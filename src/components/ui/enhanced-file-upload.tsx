@@ -243,7 +243,7 @@ export const EnhancedFileUpload: React.FC<EnhancedFileUploadProps> = ({
       </div>
 
       {/* Drop Zone */}
-      <motion.div
+      <div
         {...getRootProps()}
         className={cn(
           'relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-200',
@@ -252,14 +252,14 @@ export const EnhancedFileUpload: React.FC<EnhancedFileUploadProps> = ({
             : 'border-border-subtle hover:border-primary/50 hover:bg-surface-elevated',
           isUploading && 'opacity-50 cursor-not-allowed'
         )}
-        whileHover={!isUploading ? { scale: 1.02 } : {}}
-        whileTap={!isUploading ? { scale: 0.98 } : {}}
       >
         <input {...getInputProps()} />
         
         <motion.div
           initial={{ opacity: 0.6 }}
           animate={{ opacity: isDragActive ? 1 : 0.6 }}
+          whileHover={!isUploading ? { scale: 1.02 } : {}}
+          whileTap={!isUploading ? { scale: 0.98 } : {}}
           className="space-y-4"
         >
           <Upload className="w-12 h-12 mx-auto text-primary" />
@@ -289,7 +289,7 @@ export const EnhancedFileUpload: React.FC<EnhancedFileUploadProps> = ({
             </div>
           </motion.div>
         )}
-      </motion.div>
+      </div>
 
       {/* Upload Progress */}
       {hasUploads && (
