@@ -289,7 +289,11 @@ export async function getDocumentAnalytics(userId: string): Promise<{
 
     // Calculate documents by type
     const documentsByType = stats?.reduce((acc, doc) => {
-      acc[doc.document_type] = (acc[doc.document_type] || 0) + 1;
+      // Ensure document_type is a valid DocumentType before using it as an index
+      const docType = doc.document_type as DocumentType;
+      if (docType) {
+        acc[docType] = (acc[docType] || 0) + 1;
+      }
       return acc;
     }, {} as Record<DocumentType, number>) || {} as Record<DocumentType, number>;
 
