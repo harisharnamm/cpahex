@@ -297,12 +297,12 @@ export function AutoTaskConfirmDialog({
                   <textarea
                     value={editableTaskData.description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
-                    rows={6}
-                    className="w-full px-3 py-2 border border-border-subtle rounded-lg text-sm resize-none"
+                    rows={8}
+                    className="w-full px-4 py-3 border border-border-subtle rounded-lg text-sm resize-none"
                   />
                 ) : (
-                  <div className="bg-surface-elevated rounded-lg p-4 border border-border-subtle max-h-60 overflow-y-auto">
-                    <pre className="text-sm text-text-secondary whitespace-pre-wrap font-sans leading-relaxed break-words">
+                  <div className="bg-surface-elevated rounded-lg p-4 border border-border-subtle max-h-72 overflow-y-auto">
+                    <pre className="text-sm text-text-secondary whitespace-pre-wrap font-sans leading-relaxed break-words w-full">
                       {editableTaskData.description}
                     </pre>
                   </div>
