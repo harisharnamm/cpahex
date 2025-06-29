@@ -77,55 +77,35 @@ export class NoticeProcessingService {
         .single();
 
       return {
-        console.error('❌ Document not found:', docError);
         isProcessing: !document?.is_processed,
         progress: document?.is_processed ? 100 : 0,
-        status: document?.is_processed ? 'completed' : 'processing',
+        status: document?.is_processed ? 'completed' : 'processing'
       };
     } catch (error) {
+      console.error('❌ Document not found:', error);
       return {
         isProcessing: false,
         progress: 0,
-        status: 'error',
-        console.log('📝 Updating existing notice:', existingNotice.id);
+        status: 'error'
       };
     }
-          notice_type: analysis.noticeType || 'General Notice',
-          priority: analysis.priority || 'medium',
-          ai_summary: analysis.summary,
-          ai_recommendations: analysis.recommendations?.join('\n') || '',
-        body: JSON.stringify({
-          documentId,
-          userId,
-          console.error('❌ Error updating notice:', updateError);
-          clientId,
-        }),
-      });
+  }
 
-      if (!response.ok) {
-        console.log('🆕 Creating new notice record');
-        throw new Error(`AI processing failed: ${response.statusText}`);
-      }
-
-      const aiResult = await response.json();
-      
-          notice_type: analysis.noticeType || 'General Notice',
-          priority: analysis.priority || 'medium',
+  async reprocessNotice(noticeId: string): Promise<{ success: boolean; error?: string }> {
     try {
       // Get the notice and its document
       const { data: notice, error: noticeError } = await supabase
-          console.error('❌ Error creating notice:', noticeError);
         .from('irs_notices')
         .select(`
           *,
           documents:document_id (*)
         `)
-          ai_summary: analysis.summary,
-          ai_recommendations: analysis.recommendations?.join('\n') || '',
+        .eq('id', noticeId)
+        .single();
 
       if (noticeError || !notice) {
+        console.error('❌ Error creating notice:', noticeError);
         return { success: false, error: 'Notice not found' };
-          console.warn('⚠️ Error updating notice with AI analysis:', updateError);
       }
 
       // Reprocess the document
@@ -134,7 +114,9 @@ export class NoticeProcessingService {
         notice.user_id, 
         notice.client_id
       );
-        ai_summary: analysis.summary,
+
+      if (result.error) {
+        console.warn('⚠️ Error updating notice with AI analysis:', result.error);
         return { success: false, error: result.error.message };
       }
 
