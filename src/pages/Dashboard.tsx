@@ -221,7 +221,7 @@ export function Dashboard() {
                   <div key={task.id} className="group p-4 bg-surface rounded-xl border border-border-subtle hover:shadow-medium hover:border-border-light transition-all duration-200">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-text-primary group-hover:text-primary transition-colors duration-200">{task.title}</h3>
+                        <h3 className="font-semibold text-text-primary group-hover:text-text-hover transition-colors duration-200">{task.title}</h3>
                         <p className="text-sm text-text-tertiary mt-1">
                           {task.client_id ? 'Client task' : 'General task'} • 
                           {task.due_date ? ` Due ${new Date(task.due_date).toLocaleDateString()}` : ' No due date'}
