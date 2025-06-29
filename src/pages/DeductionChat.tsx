@@ -375,9 +375,9 @@ export function DeductionChat() {
           )}
 
           {/* Message Input */}
-          <div className="flex space-x-3">
+          <div className="flex items-end space-x-3">
             {/* File Upload Button */}
-            <div className="flex-shrink-0 relative">
+            <div className="flex-shrink-0">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -386,17 +386,21 @@ export function DeductionChat() {
                 onChange={handleFileSelect}
                 className="hidden"
               />
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={Paperclip}
+              <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isSending || isTyping || uploadingFiles.length > 0}
-                className="h-11 w-11 text-text-secondary hover:text-primary hover:bg-primary/10 border border-border-subtle hover:border-primary/30 transition-all duration-200 flex items-center justify-center"
+                className="group relative h-11 w-11 rounded-xl bg-surface-elevated border border-border-subtle hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary/20"
                 title="Attach documents"
               >
-                <Paperclip className="w-4 h-4" />
-              </Button>
+                <Paperclip className="w-5 h-5 text-text-tertiary group-hover:text-primary transition-colors duration-200" />
+                
+                {/* Upload indicator */}
+                {uploadedFiles.length > 0 && (
+                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-gray-900 rounded-full flex items-center justify-center text-xs font-bold">
+                    {uploadedFiles.length}
+                  </div>
+                )}
+              </button>
             </div>
 
             {/* Text Input */}
@@ -412,36 +416,58 @@ export function DeductionChat() {
                 disabled={isSending || isTyping || uploadingFiles.length > 0}
               />
               
-              {/* File count indicator */}
-              {uploadedFiles.length > 0 && (
-                <div className="absolute bottom-2 right-12 flex items-center space-x-1 text-xs text-primary bg-primary/20 px-2 py-1 rounded-md border border-primary/30">
-                  <Paperclip className="w-3 h-3" />
-                  <span>{uploadedFiles.length}</span>
-                </div>
-              )}
+              {/* Character count or file indicator */}
+              <div className="absolute bottom-2 right-3 flex items-center space-x-2">
+                {uploadedFiles.length > 0 && (
+                  <div className="flex items-center space-x-1 text-xs text-primary bg-primary/10 px-2 py-1 rounded-md border border-primary/20">
+                    <Paperclip className="w-3 h-3" />
+                    <span className="font-medium">{uploadedFiles.length}</span>
+                  </div>
+                )}
+                {input.length > 0 && (
+                  <div className="text-xs text-text-tertiary">
+                    {input.length}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Send Button */}
-            <div className="flex-shrink-0 relative">
-              <Button
+            <div className="flex-shrink-0">
+              <button
                 onClick={handleSend}
                 disabled={(!input.trim() && uploadedFiles.length === 0) || isSending || isTyping || uploadingFiles.length > 0}
-                icon={Send}
-                className="h-11 w-11 bg-primary text-gray-900 hover:bg-primary-hover shadow-medium flex items-center justify-center"
+                className="group relative h-11 w-11 rounded-xl bg-primary text-gray-900 hover:bg-primary-hover disabled:bg-surface-elevated disabled:text-text-tertiary disabled:cursor-not-allowed shadow-medium hover:shadow-large transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 disabled:shadow-none"
                 title="Send message"
               >
-                <Send className="w-4 h-4" />
-              </Button>
+                {isSending || isTyping ? (
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
+                )}
+                
+                {/* Send indicator */}
+                {(input.trim() || uploadedFiles.length > 0) && !isSending && !isTyping && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
+                )}
+              </button>
             </div>
           </div>
 
           {/* Status Bar */}
           <div className="flex items-center justify-between mt-3">
             <div className="flex items-center space-x-4 text-xs text-text-tertiary">
-              <span>Press Enter to send, Shift+Enter for new line</span>
+              <div className="flex items-center space-x-1">
+                <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface border border-border-subtle rounded">Enter</kbd>
+                <span>to send</span>
+                <span className="text-text-tertiary/60">•</span>
+                <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface border border-border-subtle rounded">Shift+Enter</kbd>
+                <span>for new line</span>
+              </div>
               {uploadedFiles.length > 0 && (
-                <span className="text-primary font-medium">
-                  {uploadedFiles.length} file(s) ready to upload
+                <span className="flex items-center space-x-1 text-primary font-medium">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                  <span>{uploadedFiles.length} file(s) ready</span>
                 </span>
               )}
             </div>
@@ -452,7 +478,9 @@ export function DeductionChat() {
                 </span>
               )}
               <span className="flex items-center space-x-1">
-                <div className={`w-1.5 h-1.5 rounded-full ${error ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
+                <div className={`w-2 h-2 rounded-full transition-colors duration-200 ${
+                  error ? 'bg-red-500' : isTyping ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'
+                }`}></div>
                 <span>{error ? 'Connection Error' : 'AI Assistant Online'}</span>
               </span>
             </div>
