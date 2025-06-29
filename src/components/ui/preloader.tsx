@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 
-const words = ["Hello", "Bonjour", "Ciao", "Olà", "やあ", "Hallå", "Guten tag", "হ্যালো"]
+const words = ["Hello", "Bonjour", "Ciao", "Olà", "やあ", "Hallå", "Guten tag", "Welcome"]
 
 const opacity = {
   initial: {
@@ -31,7 +31,7 @@ interface PreloaderProps {
 export default function Preloader({ onComplete }: PreloaderProps) {
  
   const [index, setIndex] = useState(0)
-  const [dimension, setDimension] = useState({ width: 0, height: 0 })
+  const [dimension, setDimension] = useState({ width: window.innerWidth, height: window.innerHeight })
   const [isExiting, setIsExiting] = useState(false)
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function Preloader({ onComplete }: PreloaderProps) {
       variants={slideUp}
       initial="initial"
       animate={isExiting ? "exit" : "initial"}
-      className="fixed inset-0 w-screen h-screen flex items-center justify-center bg-black z-[99999999999]"
+      className="fixed inset-0 w-screen h-screen flex items-center justify-center bg-black z-[99999]"
     >
       {dimension.width > 0 && (
         <>

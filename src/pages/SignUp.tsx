@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Sparkles, Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
-import Preloader from '../components/ui/preloader';
 import { useAuthContext } from '../contexts/AuthContext';
+import { usePreloader } from '../contexts/PreloaderContext';
 import { Input } from '../components/atoms/Input';
 import { Button } from '../components/atoms/Button';
 
@@ -20,9 +20,9 @@ export function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showPreloader, setShowPreloader] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const { setShowPreloader } = usePreloader();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,9 +158,6 @@ export function SignUp() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* Preloader */}
-      {showPreloader && <Preloader onComplete={() => setShowPreloader(false)} />}
-      
       {/* Left Panel - Form */}
       <div className="flex-1 bg-gray-900 flex items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-md space-y-6 sm:space-y-8">

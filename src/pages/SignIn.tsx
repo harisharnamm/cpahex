@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Sparkles, Eye, EyeOff, Mail, Lock } from 'lucide-react';
-import Preloader from '../components/ui/preloader';
 import { useAuthContext } from '../contexts/AuthContext';
+import { usePreloader } from '../contexts/PreloaderContext';
 import { Button } from '../components/atoms/Button';
 
 export function SignIn() {
@@ -14,8 +14,8 @@ export function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPreloader, setShowPreloader] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
+  const { setShowPreloader } = usePreloader();
 
   // Listen for Supabase connection events
   useEffect(() => {
@@ -67,7 +67,7 @@ export function SignIn() {
     setError(null);
     setIsSubmitting(true);
     setShowPreloader(true);
-    
+
     // Prevent sign-in attempts if there's a connection error
     if (connectionError) {
       console.warn('⚠️ Sign in prevented due to connection error');
@@ -117,9 +117,6 @@ export function SignIn() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* Preloader */}
-      {showPreloader && <Preloader onComplete={() => setShowPreloader(false)} />}
-      
       {/* Left Panel - Form */}
       <div className="flex-1 bg-gray-900 flex items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-md space-y-6 sm:space-y-8">

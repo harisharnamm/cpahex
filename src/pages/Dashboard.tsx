@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Preloader from '../components/ui/preloader';
 import { useDashboard } from '../hooks/useDashboard';
 import { useTasks } from '../hooks/useTasks';
 import { useClients } from '../hooks/useClients';
+import { usePreloader } from '../contexts/PreloaderContext';
 import { CreateTaskDialog } from '../components/ui/create-task-dialog';
 import { GlobalSearch } from '../components/molecules/GlobalSearch';
 import { useSearch } from '../contexts/SearchContext';
@@ -18,9 +18,9 @@ export function Dashboard() {
   const navigate = useNavigate();
   const [selectedYear, setSelectedYear] = useState('2024');
   const [animatingCards, setAnimatingCards] = useState<string[]>([]);
-  const [showPreloader, setShowPreloader] = useState(false);
   const { stats, recentInsights, loading, error, refreshDashboard } = useDashboard();
   const { isSearchOpen, closeSearch } = useSearch();
+  const { setShowPreloader } = usePreloader();
   const { tasks, updateTaskStatus, getUpcomingTasks, refreshTasks } = useTasks();
   const { clients } = useClients();
   const [showCreateTaskDialog, setShowCreateTaskDialog] = useState(false);
@@ -31,11 +31,25 @@ export function Dashboard() {
   // Check if user just logged in
   useEffect(() => {
     const justLoggedIn = sessionStorage.getItem('justLoggedIn');
+    console.log('Dashboard checking justLoggedIn:', justLoggedIn);
     if (justLoggedIn === 'true') {
       setShowPreloader(true);
       sessionStorage.removeItem('justLoggedIn');
     }
-  }, []);
+    
+    // Also listen for storage events to catch changes
+    const handleStorageChange = () => {
+      const updatedValue = sessionStorage.getItem('justLoggedIn');
+      console.log('Storage event detected, justLoggedIn:', updatedValue);
+      if (updatedValue === 'true') {
+        setShowPreloader(true);
+        sessionStorage.removeItem('justLoggedIn');
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [setShowPreloader]);
 
   // Simulate real-time updates - must be called before any conditional returns
   useEffect(() => {
@@ -269,9 +283,6 @@ export function Dashboard() {
 
   return (
     <div>
-      {/* Preloader */}
-      {showPreloader && <Preloader onComplete={() => setShowPreloader(false)} />}
-      
       <TopBar 
         title="Dashboard" 
         customAction={customAction} 
