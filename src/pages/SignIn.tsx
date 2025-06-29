@@ -136,7 +136,7 @@ export function SignIn() {
           {/* Header */}
           <div className="text-center">
             <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Welcome back!</h1>
-            <p className="text-sm sm:text-base text-gray-400">Sign in to your CPA Hex account</p>
+            <p className="text-sm sm:text-base text-gray-400">Sign in to your CPA OS account</p>
           </div>
 
           {/* Form */}
