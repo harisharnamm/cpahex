@@ -3,6 +3,7 @@ import { TopBar } from '../components/organisms/TopBar';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
 import { StatCard } from '../components/atoms/StatCard';
+import { RegulatoryUpdateDialog } from '../components/ui/regulatory-update-dialog';
 import { 
   GraduationCap, 
   Calendar, 
@@ -24,6 +25,7 @@ import { Input } from '../components/atoms/Input';
 export function MyZone() {
   const [selectedYear, setSelectedYear] = useState('2025');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedUpdate, setSelectedUpdate] = useState<any>(null);
   
   // Mock data for CPE credits
   const cpeCredits = {
@@ -469,7 +471,11 @@ export function MyZone() {
               
               <div className="divide-y divide-border-subtle">
                 {regulatoryUpdates.map(update => (
-                  <div key={update.id} className="p-6 hover:bg-surface-hover transition-colors duration-200">
+                  <div 
+                    key={update.id} 
+                    className="p-6 hover:bg-surface-hover transition-colors duration-200 cursor-pointer"
+                    onClick={() => setSelectedUpdate(update)}
+                  >
                     <div className="flex items-start space-x-3 mb-3">
                       <div className="p-2 bg-surface rounded-lg border border-border-subtle">
                         <Bell className="w-4 h-4 text-text-tertiary" />
@@ -494,6 +500,10 @@ export function MyZone() {
                       <Button 
                         variant="ghost" 
                         size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedUpdate(update);
+                        }}
                         className="text-xs"
                       >
                         View Details
@@ -517,6 +527,16 @@ export function MyZone() {
           </div>
         </div>
       </div>
+      
+      {/* Regulatory Update Detail Dialog */}
+      <RegulatoryUpdateDialog
+        isOpen={!!selectedUpdate}
+        onClose={() => setSelectedUpdate(null)}
+        update={selectedUpdate}
+        suggestedWebinars={upcomingWebinars.filter(webinar => 
+          webinar.creditType === selectedUpdate?.creditType
+        )}
+      />
     </div>
   );
 }
