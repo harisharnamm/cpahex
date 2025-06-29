@@ -342,7 +342,7 @@ export function SignUp() {
           <div className="flex-1 flex flex-col justify-center">
             <div className="max-w-lg">
               <h2 className="text-3xl xl:text-4xl font-bold mb-6 leading-tight">
-                Join thousands of CPAs who trust CPA Hex
+                Join thousands of CPAs who trust CPA OS
               </h2>
               <p className="text-lg xl:text-xl text-white/90 leading-relaxed mb-6 xl:mb-8">
                 Experience the future of tax preparation with AI-powered insights, 
