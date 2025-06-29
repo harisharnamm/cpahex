@@ -127,7 +127,7 @@ export class DocumentService {
 
       // Start background processing if enabled
       if (options.processingOptions?.enableOCR || options.processingOptions?.enableAI) {
-        this.processDocumentBackground(documentData!.id, options.processingOptions);
+        this.processDocumentBackground(documentData!.id, userId, options.processingOptions);
       }
 
       // Note: IRS notice records are now created only by the IRSNotices page
@@ -339,6 +339,7 @@ export class DocumentService {
    */
   private async processDocumentBackground(
     documentId: string,
+    userId: string,
     options: {
       enableOCR?: boolean;
       enableAI?: boolean;

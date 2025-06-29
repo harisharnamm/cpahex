@@ -184,7 +184,7 @@ export async function createIRSNoticeRecord(noticeData: {
       .from('irs_notices')
       .select('id')
       .eq('document_id', noticeData.document_id)
-      .single();
+      .maybeSingle();
 
     if (existingNotice) {
       return { 
