@@ -3,6 +3,7 @@ import { Breadcrumb } from '../molecules/Breadcrumb';
 import { Button } from '../atoms/Button';
 import { Menu } from 'lucide-react';
 import { useSidebar } from '../../contexts/SidebarContext';
+import { useSearch } from '../../contexts/SearchContext';
 import type { LucideIcon } from 'lucide-react';
 
 interface TopBarProps {
@@ -22,6 +23,7 @@ interface TopBarProps {
 
 export function TopBar({ title, breadcrumbItems, action, customAction }: TopBarProps) {
   const { openSidebar } = useSidebar();
+  const { openSearch } = useSearch();
   
   return (
     <div className="bg-surface-elevated/80 backdrop-blur-sm border-b border-border-subtle sticky top-0 z-30">
@@ -53,6 +55,20 @@ export function TopBar({ title, breadcrumbItems, action, customAction }: TopBarP
             </Button>
           )}
           {customAction && customAction.customRender()}
+          
+          {/* Quick search button - only show when no custom action */}
+          {!customAction && !action && (
+            <Button
+              onClick={openSearch}
+              variant="secondary"
+              className="shadow-soft text-sm sm:text-base py-1.5 sm:py-2 mt-2 sm:mt-0"
+            >
+              <div className="flex items-center space-x-2">
+                <span>Search...</span>
+                <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface border border-border-subtle rounded">⌘K</kbd>
+              </div>
+            </Button>
+          )}
         </div>
       </div>
     </div>

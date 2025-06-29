@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { TopBar } from '../components/organisms/TopBar';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
+import { GlobalSearch } from '../components/molecules/GlobalSearch';
+import { useSearch } from '../contexts/SearchContext';
 import { WebinarRegistrationDialog } from '../components/ui/webinar-registration-dialog';
 import { StatCard } from '../components/atoms/StatCard';
 import { RegulatoryUpdateDialog } from '../components/ui/regulatory-update-dialog';
@@ -26,7 +28,9 @@ import { Input } from '../components/atoms/Input';
 export function MyZone() {
   const [selectedYear, setSelectedYear] = useState('2025');
   const [searchQuery, setSearchQuery] = useState('');
+  const { isSearchOpen, closeSearch } = useSearch();
   const [selectedUpdate, setSelectedUpdate] = useState<any>(null);
+  const [selectedWebinar, setSelectedWebinar] = useState<any>(null);
   
 
   // Listen for register-webinar events from the regulatory update dialog
@@ -222,6 +226,9 @@ export function MyZone() {
         title="My Zone" 
         customAction={customAction}
       />
+
+      {/* Global Search */}
+      <GlobalSearch isOpen={isSearchOpen} onClose={closeSearch} />
       
       <div className="max-w-content mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8">
         {/* CPE Credits Overview */}

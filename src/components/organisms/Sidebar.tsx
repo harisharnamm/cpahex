@@ -1,5 +1,6 @@
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useSidebar } from '../../contexts/SidebarContext';
+import { useSearch } from '../../contexts/SearchContext';
 import { NavigationItem } from '../molecules/NavigationItem';
 import { 
   LayoutDashboard, 
@@ -23,6 +24,7 @@ interface SidebarProps {
 export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const { profile, signOut } = useAuthContext();
   const { closeSidebar } = useSidebar();
+  const { openSearch } = useSearch();
   
   const handleSignOut = async () => {
     await signOut();
@@ -100,6 +102,20 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
             Settings
           </NavigationItem>
         </nav>
+
+        {/* Search Shortcut */}
+        <div className="px-4 sm:px-6 mt-2 mb-4">
+          <button
+            onClick={openSearch}
+            className="w-full flex items-center justify-between px-4 py-2 rounded-xl text-text-tertiary hover:text-text-primary hover:bg-surface-hover transition-all duration-200 border border-border-subtle"
+          >
+            <div className="flex items-center">
+              <Search className="w-4 h-4 mr-2" />
+              <span className="text-sm">Search...</span>
+            </div>
+            <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface border border-border-subtle rounded">⌘K</kbd>
+          </button>
+        </div>
 
         {/* User Avatar */}
         <div className="p-4 sm:p-6 border-t border-border-subtle bg-gradient-to-r from-surface to-surface-elevated">

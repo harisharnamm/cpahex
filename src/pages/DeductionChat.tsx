@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useEffect, useRef } from 'react';
 import { TopBar } from '../components/organisms/TopBar';
 import { TypingIndicator } from '../components/molecules/TypingIndicator';
+import { GlobalSearch } from '../components/molecules/GlobalSearch';
+import { useSearch } from '../contexts/SearchContext';
 import { Button } from '../components/atoms/Button';
 import { Send, Sparkles, FileText, Calculator, Trash2, RefreshCw, Paperclip, X } from 'lucide-react';
 import { useChat } from '../hooks/useChat';
@@ -12,6 +14,7 @@ import { formatFileSize } from '../lib/uploadUtils';
 export function DeductionChat() {
   const { clients } = useClients();
   const [selectedClientId, setSelectedClientId] = useState<string | undefined>();
+  const { isSearchOpen, closeSearch } = useSearch();
   const { messages, loading, error, isTyping, sendMessage, clearMessages, setError } = useChat(selectedClientId);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -178,6 +181,9 @@ export function DeductionChat() {
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-surface to-surface-elevated">
       <TopBar title="Deduction Chat" />
+
+      {/* Global Search */}
+      <GlobalSearch isOpen={isSearchOpen} onClose={closeSearch} />
       
       <div className="flex-1 max-w-content mx-auto w-full flex flex-col">
         {/* Chat Header */}

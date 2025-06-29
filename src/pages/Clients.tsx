@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useClients } from '../hooks/useClients';
 import { TopBar } from '../components/organisms/TopBar';
+import { GlobalSearch } from '../components/molecules/GlobalSearch';
+import { useSearch } from '../contexts/SearchContext';
 import { ClientTable } from '../components/organisms/ClientTable';
 import { ClientDialog } from '../components/ui/client-dialog';
 import { ConfirmDialog } from '../components/ui/confirm-dialog';
@@ -13,6 +15,7 @@ import { ClientWithDocuments } from '../hooks/useClients';
 export function Clients() {
   const navigate = useNavigate();
   const { clients, loading, error, addClient, deleteClient } = useClients();
+  const { isSearchOpen, closeSearch } = useSearch();
   const [searchQuery, setSearchQuery] = useState('');
   const [showClientDialog, setShowClientDialog] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -125,6 +128,9 @@ export function Clients() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated">
       <TopBar title="Clients" />
+
+      {/* Global Search */}
+      <GlobalSearch isOpen={isSearchOpen} onClose={closeSearch} />
       
       <div className="max-w-content mx-auto px-8 py-8">
         <div className="flex justify-between items-center mb-8">

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVendors } from '../hooks/useVendors';
 import { TopBar } from '../components/organisms/TopBar';
+import { GlobalSearch } from '../components/molecules/GlobalSearch';
+import { useSearch } from '../contexts/SearchContext';
 import { Badge } from '../components/atoms/Badge';
 import { Button } from '../components/atoms/Button';
 import { Input } from '../components/atoms/Input';
@@ -10,6 +12,7 @@ import { Send, FileText, Search, Filter, TrendingUp, Clock, CheckCircle } from '
 export function Hub1099() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const { isSearchOpen, closeSearch } = useSearch();
   const { vendors, loading, error } = useVendors();
 
   const handleSendW9 = (vendor: any) => {
@@ -58,6 +61,9 @@ export function Hub1099() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated">
       <TopBar title="1099 Hub" />
+
+      {/* Global Search */}
+      <GlobalSearch isOpen={isSearchOpen} onClose={closeSearch} />
       
       <div className="max-w-content mx-auto px-8 py-8">
         {error && (

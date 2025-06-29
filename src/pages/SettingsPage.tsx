@@ -1,6 +1,8 @@
 import React, { useState, ReactElement } from 'react';
 import { useAuthContext } from '../contexts/AuthContext';
 import { TopBar } from '../components/organisms/TopBar';
+import { GlobalSearch } from '../components/molecules/GlobalSearch';
+import { useSearch } from '../contexts/SearchContext';
 import { Input } from '../components/atoms/Input';
 import { Button } from '../components/atoms/Button';
 import { 
@@ -22,6 +24,7 @@ import {
 export function Settings(): ReactElement {
   const { profile, updateProfile } = useAuthContext();
   const [activeSection, setActiveSection] = useState('profile');
+  const { isSearchOpen, closeSearch } = useSearch();
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
   
@@ -590,6 +593,9 @@ Best regards,
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated">
       <TopBar title="Settings" />
+
+      {/* Global Search */}
+      <GlobalSearch isOpen={isSearchOpen} onClose={closeSearch} />
       
       <div className="max-w-content mx-auto px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">

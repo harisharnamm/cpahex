@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useTasks } from '../hooks/useTasks';
 import { useClients } from '../hooks/useClients';
 import { CreateTaskDialog } from '../components/ui/create-task-dialog';
+import { GlobalSearch } from '../components/molecules/GlobalSearch';
+import { useSearch } from '../contexts/SearchContext';
 import { TaskDetailDialog } from '../components/ui/task-detail-dialog';
 import { TopBar } from '../components/organisms/TopBar';
 import { Button } from '../components/atoms/Button';
@@ -25,6 +27,7 @@ import { Task } from '../hooks/useTasks';
 export function Tasks() {
   const { tasks, loading, updateTaskStatus, deleteTask, createTask } = useTasks();
   const { clients } = useClients();
+  const { isSearchOpen, closeSearch } = useSearch();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
@@ -282,6 +285,9 @@ export function Tasks() {
           icon: Plus
         }}
       />
+      
+      {/* Global Search */}
+      <GlobalSearch isOpen={isSearchOpen} onClose={closeSearch} />
       
       <div className="max-w-content mx-auto px-8 py-8">
         {/* Stats Overview */}

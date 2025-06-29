@@ -5,6 +5,8 @@ import { useClients } from '../hooks/useClients';
 import { TopBar } from '../components/organisms/TopBar';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
+import { GlobalSearch } from '../components/molecules/GlobalSearch';
+import { useSearch } from '../contexts/SearchContext';
 import { Copy, Download, FileText, AlertTriangle, Clock, CheckCircle, ArrowLeft, Eye, Trash2, Plus, Zap } from 'lucide-react';
 import { EnhancedFileUpload } from '../components/ui/enhanced-file-upload';
 import { EnhancedDocumentPreview } from '../components/ui/enhanced-document-preview';
@@ -18,6 +20,7 @@ import { EnrichedIRSNotice } from '../types/documents';
 export function IRSNotices() {
   const [selectedNoticeId, setSelectedNoticeId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const { isSearchOpen, closeSearch } = useSearch();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -434,6 +437,9 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated">
       <TopBar title="IRS Notices" />
+
+      {/* Global Search */}
+      <GlobalSearch isOpen={isSearchOpen} onClose={closeSearch} />
       
       <div className="max-w-content mx-auto px-8 py-8">
         {!selectedNoticeId ? (

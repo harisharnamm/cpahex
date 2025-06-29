@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Tab } from '@headlessui/react';
 import { useClients } from '../hooks/useClients';
+import { GlobalSearch } from '../components/molecules/GlobalSearch';
+import { useSearch } from '../contexts/SearchContext';
 import { AddTransactionDialog } from '../components/ui/add-transaction-dialog';
 import { EditClientDialog } from '../components/ui/edit-client-dialog';
 import { TopBar } from '../components/organisms/TopBar';
@@ -17,6 +19,7 @@ export function ClientDetail() {
   const { id } = useParams();
   const [selectedTab, setSelectedTab] = useState(0);
   const { clients, loading: clientsLoading, updateClient } = useClients();
+  const { isSearchOpen, closeSearch } = useSearch();
   const [searchQuery, setSearchQuery] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -202,6 +205,9 @@ export function ClientDetail() {
           icon: Edit
         }}
       />
+      
+      {/* Global Search */}
+      <GlobalSearch isOpen={isSearchOpen} onClose={closeSearch} />
       
       <div className="max-w-content mx-auto px-8 py-8">
         {/* Client Info Card */}

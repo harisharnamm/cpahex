@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
+import { SearchProvider } from './contexts/SearchContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Sidebar } from './components/organisms/Sidebar';
 import { Dashboard } from './pages/Dashboard';
@@ -129,11 +130,13 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <SidebarProvider>
-          <AppContent />
-        </SidebarProvider>
-      </Router>
+      <SearchProvider>
+        <Router>
+          <SidebarProvider>
+            <AppContent />
+          </SidebarProvider>
+        </Router>
+      </SearchProvider>
     </AuthProvider>
   );
 }

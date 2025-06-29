@@ -4,6 +4,8 @@ import { useDashboard } from '../hooks/useDashboard';
 import { useTasks } from '../hooks/useTasks';
 import { useClients } from '../hooks/useClients';
 import { CreateTaskDialog } from '../components/ui/create-task-dialog';
+import { GlobalSearch } from '../components/molecules/GlobalSearch';
+import { useSearch } from '../contexts/SearchContext';
 import { TopBar } from '../components/organisms/TopBar';
 import { StatCard } from '../components/atoms/StatCard';
 import { Input } from '../components/atoms/Input';
@@ -16,6 +18,7 @@ export function Dashboard() {
   const [selectedYear, setSelectedYear] = useState('2024');
   const [animatingCards, setAnimatingCards] = useState<string[]>([]);
   const { stats, recentInsights, loading, error, refreshDashboard } = useDashboard();
+  const { isSearchOpen, closeSearch } = useSearch();
   const { tasks, updateTaskStatus, getUpcomingTasks, refreshTasks } = useTasks();
   const { clients } = useClients();
   const [showCreateTaskDialog, setShowCreateTaskDialog] = useState(false);
@@ -259,6 +262,9 @@ export function Dashboard() {
         title="Dashboard" 
         customAction={customAction} 
       />
+
+      {/* Global Search */}
+      <GlobalSearch isOpen={isSearchOpen} onClose={closeSearch} />
       
       <div className="max-w-content mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8">
         {/* Stats Grid */}
