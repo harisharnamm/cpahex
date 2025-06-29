@@ -75,18 +75,32 @@ User Question: ${message.trim()}`
     if (context_documents && context_documents.length > 0) {
       const { data: documents } = await supabaseClient
         .from('documents')
-        .select('original_filename, document_type, ocr_text, ai_summary')
+        .select('original_filename, document_type, ocr_text, ai_summary, file_size, created_at')
         .in('id', context_documents)
         .limit(5) // Limit to avoid token overflow
 
       if (documents && documents.length > 0) {
-        let docContext = '\n\nRelevant Documents:'
+        let docContext = '\n\nUploaded Documents for Analysis:'
         documents.forEach(doc => {
-          docContext += `\n- ${doc.original_filename} (${doc.document_type})`
+          docContext += `\n\n📄 Document: ${doc.original_filename}`
+          docContext += `\n   Type: ${doc.document_type}`
+          docContext += `\n   Size: ${(doc.file_size / 1024 / 1024).toFixed(2)} MB`
+          docContext += `\n   Uploaded: ${new Date(doc.created_at).toLocaleDateString()}`
+          
           if (doc.ai_summary) {
-            docContext += `: ${doc.ai_summary.substring(0, 200)}...`
+            docContext += `\n   AI Summary: ${doc.ai_summary}`
+          }
+          
+          if (doc.ocr_text && doc.ocr_text.length > 0) {
+            // Include OCR text for analysis, but limit length
+            const ocrPreview = doc.ocr_text.length > 500 
+              ? doc.ocr_text.substring(0, 500) + '...' 
+              : doc.ocr_text;
+            docContext += `\n   Extracted Text: ${ocrPreview}`
           }
         })
+        
+        docContext += '\n\nPlease analyze these documents and provide insights about potential tax deductions, compliance issues, or other relevant tax implications.'
         contextMessage += docContext
       }
     }

@@ -3,9 +3,11 @@ import { useEffect, useRef } from 'react';
 import { TopBar } from '../components/organisms/TopBar';
 import { TypingIndicator } from '../components/molecules/TypingIndicator';
 import { Button } from '../components/atoms/Button';
-import { Send, Sparkles, FileText, Calculator, Trash2, RefreshCw } from 'lucide-react';
+import { Send, Sparkles, FileText, Calculator, Trash2, RefreshCw, Upload, Paperclip, X } from 'lucide-react';
 import { useChat } from '../hooks/useChat';
 import { useClients } from '../hooks/useClients';
+import { useDocumentUpload } from '../hooks/useDocumentUpload';
+import { formatFileSize } from '../lib/uploadUtils';
 
 export function DeductionChat() {
   const { clients } = useClients();
@@ -13,7 +15,12 @@ export function DeductionChat() {
   const { messages, loading, error, isTyping, sendMessage, clearMessages, setError } = useChat(selectedClientId);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { uploadSingleDocument } = useDocumentUpload();
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -26,7 +33,7 @@ export function DeductionChat() {
       id: 'welcome',
       user_id: '',
       role: 'assistant' as const,
-      content: 'Hello! I\'m your AI tax assistant. I can help you identify potential deductions, analyze receipts, and answer tax-related questions. What would you like to know?',
+      content: 'Hello! I\'m your AI tax assistant. I can help you identify potential deductions, analyze receipts, and answer tax-related questions. You can also upload documents for analysis. What would you like to know?',
       created_at: new Date().toISOString(),
     }
   ] : messages;
@@ -49,24 +56,97 @@ export function DeductionChat() {
     },
   ];
 
-  const handleSend = async () => {
-    if (!input.trim() || isSending) return;
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length > 0) {
+      setUploadedFiles(prev => [...prev, ...files]);
+    }
+    // Reset the input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
-    const messageContent = input.trim();
-    setInput('');
+  const handleRemoveFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUploadFiles = async () => {
+    if (uploadedFiles.length === 0) return [];
+
+    const uploadedDocumentIds: string[] = [];
+    setUploadingFiles([...uploadedFiles]);
+
+    try {
+      for (const file of uploadedFiles) {
+        const result = await uploadSingleDocument(file, {
+          clientId: selectedClientId,
+          documentType: 'other', // Default type for chat uploads
+          tags: ['chat-upload'],
+          processingOptions: {
+            enableOCR: true,
+            enableAI: true,
+            autoClassify: true,
+          },
+        });
+
+        if (result.data) {
+          uploadedDocumentIds.push(result.data.id);
+        }
+      }
+
+      setUploadedFiles([]);
+      setUploadingFiles([]);
+      return uploadedDocumentIds;
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      setUploadingFiles([]);
+      throw error;
+    }
+  };
+
+  const handleSend = async () => {
+    if ((!input.trim() && uploadedFiles.length === 0) || isSending) return;
+
+    let messageContent = input.trim();
+    let contextDocuments: string[] = [];
+
     setIsSending(true);
 
-    const result = await sendMessage(messageContent, {
-      clientId: selectedClientId,
-    });
+    try {
+      // Upload files if any
+      if (uploadedFiles.length > 0) {
+        contextDocuments = await handleUploadFiles();
+        
+        // Add file context to message
+        if (messageContent) {
+          messageContent += '\n\n';
+        }
+        messageContent += `I've uploaded ${uploadedFiles.length} document(s) for analysis. Please review and provide insights.`;
+      }
 
-    if (!result.success) {
-      console.error('Failed to send message:', result.error);
-      // Restore input on error
+      if (!messageContent.trim()) {
+        messageContent = 'Please analyze the uploaded documents.';
+      }
+
+      setInput('');
+
+      const result = await sendMessage(messageContent, {
+        clientId: selectedClientId,
+        contextDocuments: contextDocuments.length > 0 ? contextDocuments : undefined,
+      });
+
+      if (!result.success) {
+        console.error('Failed to send message:', result.error);
+        // Restore input on error
+        setInput(messageContent);
+      }
+    } catch (error) {
+      console.error('Error in handleSend:', error);
       setInput(messageContent);
+    } finally {
+      setIsSending(false);
     }
-
-    setIsSending(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -145,7 +225,7 @@ export function DeductionChat() {
 
         {/* Quick Actions */}
         <div className="bg-surface-elevated border-b border-border-subtle p-6">
-          <div className="flex space-x-3">
+          <div className="flex flex-wrap gap-3">
             {quickActions.map((action) => (
               <Button
                 key={action.label}
@@ -158,8 +238,98 @@ export function DeductionChat() {
                 {action.label}
               </Button>
             ))}
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Upload}
+              onClick={() => setShowUpload(!showUpload)}
+              className={`text-xs ${showUpload ? 'bg-primary/10 text-primary border-primary/20' : ''}`}
+            >
+              Upload Document
+            </Button>
           </div>
         </div>
+
+        {/* File Upload Section */}
+        {showUpload && (
+          <div className="bg-surface border-b border-border-subtle p-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-text-primary">Upload Documents</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={X}
+                  onClick={() => setShowUpload(false)}
+                  className="text-text-secondary hover:text-text-primary"
+                />
+              </div>
+              
+              <div className="border-2 border-dashed border-border-subtle rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".pdf,.jpg,.jpeg,.png,.txt,.doc,.docx"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <Upload className="w-8 h-8 text-text-tertiary mx-auto mb-2" />
+                <p className="text-text-primary font-medium mb-1">Upload documents for analysis</p>
+                <p className="text-text-tertiary text-sm mb-4">
+                  Supports PDF, images, and document files up to 50MB
+                </p>
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  variant="secondary"
+                  icon={Paperclip}
+                  disabled={uploadingFiles.length > 0}
+                >
+                  Choose Files
+                </Button>
+              </div>
+
+              {/* Uploaded Files List */}
+              {(uploadedFiles.length > 0 || uploadingFiles.length > 0) && (
+                <div className="space-y-2">
+                  <h4 className="font-medium text-text-primary text-sm">
+                    Files to Upload ({uploadedFiles.length})
+                  </h4>
+                  {uploadedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-surface-elevated rounded-lg border border-border-subtle">
+                      <div className="flex items-center space-x-3">
+                        <FileText className="w-4 h-4 text-text-tertiary" />
+                        <div>
+                          <p className="text-sm font-medium text-text-primary">{file.name}</p>
+                          <p className="text-xs text-text-tertiary">{formatFileSize(file.size)}</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={X}
+                        onClick={() => handleRemoveFile(index)}
+                        className="text-text-secondary hover:text-red-600"
+                      />
+                    </div>
+                  ))}
+                  
+                  {uploadingFiles.map((file, index) => (
+                    <div key={`uploading-${index}`} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center space-x-3">
+                        <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />
+                        <div>
+                          <p className="text-sm font-medium text-blue-900">{file.name}</p>
+                          <p className="text-xs text-blue-700">Uploading...</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Error Display */}
         {error && (
@@ -201,6 +371,20 @@ export function DeductionChat() {
                 }`}
               >
                 <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                
+                {/* Show context documents if any */}
+                {message.context_documents && message.context_documents.length > 0 && (
+                  <div className={`mt-3 pt-3 border-t ${
+                    message.role === 'user' ? 'border-gray-700' : 'border-border-subtle'
+                  }`}>
+                    <p className={`text-xs ${
+                      message.role === 'user' ? 'text-gray-700' : 'text-text-tertiary'
+                    }`}>
+                      📎 {message.context_documents.length} document(s) attached
+                    </p>
+                  </div>
+                )}
+                
                 {message.created_at && (
                   <p className={`text-xs mt-3 ${
                     message.role === 'user' ? 'text-gray-700' : 'text-text-tertiary'
@@ -233,21 +417,29 @@ export function DeductionChat() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ask about deductions, tax questions, or upload receipts..."
+                placeholder="Ask about deductions, tax questions, or upload documents for analysis..."
                 className="w-full resize-none rounded-xl border border-border-subtle px-4 py-3 bg-surface-elevated text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all duration-200 disabled:opacity-50"
                 rows={1}
                 style={{ minHeight: '44px' }}
-                disabled={isSending || isTyping}
+                disabled={isSending || isTyping || uploadingFiles.length > 0}
               />
+              
+              {/* File attachment indicator */}
+              {uploadedFiles.length > 0 && (
+                <div className="absolute bottom-2 right-2 flex items-center space-x-1 text-xs text-text-tertiary">
+                  <Paperclip className="w-3 h-3" />
+                  <span>{uploadedFiles.length} file(s)</span>
+                </div>
+              )}
             </div>
             <Button
               onClick={handleSend}
-              disabled={!input.trim() || isSending || isTyping}
+              disabled={(!input.trim() && uploadedFiles.length === 0) || isSending || isTyping || uploadingFiles.length > 0}
               icon={Send}
               aria-label="Send message"
               className="shrink-0"
             >
-              {isSending ? 'Sending...' : ''}
+              {isSending ? 'Sending...' : uploadingFiles.length > 0 ? 'Uploading...' : ''}
             </Button>
           </div>
           <div className="flex items-center justify-between mt-3">
