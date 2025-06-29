@@ -1,4 +1,3 @@
-import React from 'react';
 import { MoreHorizontal, Mail, Phone, Users } from 'lucide-react';
 import { ClientWithDocuments } from '../../hooks/useClients';
 import { Button } from '../atoms/Button';
@@ -58,7 +57,9 @@ export function ClientTable({ clients, onClientClick }: ClientTableProps) {
                 }}
                 aria-label="Client actions"
                 className="flex-shrink-0 ml-2"
-              />
+              >
+                Actions
+              </Button>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -162,7 +163,9 @@ export function ClientTable({ clients, onClientClick }: ClientTableProps) {
                         // Handle menu actions
                       }}
                       aria-label="Client actions"
-                    />
+                    >
+                      Actions
+                    </Button>
                   </td>
                 </tr>
               ))}

@@ -175,7 +175,7 @@ const PreviewContent: React.FC<{
 };
 
 export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
-  document,
+  document: docData,
   previewUrl,
   isOpen,
   onClose,
@@ -190,13 +190,13 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
     };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
+      window.document.addEventListener('keydown', handleEscape);
+      window.document.body.style.overflow = 'hidden';
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
+      window.document.removeEventListener('keydown', handleEscape);
+      window.document.body.style.overflow = 'unset';
     };
   }, [isOpen, onClose]);
 
@@ -225,17 +225,17 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
           <div className="flex items-center space-x-4 flex-1 min-w-0 mb-4 sm:mb-0">
             <div className="w-full">
               <h2 className="text-base sm:text-lg font-semibold text-text-primary truncate">
-                {document.original_filename}
+                {docData.original_filename}
               </h2>
               <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1">
                 <Badge variant="neutral" size="sm">
-                  {DOCUMENT_TYPE_LABELS[document.document_type] || document.document_type}
+                  {DOCUMENT_TYPE_LABELS[docData.document_type] || docData.document_type}
                 </Badge>
                 <span className="text-xs sm:text-sm text-text-tertiary">
-                  {formatFileSize(document.file_size)}
+                  {formatFileSize(docData.file_size)}
                 </span>
                 <span className="text-xs sm:text-sm text-text-tertiary">
-                  {new Date(document.created_at).toLocaleDateString()}
+                  {new Date(docData.created_at).toLocaleDateString()}
                 </span>
               </div>
             </div>
@@ -266,7 +266,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
         {/* Content */}
         <div className="p-3 sm:p-4 md:p-6 overflow-auto max-h-[calc(85vh-100px)] sm:max-h-[calc(90vh-120px)]">
           {previewUrl ? (
-            <PreviewContent document={document} previewUrl={previewUrl} />
+            <PreviewContent document={docData} previewUrl={previewUrl} />
           ) : (
             <div className="flex items-center justify-center h-48 sm:h-72 md:h-96">
               <div className="text-center">
@@ -278,11 +278,11 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
         </div>
 
         {/* Footer with document metadata */}
-        {document.ai_summary && (
+        {docData.ai_summary && (
           <div className="border-t border-border-subtle p-4 sm:p-6 bg-surface-elevated">
             <h3 className="text-xs sm:text-sm font-semibold text-text-primary mb-1 sm:mb-2">AI Summary</h3>
             <p className="text-xs sm:text-sm text-text-tertiary leading-relaxed">
-              {document.ai_summary}
+              {docData.ai_summary}
             </p>
           </div>
         )}

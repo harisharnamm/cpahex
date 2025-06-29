@@ -3,6 +3,7 @@ import { Breadcrumb } from '../molecules/Breadcrumb';
 import { Button } from '../atoms/Button';
 import { Menu } from 'lucide-react';
 import { useSidebar } from '../../contexts/SidebarContext';
+import type { LucideIcon } from 'lucide-react';
 
 interface TopBarProps {
   title: string;
@@ -10,7 +11,7 @@ interface TopBarProps {
   action?: {
     label: string;
     onClick: () => void;
-    icon?: React.ComponentType<any>;
+    icon?: LucideIcon;
   };
   customAction?: {
     label: string;
