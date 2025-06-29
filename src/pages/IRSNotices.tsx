@@ -7,7 +7,7 @@ import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
 import { GlobalSearch } from '../components/molecules/GlobalSearch';
 import { useSearch } from '../contexts/SearchContext';
-import { Copy, Download, FileText, AlertTriangle, Clock, CheckCircle, ArrowLeft, Eye, Trash2, Plus, Zap } from 'lucide-react';
+import { Copy, Download, FileText, AlertTriangle, Clock, CheckCircle, ArrowLeft, Eye, Trash2, Plus, Zap, Search, Filter } from 'lucide-react';
 import { EnhancedFileUpload } from '../components/ui/enhanced-file-upload';
 import { EnhancedDocumentPreview } from '../components/ui/enhanced-document-preview';
 import { ConfirmDialog } from '../components/ui/confirm-dialog';
@@ -20,7 +20,7 @@ import { EnrichedIRSNotice } from '../types/documents';
 export function IRSNotices() {
   const [selectedNoticeId, setSelectedNoticeId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const { isSearchOpen, closeSearch } = useSearch();
+  const { isSearchOpen, closeSearch, openSearch } = useSearch();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -515,6 +515,21 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
                   onUploadError={handleUploadError}
                 />
               </div>
+            </div>
+
+            {/* Search and Filters */}
+            <div className="flex gap-4 mb-8">
+              <Button 
+                variant="secondary" 
+                icon={Search} 
+                onClick={openSearch}
+                className="flex-1"
+              >
+                Search notices...
+              </Button>
+              <Button variant="secondary" icon={Filter}>
+                Filter
+              </Button>
             </div>
 
             {/* Recent Notices */}
