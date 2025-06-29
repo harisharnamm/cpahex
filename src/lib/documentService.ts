@@ -348,8 +348,14 @@ export class DocumentService {
   ): Promise<void> {
     try {
       console.log('🤖 Starting AI processing for document:', documentId);
+      console.log('🤖 User ID:', userId);
+      console.log('🤖 Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+      console.log('🤖 Has Anon Key:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
       
       // Call the edge function for AI processing
+      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document-ai`;
+      console.log('🤖 Calling edge function:', functionUrl);
+      
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document-ai`, {
         method: 'POST',
         headers: {
@@ -362,11 +368,17 @@ export class DocumentService {
         }),
       });
 
+      console.log('🤖 Edge function response status:', response.status);
+      console.log('🤖 Edge function response ok:', response.ok);
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Edge function error response:', errorText);
         throw new Error(`AI processing failed: ${response.statusText}`);
       }
 
       const result = await response.json();
+      console.log('🤖 Edge function result:', result);
       
       if (result.success && result.analysis) {
         // Update document with AI analysis
@@ -399,6 +411,7 @@ export class DocumentService {
         await updateDocumentProcessing(documentId, updates);
         console.log('✅ AI processing completed successfully');
       } else {
+        console.error('❌ AI processing returned no results:', result);
         throw new Error('AI processing returned no results');
       }
 

@@ -58,14 +58,20 @@ export function IRSNotices() {
     
     // If there's a document, start processing it
     const notice = enrichedNotices.find(n => n.id === noticeId);
+    console.log('🔍 Selected notice:', notice);
+    console.log('🔍 Document ID:', notice?.document_id);
+    console.log('🔍 Has AI summary:', !!notice?.ai_summary);
+    
     if (notice?.document_id && !notice.ai_summary) {
+      console.log('🤖 Starting AI processing for notice:', noticeId);
       setIsProcessing(true);
       try {
-        await noticeProcessingService.processIRSNotice(
+        const result = await noticeProcessingService.processIRSNotice(
           notice.document_id, 
           notice.user_id, 
           notice.client_id
         );
+        console.log('🤖 AI processing result:', result);
         // Refresh notices to get updated AI summary
         refreshNotices();
       } catch (error) {
@@ -73,6 +79,11 @@ export function IRSNotices() {
       } finally {
         setIsProcessing(false);
       }
+    } else {
+      console.log('🔍 Skipping AI processing:', {
+        hasDocumentId: !!notice?.document_id,
+        hasAiSummary: !!notice?.ai_summary
+      });
     }
   };
 
