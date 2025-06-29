@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboard } from '../hooks/useDashboard';
+import { useTasks } from '../hooks/useTasks';
 import { TopBar } from '../components/organisms/TopBar';
 import { StatCard } from '../components/atoms/StatCard';
 import { Input } from '../components/atoms/Input';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
-import { Users, FileText, AlertTriangle, Calendar, Search, Plus, Clock, TrendingUp } from 'lucide-react';
+import { Users, FileText, AlertTriangle, Calendar, Search, Plus, Clock, TrendingUp, CheckCircle, RotateCcw } from 'lucide-react';
 
 export function Dashboard() {
   const navigate = useNavigate();
   const [selectedYear, setSelectedYear] = useState('2024');
   const [animatingCards, setAnimatingCards] = useState<string[]>([]);
   const { stats, upcomingTasks, recentInsights, loading, error } = useDashboard();
+  const { updateTaskStatus } = useTasks();
 
   // Simulate real-time updates - must be called before any conditional returns
   useEffect(() => {
@@ -43,6 +45,21 @@ export function Dashboard() {
   const handleUploadIRSNotice = () => {
     navigate('/irs-notices?action=upload');
   };
+
+  const handleMarkTaskComplete = async (taskId: string) => {
+    const result = await updateTaskStatus(taskId, 'completed');
+    if (!result.success) {
+      console.error('Failed to mark task as complete:', result.error);
+    }
+  };
+
+  const handleMarkTaskPending = async (taskId: string) => {
+    const result = await updateTaskStatus(taskId, 'pending');
+    if (!result.success) {
+      console.error('Failed to mark task as pending:', result.error);
+    }
+  };
+
   const kpiData = [
     {
       id: 'clients',
@@ -237,16 +254,50 @@ export function Dashboard() {
               </div>
               <div className="space-y-4">
                 {upcomingTasks.map((task) => (
-                  <div key={task.id} className="group p-4 bg-surface rounded-xl border border-border-subtle hover:shadow-medium hover:border-border-light transition-all duration-200">
+                  <div key={task.id} className={`group p-4 bg-surface rounded-xl border border-border-subtle hover:shadow-medium hover:border-border-light transition-all duration-200 ${
+                    task.status === 'completed' ? 'opacity-60' : ''
+                  }`}>
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-text-primary group-hover:text-text-hover transition-colors duration-200">{task.title}</h3>
+                        <div className="flex items-center space-x-3">
+                          <h3 className={`font-semibold group-hover:text-text-hover transition-colors duration-200 ${
+                            task.status === 'completed' ? 'line-through text-text-tertiary' : 'text-text-primary'
+                          }`}>
+                            {task.title}
+                          </h3>
+                          {task.status === 'completed' && (
+                            <Badge variant="success" size="sm">Completed</Badge>
+                          )}
+                        </div>
                         <p className="text-sm text-text-tertiary mt-1">
                           {task.client_id ? 'Client task' : 'General task'} • 
                           {task.due_date ? ` Due ${new Date(task.due_date).toLocaleDateString()}` : ' No due date'}
                         </p>
                       </div>
-                      {getPriorityBadge(task.priority)}
+                      <div className="flex items-center space-x-2">
+                        {getPriorityBadge(task.priority)}
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex space-x-1">
+                          {task.status === 'completed' ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              icon={RotateCcw}
+                              onClick={() => handleMarkTaskPending(task.id)}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              title="Mark as pending"
+                            />
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              icon={CheckCircle}
+                              onClick={() => handleMarkTaskComplete(task.id)}
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                              title="Mark as complete"
+                            />
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}

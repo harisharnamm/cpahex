@@ -395,7 +395,7 @@ export const tasksApi = {
       .from('tasks')
       .select('*')
       .eq('user_id', user.id)
-      .in('status', ['pending', 'in_progress'])
+      .in('status', ['pending', 'in_progress', 'completed'])
       .order('due_date', { ascending: true })
       .limit(limit);
     

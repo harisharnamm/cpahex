@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useEffect } from 'react';
+import { useTasks } from '../hooks/useTasks';
 import { TopBar } from '../components/organisms/TopBar';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
-import { Copy, Download, FileText, AlertTriangle, Clock, CheckCircle, ArrowLeft, Eye, Trash2 } from 'lucide-react';
+import { Copy, Download, FileText, AlertTriangle, Clock, CheckCircle, ArrowLeft, Eye, Trash2, Plus } from 'lucide-react';
 import { EnhancedFileUpload } from '../components/ui/enhanced-file-upload';
 import { EnhancedDocumentPreview } from '../components/ui/enhanced-document-preview';
 import { ConfirmDialog } from '../components/ui/confirm-dialog';
@@ -46,6 +47,7 @@ export function IRSNotices() {
   // Use our hooks to get real data
   const { notices, loading: noticesLoading, createNotice, refreshNotices, deleteNotice } = useIRSNotices();
   const { getDocumentPreviewURL, downloadDocument } = useDocuments();
+  const { createTask } = useTasks();
 
   // Cast notices to enriched type since we know the query includes joins
   const enrichedNotices = notices as EnrichedIRSNotice[];
@@ -190,6 +192,41 @@ export function IRSNotices() {
 
   const handleDeleteCancel = () => {
     setDeleteConfirm({ isOpen: false, noticeId: null, noticeName: '' });
+  };
+
+  const handleCreateTask = async () => {
+    if (!selectedNotice) return;
+
+    const taskTitle = `Review IRS Notice: ${getNoticeDisplayName(selectedNotice)}`;
+    const taskDescription = `Review and respond to IRS notice with the following details:
+
+Notice Type: ${selectedNotice.notice_type}
+${selectedNotice.amount_owed ? `Amount Owed: $${selectedNotice.amount_owed.toLocaleString()}` : ''}
+${selectedNotice.deadline_date ? `Deadline: ${new Date(selectedNotice.deadline_date).toLocaleDateString()}` : ''}
+
+AI Recommendations:
+${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed recommendations.'}`;
+
+    const priority = selectedNotice.priority === 'critical' || selectedNotice.priority === 'high' ? 'high' : 
+                    selectedNotice.priority === 'medium' ? 'medium' : 'low';
+
+    const result = await createTask({
+      title: taskTitle,
+      description: taskDescription,
+      task_type: 'deadline',
+      priority: priority as 'low' | 'medium' | 'high',
+      due_date: selectedNotice.deadline_date,
+      client_id: selectedNotice.client_id
+    });
+
+    if (result.success) {
+      // Show success message or notification
+      console.log('✅ Task created successfully');
+      // You could add a toast notification here
+    } else {
+      console.error('❌ Failed to create task:', result.error);
+      // You could add an error toast notification here
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -535,18 +572,32 @@ export function IRSNotices() {
                 </div>
                 {selectedNotice.ai_summary && (
                   <div className="p-6 border-t border-border-subtle bg-surface">
-                    <div className="flex space-x-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
                       <Button 
                         variant="secondary" 
                         size="sm" 
                         icon={Copy} 
-                        className="flex-1"
+                        className="flex-1 sm:flex-none"
                         onClick={() => navigator.clipboard.writeText(selectedNotice.ai_summary || '')}
                       >
                         Copy Summary
                       </Button>
-                      <Button variant="secondary" size="sm" icon={Download} className="flex-1">
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        icon={Download} 
+                        className="flex-1 sm:flex-none"
+                      >
                         Download Report
+                      </Button>
+                      <Button 
+                        variant="primary" 
+                        size="sm" 
+                        icon={Plus}
+                        onClick={handleCreateTask}
+                        className="flex-1 sm:flex-none bg-primary text-gray-900 hover:bg-primary-hover"
+                      >
+                        Create Task
                       </Button>
                     </div>
                   </div>
