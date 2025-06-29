@@ -1,14 +1,134 @@
-import { MoreHorizontal, Mail, Phone, Users } from 'lucide-react';
+import { MoreHorizontal, Mail, Phone, Users, Edit, Trash2, FileText, Send, Eye } from 'lucide-react';
 import { ClientWithDocuments } from '../../hooks/useClients';
 import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
+import { useState, useRef, useEffect } from 'react';
 
 interface ClientTableProps {
   clients: ClientWithDocuments[];
   onClientClick: (client: ClientWithDocuments) => void;
+  onEditClient?: (client: ClientWithDocuments) => void;
+  onDeleteClient?: (client: ClientWithDocuments) => void;
+  onSendEmail?: (client: ClientWithDocuments) => void;
+  onViewDocuments?: (client: ClientWithDocuments) => void;
 }
 
-export function ClientTable({ clients, onClientClick }: ClientTableProps) {
+interface ActionsMenuProps {
+  client: ClientWithDocuments;
+  onEdit?: (client: ClientWithDocuments) => void;
+  onDelete?: (client: ClientWithDocuments) => void;
+  onSendEmail?: (client: ClientWithDocuments) => void;
+  onViewDocuments?: (client: ClientWithDocuments) => void;
+}
+
+function ActionsMenu({ client, onEdit, onDelete, onSendEmail, onViewDocuments }: ActionsMenuProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  const handleAction = (action: () => void) => {
+    action();
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <Button
+        variant="ghost"
+        size="sm"
+        icon={MoreHorizontal}
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        aria-label="Client actions"
+        className="h-8 w-8 p-0"
+      />
+      
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-1 w-48 bg-surface-elevated rounded-xl border border-border-subtle shadow-premium z-50 py-2 animate-scale-in">
+          {onViewDocuments && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(() => onViewDocuments(client));
+              }}
+              className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-text-primary hover:bg-surface-hover transition-colors duration-200"
+            >
+              <Eye className="w-4 h-4 text-text-tertiary" />
+              <span>View Documents</span>
+            </button>
+          )}
+          
+          {onEdit && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(() => onEdit(client));
+              }}
+              className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-text-primary hover:bg-surface-hover transition-colors duration-200"
+            >
+              <Edit className="w-4 h-4 text-text-tertiary" />
+              <span>Edit Client</span>
+            </button>
+          )}
+          
+          {onSendEmail && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(() => onSendEmail(client));
+              }}
+              className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-text-primary hover:bg-surface-hover transition-colors duration-200"
+            >
+              <Send className="w-4 h-4 text-text-tertiary" />
+              <span>Send Email</span>
+            </button>
+          )}
+          
+          <div className="h-px bg-border-subtle my-1" />
+          
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(() => onDelete(client));
+              }}
+              className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Delete Client</span>
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ClientTable({ 
+  clients, 
+  onClientClick, 
+  onEditClient, 
+  onDeleteClient, 
+  onSendEmail, 
+  onViewDocuments 
+}: ClientTableProps) {
   if (clients.length === 0) {
     return (
       <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-8 sm:p-12 shadow-soft">
@@ -50,16 +170,22 @@ export function ClientTable({ clients, onClientClick }: ClientTableProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                icon={MoreHorizontal}
+                icon={FileText}
                 onClick={(e) => {
                   e.stopPropagation();
-                  // Handle menu actions
+                  onViewDocuments?.(client);
                 }}
-                aria-label="Client actions"
-                className="flex-shrink-0 ml-2"
+                className="flex-shrink-0 ml-2 text-xs"
               >
-                Actions
+                View
               </Button>
+              <ActionsMenu
+                client={client}
+                onEdit={onEditClient}
+                onDelete={onDeleteClient}
+                onSendEmail={onSendEmail}
+                onViewDocuments={onViewDocuments}
+              />
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -154,18 +280,13 @@ export function ClientTable({ clients, onClientClick }: ClientTableProps) {
                     </Badge>
                   </td>
                   <td className="px-6 py-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      icon={MoreHorizontal}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Handle menu actions
-                      }}
-                      aria-label="Client actions"
-                    >
-                      Actions
-                    </Button>
+                    <ActionsMenu
+                      client={client}
+                      onEdit={onEditClient}
+                      onDelete={onDeleteClient}
+                      onSendEmail={onSendEmail}
+                      onViewDocuments={onViewDocuments}
+                    />
                   </td>
                 </tr>
               ))}

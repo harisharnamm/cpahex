@@ -1,20 +1,30 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useClients } from '../hooks/useClients';
+import { useState } from 'react';
 import { TopBar } from '../components/organisms/TopBar';
 import { ClientTable } from '../components/organisms/ClientTable';
 import { ClientDialog } from '../components/ui/client-dialog';
+import { ConfirmDialog } from '../components/ui/confirm-dialog';
 import { Input } from '../components/atoms/Input';
 import { Button } from '../components/atoms/Button';
-import { Search, Filter, Users as UsersIcon, Plus } from 'lucide-react';
+import { Search, Filter, Users as UsersIcon, Plus, Mail } from 'lucide-react';
 import { ClientWithDocuments } from '../hooks/useClients';
 
 export function Clients() {
   const navigate = useNavigate();
-  const { clients, loading, error, addClient } = useClients();
+  const { clients, loading, error, addClient, deleteClient } = useClients();
   const [searchQuery, setSearchQuery] = useState('');
   const [showClientDialog, setShowClientDialog] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    client: ClientWithDocuments | null;
+  }>({
+    isOpen: false,
+    client: null
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleClientClick = (client: ClientWithDocuments) => {
     navigate(`/clients/${client.id}`);
@@ -43,6 +53,51 @@ export function Clients() {
     } finally {
       setIsCreating(false);
     }
+  };
+
+  const handleEditClient = (client: ClientWithDocuments) => {
+    // TODO: Implement edit functionality
+    console.log('Edit client:', client.name);
+    // For now, just navigate to client detail page
+    navigate(`/clients/${client.id}`);
+  };
+
+  const handleDeleteClient = (client: ClientWithDocuments) => {
+    setDeleteConfirm({
+      isOpen: true,
+      client
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm.client) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteClient(deleteConfirm.client.id);
+      setDeleteConfirm({ isOpen: false, client: null });
+    } catch (error) {
+      console.error('Failed to delete client:', error);
+      // TODO: Show error toast
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirm({ isOpen: false, client: null });
+  };
+
+  const handleSendEmail = (client: ClientWithDocuments) => {
+    // Create mailto link with pre-filled subject
+    const subject = encodeURIComponent(`Tax Documents Request - ${new Date().getFullYear()}`);
+    const body = encodeURIComponent(`Dear ${client.name},\n\nI hope this email finds you well. As we prepare for the upcoming tax season, I wanted to reach out regarding the documents we'll need to complete your ${new Date().getFullYear()} tax return.\n\nPlease let me know if you have any questions or if you'd like to schedule a meeting to discuss your tax situation.\n\nBest regards,\n[Your Name]`);
+    
+    window.open(`mailto:${client.email}?subject=${subject}&body=${body}`, '_blank');
+  };
+
+  const handleViewDocuments = (client: ClientWithDocuments) => {
+    navigate(`/clients/${client.id}`);
   };
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -139,7 +194,14 @@ export function Clients() {
             </div>
           </div>
         ) : (
-          <ClientTable clients={filteredClients} onClientClick={handleClientClick} />
+          <ClientTable 
+            clients={filteredClients} 
+            onClientClick={handleClientClick}
+            onEditClient={handleEditClient}
+            onDeleteClient={handleDeleteClient}
+            onSendEmail={handleSendEmail}
+            onViewDocuments={handleViewDocuments}
+          />
         )}
 
         {/* Client Creation Dialog */}
@@ -148,6 +210,18 @@ export function Clients() {
           onClose={() => setShowClientDialog(false)}
           onSubmit={handleCreateClient}
           loading={isCreating}
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={deleteConfirm.isOpen}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+          title="Delete Client"
+          message={`Are you sure you want to delete "${deleteConfirm.client?.name}"? This action will permanently remove the client and all associated data. This cannot be undone.`}
+          confirmText="Delete"
+          confirmVariant="secondary"
+          loading={isDeleting}
         />
       </div>
     </div>
