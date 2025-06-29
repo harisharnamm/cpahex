@@ -627,7 +627,7 @@ Best regards,
             </div>
             
             <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl border border-blue-200 p-6 shadow-soft hidden lg:block sticky top-[calc(8rem+1.5rem)] z-10">
-              <div className="flex items-center space-x-3 mb-4">
+              <div className="flex items-center space-x-3 mb-4 relative">
                 <div className="p-2 bg-blue-200 rounded-lg">
                   <Zap className="w-4 h-4 text-blue-700" />
                 </div>
@@ -636,7 +636,7 @@ Best regards,
               <p className="text-sm text-blue-700 mb-4">
                 Our support team is available to help you with any questions about your account settings.
               </p>
-              <Button variant="secondary" className="w-full border-blue-300 bg-blue-100/50 hover:bg-blue-200/50 text-blue-700">
+              <Button variant="secondary" className="w-full border-blue-300 bg-blue-100/50 hover:bg-blue-200/50 text-blue-700 relative">
                 Contact Support
               </Button>
             </div>
