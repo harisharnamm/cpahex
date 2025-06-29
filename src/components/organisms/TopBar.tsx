@@ -1,7 +1,7 @@
 import React from 'react';
 import { Breadcrumb } from '../molecules/Breadcrumb';
 import { Button } from '../atoms/Button';
-import { Menu, Search, X, Users, FileText, CheckSquare, AlertTriangle, User } from 'lucide-react';
+import { Menu, Search, X, Users, FileText, CheckSquare, AlertTriangle, User, Command } from 'lucide-react';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { useSearch } from '../../contexts/SearchContext';
 import type { LucideIcon } from 'lucide-react';
@@ -146,27 +146,53 @@ export function TopBar({ title, breadcrumbItems, action, customAction }: TopBarP
           </div>
           
           {action && (
-            <Button
-              onClick={action.onClick}
-              icon={action.icon}
-              className="shadow-medium text-sm sm:text-base py-1.5 sm:py-2 mt-2 sm:mt-0 w-full sm:w-auto"
-            >
-              {action.label}
-            </Button>
-          )}
-          {customAction && customAction.customRender()}
-          
-          {/* Quick search button - only show when no custom action */}
-          {!customAction && !action && (
-            <div ref={searchRef} className="relative mt-2 sm:mt-0">
+            <div className="flex items-center space-x-2 mt-2 sm:mt-0">
               <Button
                 variant="secondary"
                 size="sm"
                 icon={Search}
                 onClick={openSearch}
-                className="w-full sm:w-64 justify-start text-text-tertiary"
+                className="hidden sm:flex items-center"
               >
-                <span className="flex-1 text-left">Search...</span>
+                <span className="mr-1">Search</span>
+                <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface border border-border-subtle rounded hidden sm:inline-block">⌘K</kbd>
+              </Button>
+              <Button
+                onClick={action.onClick}
+                icon={action.icon}
+                className="shadow-medium text-sm sm:text-base py-1.5 sm:py-2 w-full sm:w-auto"
+              >
+                {action.label}
+              </Button>
+            </div>
+          )}
+          {customAction && (
+            <div className="flex items-center space-x-2 mt-2 sm:mt-0">
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={Search}
+                onClick={openSearch}
+                className="hidden sm:flex items-center"
+              >
+                <span className="mr-1">Search</span>
+                <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface border border-border-subtle rounded hidden sm:inline-block">⌘K</kbd>
+              </Button>
+              {customAction.customRender()}
+            </div>
+          )}
+          
+          {/* Quick search button - only show when no custom action */}
+          {!customAction && !action && (
+            <div className="relative mt-2 sm:mt-0">
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={Search}
+                onClick={openSearch}
+                className="w-full sm:w-auto justify-start text-text-tertiary"
+              >
+                <span className="mr-1">Search</span>
                 <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface border border-border-subtle rounded hidden sm:inline-block">⌘K</kbd>
               </Button>
             </div>
