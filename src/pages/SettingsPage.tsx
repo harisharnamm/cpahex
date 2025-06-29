@@ -626,7 +626,7 @@ Best regards,
               </nav>
             </div>
             
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl border border-blue-200 p-6 shadow-soft hidden lg:block sticky top-[calc(8rem+1.5rem)]">
+            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl border border-blue-200 p-6 shadow-soft hidden lg:block sticky top-[calc(8rem+1.5rem)] z-10">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="p-2 bg-blue-200 rounded-lg">
                   <Zap className="w-4 h-4 text-blue-700" />
