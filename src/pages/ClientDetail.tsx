@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Tab } from '@headlessui/react';
 import { useClients } from '../hooks/useClients';
+import { useState } from 'react';
 import { EditClientDialog } from '../components/ui/edit-client-dialog';
 import { TopBar } from '../components/organisms/TopBar';
-import { Search, Filter, FileText, Calendar, User, Upload, Download, Eye, Edit } from 'lucide-react';
+import { Search, Filter, FileText, Calendar, User, Upload, Download, Eye, Edit, DollarSign, CreditCard, ArrowUpRight, ArrowDownLeft, Banknote } from 'lucide-react';
 import { Input } from '../components/atoms/Input';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
@@ -24,7 +25,56 @@ export function ClientDetail() {
   // Use our document hooks
   const { documents, loading, downloadDocument, deleteDocument, getDocumentPreviewURL } = useDocuments(id);
   
-  const tabs = ['Documents', 'Vendors', 'Notes'];
+  const tabs = ['Documents', 'Vendors', 'Bookkeeping', 'Notes'];
+  
+  // Sample transactions for the bookkeeping ledger
+  const [transactions, setTransactions] = useState([
+    {
+      id: '1',
+      date: '2025-06-15',
+      type: 'income',
+      category: 'Sales',
+      description: 'Client payment - ABC Corp',
+      amount: 2500.00,
+      document: 'invoice-abc-corp.pdf'
+    },
+    {
+      id: '2',
+      date: '2025-06-10',
+      type: 'expense',
+      category: 'Office Supplies',
+      description: 'Office Depot - Printer paper and toner',
+      amount: 125.75,
+      document: 'receipt-office-depot.pdf'
+    },
+    {
+      id: '3',
+      date: '2025-06-05',
+      type: 'expense',
+      category: 'Utilities',
+      description: 'Electric bill - June',
+      amount: 210.50,
+      document: 'electric-bill-june.pdf'
+    },
+    {
+      id: '4',
+      date: '2025-06-01',
+      type: 'income',
+      category: 'Consulting',
+      description: 'Consulting services - XYZ Inc',
+      amount: 1800.00,
+      document: 'invoice-xyz-inc.pdf'
+    },
+    {
+      id: '5',
+      date: '2025-05-28',
+      type: 'expense',
+      category: 'Software',
+      description: 'Accounting software subscription',
+      amount: 49.99,
+      document: 'software-receipt.pdf'
+    }
+  ]);
   
   // Find the actual client based on the ID from the URL
   const client = clients.find(c => c.id === id);
@@ -305,6 +355,277 @@ export function ClientDetail() {
                         </Badge>
                       </div>
                     ))}
+                  </div>
+                </div>
+              </div>
+            </Tab.Panel>
+            
+            <Tab.Panel>
+              <div className="space-y-8">
+                {/* Bookkeeping Overview */}
+                <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-6 shadow-soft">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="text-lg font-semibold text-text-primary">Financial Overview</h3>
+                      <p className="text-text-tertiary">Track income, expenses, and financial documents</p>
+                    </div>
+                    <div className="flex space-x-3">
+                      <Button variant="secondary" icon={FileText}>
+                        Export
+                      </Button>
+                      <Button variant="primary" icon={Plus} className="bg-primary text-gray-900 hover:bg-primary-hover">
+                        Add Transaction
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div className="bg-surface rounded-xl border border-border-subtle p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-emerald-100 rounded-lg">
+                          <ArrowDownLeft className="w-5 h-5 text-emerald-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-text-tertiary">Total Income</p>
+                          <p className="text-xl font-semibold text-emerald-600">$4,300.00</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-surface rounded-xl border border-border-subtle p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-red-100 rounded-lg">
+                          <ArrowUpRight className="w-5 h-5 text-red-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-text-tertiary">Total Expenses</p>
+                          <p className="text-xl font-semibold text-red-600">$386.24</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-surface rounded-xl border border-border-subtle p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <DollarSign className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-text-tertiary">Net Balance</p>
+                          <p className="text-xl font-semibold text-blue-600">$3,913.76</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Document Upload Section */}
+                  <div className="bg-surface rounded-xl border border-border-subtle p-4 mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-semibold text-text-primary">Financial Documents</h4>
+                      <Button variant="ghost" size="sm" icon={Upload}>
+                        Upload Documents
+                      </Button>
+                    </div>
+                    
+                    <div className="p-4 border border-dashed border-border-light rounded-xl bg-surface-elevated">
+                      <div className="text-center py-6">
+                        <Upload className="w-10 h-10 text-text-tertiary mx-auto mb-3" />
+                        <h5 className="font-medium text-text-primary mb-1">Drop financial documents here</h5>
+                        <p className="text-text-tertiary text-sm mb-3">Upload bank statements, invoices, receipts, or payroll documents</p>
+                        <Button size="sm" variant="secondary" icon={FileText}>
+                          Browse Files
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <EnhancedFileUpload
+                        clientId={id}
+                        allowMultiple={true}
+                        onUploadComplete={(documentIds) => console.log('Uploaded documents:', documentIds)}
+                        onUploadError={(error) => console.error('Upload error:', error)}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Transaction Ledger */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-semibold text-text-primary">Transaction Ledger</h4>
+                      <div className="flex items-center space-x-2">
+                        <select className="px-3 py-1 text-sm border border-border-subtle rounded-lg bg-surface-elevated">
+                          <option value="all">All Transactions</option>
+                          <option value="income">Income Only</option>
+                          <option value="expense">Expenses Only</option>
+                        </select>
+                        <Button variant="ghost" size="sm" icon={Filter}>
+                          Filter
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-surface border-b border-border-subtle">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                              Date
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                              Type
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                              Category
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                              Description
+                            </th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                              Amount
+                            </th>
+                            <th className="px-4 py-3 text-center text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                              Document
+                            </th>
+                            <th className="px-4 py-3 text-center text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border-subtle">
+                          {transactions.map((transaction) => (
+                            <tr key={transaction.id} className="hover:bg-surface-hover transition-all duration-200">
+                              <td className="px-4 py-3 text-sm text-text-secondary">
+                                {new Date(transaction.date).toLocaleDateString()}
+                              </td>
+                              <td className="px-4 py-3">
+                                {transaction.type === 'income' ? (
+                                  <Badge variant="success" size="sm">Income</Badge>
+                                ) : (
+                                  <Badge variant="error" size="sm">Expense</Badge>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-text-secondary">
+                                {transaction.category}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-text-primary font-medium">
+                                {transaction.description}
+                              </td>
+                              <td className={`px-4 py-3 text-sm font-semibold text-right ${
+                                transaction.type === 'income' ? 'text-emerald-600' : 'text-red-600'
+                              }`}>
+                                {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  icon={FileText}
+                                  className="text-xs py-1 px-2 h-7"
+                                >
+                                  View
+                                </Button>
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <div className="flex items-center justify-center space-x-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    icon={Edit}
+                                    className="text-xs py-1 px-2 h-7"
+                                  />
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    icon={Eye}
+                                    className="text-xs py-1 px-2 h-7"
+                                  />
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    {/* Pagination */}
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-border-subtle">
+                      <div className="text-sm text-text-tertiary">
+                        Showing 5 of 24 transactions
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button variant="ghost" size="sm" disabled>
+                          Previous
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Categories Summary */}
+                <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-6 shadow-soft">
+                  <h3 className="text-lg font-semibold text-text-primary mb-6">Categories Summary</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Income Categories */}
+                    <div>
+                      <h4 className="font-medium text-text-primary mb-4">Income Categories</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-surface rounded-lg border border-border-subtle">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-emerald-100 rounded-lg">
+                              <Banknote className="w-4 h-4 text-emerald-600" />
+                            </div>
+                            <span className="text-text-primary">Sales</span>
+                          </div>
+                          <div className="text-emerald-600 font-semibold">$2,500.00</div>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-surface rounded-lg border border-border-subtle">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-emerald-100 rounded-lg">
+                              <Banknote className="w-4 h-4 text-emerald-600" />
+                            </div>
+                            <span className="text-text-primary">Consulting</span>
+                          </div>
+                          <div className="text-emerald-600 font-semibold">$1,800.00</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Expense Categories */}
+                    <div>
+                      <h4 className="font-medium text-text-primary mb-4">Expense Categories</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-surface rounded-lg border border-border-subtle">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-red-100 rounded-lg">
+                              <CreditCard className="w-4 h-4 text-red-600" />
+                            </div>
+                            <span className="text-text-primary">Office Supplies</span>
+                          </div>
+                          <div className="text-red-600 font-semibold">$125.75</div>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-surface rounded-lg border border-border-subtle">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-red-100 rounded-lg">
+                              <CreditCard className="w-4 h-4 text-red-600" />
+                            </div>
+                            <span className="text-text-primary">Utilities</span>
+                          </div>
+                          <div className="text-red-600 font-semibold">$210.50</div>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-surface rounded-lg border border-border-subtle">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-red-100 rounded-lg">
+                              <CreditCard className="w-4 h-4 text-red-600" />
+                            </div>
+                            <span className="text-text-primary">Software</span>
+                          </div>
+                          <div className="text-red-600 font-semibold">$49.99</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
