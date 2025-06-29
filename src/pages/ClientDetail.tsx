@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Tab } from '@headlessui/react';
 import { useClients } from '../hooks/useClients';
+import { EditClientDialog } from '../components/ui/edit-client-dialog';
 import { TopBar } from '../components/organisms/TopBar';
-import { Search, Filter, FileText, Calendar, User, Upload, Download, Eye } from 'lucide-react';
+import { Search, Filter, FileText, Calendar, User, Upload, Download, Eye, Edit } from 'lucide-react';
 import { Input } from '../components/atoms/Input';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
@@ -14,9 +15,11 @@ import { DOCUMENT_TYPE_LABELS } from '../types/documents';
 export function ClientDetail() {
   const { id } = useParams();
   const [selectedTab, setSelectedTab] = useState(0);
-  const { clients, loading: clientsLoading } = useClients();
+  const { clients, loading: clientsLoading, updateClient } = useClients();
   const [searchQuery, setSearchQuery] = useState('');
   const [showUpload, setShowUpload] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   
   // Use our document hooks
   const { documents, loading, downloadDocument, deleteDocument, getDocumentPreviewURL } = useDocuments(id);
@@ -70,6 +73,35 @@ export function ClientDetail() {
     }
   };
 
+  const handleEditClient = async (clientData: {
+    name: string;
+    email: string;
+    phone?: string;
+    address?: string;
+    taxYear: number;
+    entityType: string;
+  }) => {
+    if (!client) return;
+    
+    setIsUpdating(true);
+    try {
+      await updateClient(client.id, {
+        name: clientData.name,
+        email: clientData.email,
+        phone: clientData.phone,
+        address: clientData.address,
+        tax_year: clientData.taxYear,
+        entity_type: clientData.entityType as any,
+      });
+      setShowEditDialog(false);
+    } catch (error) {
+      console.error('Failed to update client:', error);
+      throw error; // Re-throw to let the dialog handle the error
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated">
       <TopBar
@@ -78,6 +110,11 @@ export function ClientDetail() {
           { label: 'Clients', href: '/clients' },
           { label: client.name },
         ]}
+        action={{
+          label: 'Edit Client',
+          onClick: () => setShowEditDialog(true),
+          icon: Edit
+        }}
       />
       
       <div className="max-w-content mx-auto px-8 py-8">
@@ -287,6 +324,15 @@ export function ClientDetail() {
             </Tab.Panel>
           </Tab.Panels>
         </Tab.Group>
+
+        {/* Edit Client Dialog */}
+        <EditClientDialog
+          isOpen={showEditDialog}
+          onClose={() => setShowEditDialog(false)}
+          onSubmit={handleEditClient}
+          client={client}
+          loading={isUpdating}
+        />
       </div>
     </div>
   );
