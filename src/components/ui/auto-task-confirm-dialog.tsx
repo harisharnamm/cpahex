@@ -301,8 +301,8 @@ export function AutoTaskConfirmDialog({
                     className="w-full px-3 py-2 border border-border-subtle rounded-lg text-sm resize-none"
                   />
                 ) : (
-                  <div className="bg-surface-elevated rounded-lg p-4 border border-border-subtle max-h-40 overflow-y-auto">
-                    <pre className="text-sm text-text-secondary whitespace-pre-wrap font-sans leading-relaxed">
+                  <div className="bg-surface-elevated rounded-lg p-4 border border-border-subtle max-h-60 overflow-y-auto">
+                    <pre className="text-sm text-text-secondary whitespace-pre-wrap font-sans leading-relaxed break-words">
                       {editableTaskData.description}
                     </pre>
                   </div>

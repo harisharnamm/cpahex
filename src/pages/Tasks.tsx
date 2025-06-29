@@ -164,9 +164,11 @@ export function Tasks() {
           </div>
           
           {task.description && (
-            <p className="text-text-secondary text-sm mb-3 leading-relaxed">
-              {task.description}
-            </p>
+            <div className="bg-surface rounded-lg p-3 mb-3 border border-border-subtle">
+              <div className="text-text-secondary text-sm leading-relaxed whitespace-pre-line max-h-24 overflow-y-auto">
+                {task.description}
+              </div>
+            </div>
           )}
           
           <div className="flex flex-wrap items-center gap-3 text-sm text-text-tertiary">

@@ -317,6 +317,13 @@ export function Dashboard() {
                           }`}>
                             {task.title}
                           </h3>
+                          {task.description && (
+                            <div className="bg-surface rounded-lg p-2 mt-2 border border-border-subtle">
+                              <div className="text-text-secondary text-xs leading-relaxed line-clamp-2 overflow-hidden">
+                                {task.description}
+                              </div>
+                            </div>
+                          )}
                           {task.status === 'completed' && (
                             <Badge variant="success" size="sm">Completed</Badge>
                           )}
