@@ -164,7 +164,7 @@ export function Tasks() {
           </div>
           
           {task.description && (
-            <div className="bg-surface rounded-lg p-4 mb-3 border border-border-subtle w-full">
+            <div className="bg-surface rounded-lg p-4 mb-3 border border-border-subtle">
               <div className="text-text-secondary text-sm leading-relaxed whitespace-pre-line max-h-48 overflow-y-auto w-full">
                 {task.description}
               </div>
