@@ -195,6 +195,7 @@ export function IRSNotices() {
   };
 
   const handleCreateTask = async () => {
+    console.log('🔄 Creating task for notice:', selectedNotice?.id);
     if (!selectedNotice) return;
 
     const taskTitle = `Review IRS Notice: ${getNoticeDisplayName(selectedNotice)}`;
@@ -210,6 +211,12 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
     const priority = selectedNotice.priority === 'critical' || selectedNotice.priority === 'high' ? 'high' : 
                     selectedNotice.priority === 'medium' ? 'medium' : 'low';
 
+    console.log('🔄 Task data:', {
+      title: taskTitle,
+      priority,
+      due_date: selectedNotice.deadline_date,
+      client_id: selectedNotice.client_id
+    });
     const result = await createTask({
       title: taskTitle,
       description: taskDescription,
@@ -220,12 +227,12 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
     });
 
     if (result.success) {
-      // Show success message or notification
       console.log('✅ Task created successfully');
-      // You could add a toast notification here
+      // Show a simple alert for now - you could replace with a toast notification
+      alert('Task created successfully! Check your dashboard to see the new task.');
     } else {
       console.error('❌ Failed to create task:', result.error);
-      // You could add an error toast notification here
+      alert(`Failed to create task: ${result.error}`);
     }
   };
 

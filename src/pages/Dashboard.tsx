@@ -13,8 +13,12 @@ export function Dashboard() {
   const navigate = useNavigate();
   const [selectedYear, setSelectedYear] = useState('2024');
   const [animatingCards, setAnimatingCards] = useState<string[]>([]);
-  const { stats, upcomingTasks, recentInsights, loading, error } = useDashboard();
+  const { stats, recentInsights, loading, error, refreshDashboard } = useDashboard();
   const { updateTaskStatus } = useTasks();
+  const { tasks, getUpcomingTasks } = useTasks();
+
+  // Get upcoming tasks from the tasks hook instead of dashboard
+  const upcomingTasks = getUpcomingTasks(5);
 
   // Simulate real-time updates - must be called before any conditional returns
   useEffect(() => {
@@ -47,15 +51,25 @@ export function Dashboard() {
   };
 
   const handleMarkTaskComplete = async (taskId: string) => {
+    console.log('🔄 Marking task as complete:', taskId);
     const result = await updateTaskStatus(taskId, 'completed');
-    if (!result.success) {
+    if (result.success) {
+      console.log('✅ Task marked as complete successfully');
+      // Refresh dashboard to update stats
+      refreshDashboard();
+    } else {
       console.error('Failed to mark task as complete:', result.error);
     }
   };
 
   const handleMarkTaskPending = async (taskId: string) => {
+    console.log('🔄 Marking task as pending:', taskId);
     const result = await updateTaskStatus(taskId, 'pending');
-    if (!result.success) {
+    if (result.success) {
+      console.log('✅ Task marked as pending successfully');
+      // Refresh dashboard to update stats
+      refreshDashboard();
+    } else {
       console.error('Failed to mark task as pending:', result.error);
     }
   };

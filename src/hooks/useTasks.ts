@@ -58,32 +58,40 @@ export function useTasks() {
     due_date?: string;
     client_id?: string;
   }) => {
+    console.log('🔄 Creating task with data:', taskData);
     if (!user) {
+      console.error('❌ User not authenticated');
       return { success: false, error: 'User not authenticated' };
     }
 
     try {
+      const taskPayload = {
+        user_id: user.id,
+        title: taskData.title,
+        description: taskData.description,
+        task_type: taskData.task_type || 'general',
+        priority: taskData.priority || 'medium',
+        due_date: taskData.due_date,
+        client_id: taskData.client_id,
+        status: 'pending' as const
+      };
+      
+      console.log('📊 Task payload:', taskPayload);
+      
       const { data, error: createError } = await supabase
         .from('tasks')
-        .insert({
-          user_id: user.id,
-          title: taskData.title,
-          description: taskData.description,
-          task_type: taskData.task_type || 'general',
-          priority: taskData.priority || 'medium',
-          due_date: taskData.due_date,
-          client_id: taskData.client_id,
-          status: 'pending'
-        })
+        .insert(taskPayload)
         .select()
         .single();
 
+      console.log('📊 Supabase create result:', { data, error: createError });
       if (createError) {
         throw createError;
       }
 
       // Add to local state
       setTasks(prev => [data, ...prev]);
+      console.log('✅ Task created and added to local state');
       return { success: true, data };
     } catch (err: any) {
       console.error('Error creating task:', err);
@@ -96,6 +104,7 @@ export function useTasks() {
     taskId: string, 
     status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
   ) => {
+    console.log('🔄 Updating task status:', taskId, 'to', status);
     try {
       const updates: any = { status };
       
@@ -113,6 +122,7 @@ export function useTasks() {
         .select()
         .single();
 
+      console.log('📊 Supabase update result:', { data, error: updateError });
       if (updateError) {
         throw updateError;
       }
@@ -122,6 +132,7 @@ export function useTasks() {
         task.id === taskId ? { ...task, ...updates } : task
       ));
 
+      console.log('✅ Task status updated successfully');
       return { success: true, data };
     } catch (err: any) {
       console.error('Error updating task status:', err);
@@ -152,9 +163,21 @@ export function useTasks() {
   }, []);
 
   const getUpcomingTasks = useCallback((limit: number = 5) => {
-    return tasks
-      .filter(task => task.status === 'pending' || task.status === 'in_progress')
+    const upcomingTasks = tasks
+      .filter(task => task.status === 'pending' || task.status === 'in_progress' || task.status === 'completed')
+      .sort((a, b) => {
+        // Sort by due date, then by created date
+        if (a.due_date && b.due_date) {
+          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+        }
+        if (a.due_date && !b.due_date) return -1;
+        if (!a.due_date && b.due_date) return 1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      })
       .slice(0, limit);
+    
+    console.log('📋 Getting upcoming tasks:', upcomingTasks.length, 'tasks');
+    return upcomingTasks;
   }, [tasks]);
 
   // Load tasks on mount
