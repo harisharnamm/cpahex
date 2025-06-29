@@ -265,8 +265,8 @@ export function Dashboard() {
                   <div className="p-2 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl">
                     <Clock className="w-5 h-5 text-primary" />
                   </div>
-                  <h2 className="text-xl font-semibold text-text-primary">Upcoming Tasks</h2>
-                <h2 className="text-xl font-semibold text-text-primary">Recent Tasks</h2>
+                  <h2 className="text-xl font-semibold text-text-primary">Recent Tasks</h2>
+                </div>
                 <Button 
                   variant="ghost" 
                   size="sm"
@@ -283,9 +283,9 @@ export function Dashboard() {
                   <div key={task.id} className={`group p-4 bg-surface rounded-xl border border-border-subtle hover:shadow-medium hover:border-border-light transition-all duration-200 ${
                     task.status === 'completed' ? 'opacity-60' : ''
                   }`}>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-3 mb-2">
                           <h3 className={`font-semibold group-hover:text-text-hover transition-colors duration-200 ${
                             task.status === 'completed' ? 'line-through text-text-tertiary' : 'text-text-primary'
                           }`}>
@@ -294,16 +294,16 @@ export function Dashboard() {
                           {task.status === 'completed' && (
                             <Badge variant="success" size="sm">Completed</Badge>
                           )}
+                          {/* Show "NEW" badge for tasks created in the last 24 hours */}
+                          {new Date().getTime() - new Date(task.created_at).getTime() < 24 * 60 * 60 * 1000 && (
+                            <Badge variant="warning" size="sm">NEW</Badge>
+                          )}
                         </div>
-                        {/* Show "NEW" badge for tasks created in the last 24 hours */}
-                        {new Date().getTime() - new Date(task.created_at).getTime() < 24 * 60 * 60 * 1000 && (
-                          <Badge variant="warning" size="sm">NEW</Badge>
-                        )}
                         <p className="text-sm text-text-tertiary mt-1">
                           {task.client_id ? 'Client task' : 'General task'} • 
-                          {task.due_date ? ` Due ${new Date(task.due_date).toLocaleDateString()}` : ' No due date'}
+                          {task.due_date ? ` Due ${new Date(task.due_date).toLocaleDateString()}` : ' No due date'} •
+                          {' Created ' + new Date(task.created_at).toLocaleDateString()}
                         </p>
-                        {' • Created ' + new Date(task.created_at).toLocaleDateString()}
                       </div>
                       <div className="flex items-center space-x-2">
                         {getPriorityBadge(task.priority)}
@@ -344,9 +344,10 @@ export function Dashboard() {
             {/* Recent Activity Timeline */}
             <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-8 shadow-soft animate-fade-in">
               <div className="flex items-center space-x-3 mb-6">
-                  <h3 className="text-lg font-semibold text-text-primary mb-2">No recent tasks</h3>
+                <div className="p-2 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-xl">
                   <TrendingUp className="w-5 h-5 text-emerald-600" />
                 </div>
+                <h2 className="text-xl font-semibold text-text-primary">Recent Activity</h2>
                 <h2 className="text-xl font-semibold text-text-primary">Recent Activity</h2>
               </div>
               <div className="space-y-4">
