@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useClients } from '../hooks/useClients';
 import { TopBar } from '../components/organisms/TopBar';
 import { ClientTable } from '../components/organisms/ClientTable';
-import { EnhancedClientDialog } from '../components/ui/enhanced-client-dialog';
+import { ClientDialog } from '../components/ui/client-dialog';
 import { Input } from '../components/atoms/Input';
 import { Button } from '../components/atoms/Button';
 import { Search, Filter, Users as UsersIcon, Plus } from 'lucide-react';
@@ -143,7 +143,7 @@ export function Clients() {
         )}
 
         {/* Client Creation Dialog */}
-        <EnhancedClientDialog
+        <ClientDialog
           isOpen={showClientDialog}
           onClose={() => setShowClientDialog(false)}
           onSubmit={handleCreateClient}
