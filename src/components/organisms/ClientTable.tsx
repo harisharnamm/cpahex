@@ -179,7 +179,7 @@ export function ClientTable({
                     </Badge>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div className="flex items-center space-x-1">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -187,7 +187,7 @@ export function ClientTable({
                           e.stopPropagation();
                           onViewDocuments?.(client);
                         }}
-                        className="h-8 w-8 p-0 hover:bg-surface-hover"
+                        className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 text-text-secondary"
                         title="View Documents"
                       >
                         <Eye className="w-4 h-4" />
@@ -199,7 +199,7 @@ export function ClientTable({
                           e.stopPropagation();
                           onEditClient?.(client);
                         }}
-                        className="h-8 w-8 p-0 hover:bg-surface-hover"
+                        className="h-8 w-8 p-0 hover:bg-green-50 hover:text-green-600 text-text-secondary"
                         title="Edit Client"
                       >
                         <Edit className="w-4 h-4" />
@@ -211,7 +211,7 @@ export function ClientTable({
                           e.stopPropagation();
                           onSendEmail?.(client);
                         }}
-                        className="h-8 w-8 p-0 hover:bg-surface-hover"
+                        className="h-8 w-8 p-0 hover:bg-purple-50 hover:text-purple-600 text-text-secondary"
                         title="Send Email"
                       >
                         <Send className="w-4 h-4" />
@@ -223,7 +223,7 @@ export function ClientTable({
                           e.stopPropagation();
                           onDeleteClient?.(client);
                         }}
-                        className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
+                        className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 text-text-secondary"
                         title="Delete Client"
                       >
                         <Trash2 className="w-4 h-4" />
