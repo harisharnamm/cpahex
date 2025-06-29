@@ -282,7 +282,7 @@ export function SignIn() {
               <span className="text-white/90 font-medium text-sm xl:text-base">Trusted by 2,500+ CPAs</span>
             </div>
             <p className="text-white/80 italic text-sm xl:text-base">
-              "CPA Hex has transformed how we handle tax season. The AI insights save us hours every day."
+              "CPA OS has transformed how we handle tax season. The AI insights save us hours every day."
             </p>
             <p className="text-white/70 text-xs xl:text-sm mt-2">— Sarah Chen, Managing Partner</p>
           </div>
