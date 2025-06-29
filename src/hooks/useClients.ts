@@ -71,6 +71,7 @@ export function useClients() {
     try {
       console.log('🔄 Adding client with data:', clientData);
       
+      // Ensure all fields are properly mapped
       const newClient = await clientsApi.create({
         name: clientData.name,
         email: clientData.email,
@@ -79,7 +80,9 @@ export function useClients() {
         tax_year: clientData.taxYear,
         entity_type: clientData.entityType as Client['entity_type'],
         required_documents: clientData.requiredDocuments,
-        status: 'active'
+        status: 'active',
+        notes: null,
+        tax_id: null
       });
       
       console.log('✅ Client created successfully:', newClient);
