@@ -3,7 +3,6 @@ import { useTasks } from '../hooks/useTasks';
 import { useClients } from '../hooks/useClients';
 import { CreateTaskDialog } from '../components/ui/create-task-dialog';
 import { TaskDetailDialog } from '../components/ui/task-detail-dialog';
-import { TaskDetailDialog } from '../components/ui/task-detail-dialog';
 import { TopBar } from '../components/organisms/TopBar';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
