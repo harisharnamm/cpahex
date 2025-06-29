@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useEffect, useRef } from 'react';
 import { TopBar } from '../components/organisms/TopBar';
 import { TypingIndicator } from '../components/molecules/TypingIndicator';
-import { Button } from '../atoms/Button';
+import { Button } from '../components/atoms/Button';
 import { Send, Sparkles, FileText, Calculator, Trash2, RefreshCw, Paperclip, X } from 'lucide-react';
 import { useChat } from '../hooks/useChat';
 import { useClients } from '../hooks/useClients';
