@@ -199,10 +199,10 @@ export function ClientDialog({ isOpen, onClose, onSubmit, loading = false }: Cli
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-elevated rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden animate-scale-in">
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-surface-elevated rounded-xl sm:rounded-2xl shadow-2xl max-w-4xl w-full h-full sm:h-auto sm:max-h-[95vh] flex flex-col overflow-hidden animate-scale-in">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border-subtle">
+        <div className="flex-shrink-0 flex items-center justify-between p-4 sm:p-6 border-b border-border-subtle">
           <div className="flex items-center space-x-3">
             <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl">
               <User className="w-6 h-6 text-blue-600" />
@@ -224,7 +224,7 @@ export function ClientDialog({ isOpen, onClose, onSubmit, loading = false }: Cli
         </div>
 
         {/* Progress indicator */}
-        <div className="px-6 py-4 bg-surface border-b border-border-subtle">
+        <div className="flex-shrink-0 px-4 sm:px-6 py-3 sm:py-4 bg-surface border-b border-border-subtle">
           <div className="flex items-center space-x-4">
             <div className={cn(
               "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200",
@@ -244,15 +244,15 @@ export function ClientDialog({ isOpen, onClose, onSubmit, loading = false }: Cli
             </div>
           </div>
           <div className="flex justify-between mt-2">
-            <span className="text-xs font-medium text-text-secondary">Client Details</span>
-            <span className="text-xs font-medium text-text-secondary">Document Selection</span>
+            <span className="text-xs font-medium text-text-secondary">Details</span>
+            <span className="text-xs font-medium text-text-secondary">Documents</span>
           </div>
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+        <div className="flex-1 overflow-y-auto">
           {step === 1 && (
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* Client Name */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-text-primary">Client Name *</label>
@@ -323,7 +323,7 @@ export function ClientDialog({ isOpen, onClose, onSubmit, loading = false }: Cli
               </div>
 
               {/* Tax Year and Entity Type */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-text-primary">Tax Year *</label>
                   <div className="relative">
@@ -363,7 +363,7 @@ export function ClientDialog({ isOpen, onClose, onSubmit, loading = false }: Cli
           )}
 
           {step === 2 && (
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-semibold text-text-primary mb-2">Required Documents</h3>
@@ -450,36 +450,37 @@ export function ClientDialog({ isOpen, onClose, onSubmit, loading = false }: Cli
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-border-subtle bg-surface">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex space-x-3 order-2 sm:order-1">
+        <div className="flex-shrink-0 p-4 sm:p-6 border-t border-border-subtle bg-surface">
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 sm:gap-4">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
               <Button
                 variant="secondary"
                 onClick={handleClose}
                 disabled={loading}
-                className="min-w-[100px]"
+                className="w-full sm:w-auto sm:min-w-[100px]"
               >
                 Cancel
               </Button>
+              
               
               {step === 2 && (
                 <Button
                   variant="secondary"
                   onClick={handleBack}
                   disabled={loading}
-                  className="min-w-[100px]"
+                  className="w-full sm:w-auto sm:min-w-[100px]"
                 >
                   ← Back
                 </Button>
               )}
             </div>
             
-            <div className="flex space-x-3 order-1 sm:order-2">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
               {step === 1 && (
                 <Button
                   onClick={handleNext}
                   disabled={loading}
-                  className="shadow-medium min-w-[180px] bg-primary text-gray-900 hover:bg-primary-hover"
+                  className="w-full sm:w-auto shadow-medium sm:min-w-[180px] bg-primary text-gray-900 hover:bg-primary-hover"
                 >
                   Next: Select Documents →
                 </Button>
@@ -489,7 +490,7 @@ export function ClientDialog({ isOpen, onClose, onSubmit, loading = false }: Cli
                 <Button
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="shadow-medium min-w-[140px] bg-primary text-gray-900 hover:bg-primary-hover"
+                  className="w-full sm:w-auto shadow-medium sm:min-w-[140px] bg-primary text-gray-900 hover:bg-primary-hover"
                 >
                   {loading ? 'Creating...' : '✓ Create Client'}
                 </Button>
