@@ -34,7 +34,10 @@ export function Clients() {
     email: string;
     phone?: string;
     address?: string;
+    address?: string;
     taxYear: number;
+    entityType: string;
+    requiredDocuments: string[];
     entityType: string;
     requiredDocuments: string[];
   }) => {
@@ -44,7 +47,10 @@ export function Clients() {
         name: clientData.name,
         email: clientData.email,
         phone: clientData.phone,
+        address: clientData.address,
         taxYear: clientData.taxYear
+        entityType: clientData.entityType,
+        requiredDocuments: clientData.requiredDocuments
       });
     } catch (error) {
       console.error('Failed to create client:', error);
