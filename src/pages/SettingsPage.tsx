@@ -15,7 +15,8 @@ import {
   CheckCircle, 
   Smartphone, 
   Lock, 
-  Zap 
+  Zap,
+  Clock
 } from 'lucide-react';
 
 export function Settings(): ReactElement {
