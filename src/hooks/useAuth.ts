@@ -175,11 +175,14 @@ export function useAuth() {
       if (error) {
         console.error('❌ Sign in error:', error);
         setAuthState(prev => ({ ...prev, loading: false }));
+        sessionStorage.removeItem('justLoggedIn');
         return { data, error };
       }
 
       if (data?.user) {
         console.log('✅ Sign in successful for user:', data.user.id);
+        // Set flag for just logged in to trigger preloader
+        sessionStorage.setItem('justLoggedIn', 'true');
         // Auth state change will handle the rest
         return { data, error: null };
       } else {

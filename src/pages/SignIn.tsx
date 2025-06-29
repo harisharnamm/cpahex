@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Sparkles, Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import Preloader from '../components/ui/preloader';
 import { useAuthContext } from '../contexts/AuthContext';
 import { Button } from '../components/atoms/Button';
 
@@ -13,6 +14,7 @@ export function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPreloader, setShowPreloader] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
 
   // Listen for Supabase connection events
@@ -64,6 +66,7 @@ export function SignIn() {
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);
+    setShowPreloader(true);
     
     // Prevent sign-in attempts if there's a connection error
     if (connectionError) {
@@ -81,6 +84,7 @@ export function SignIn() {
       if (error) {
         console.error('❌ Sign in failed:', error.message);
         setError(error.message);
+        setShowPreloader(false);
       } else {
         console.log('✅ Sign in successful, navigating to dashboard');
         // Don't navigate here - let the useEffect handle it when user state updates
@@ -89,6 +93,7 @@ export function SignIn() {
     } catch (err: any) {
       console.error('❌ Unexpected sign in error:', err);
       setError(err?.message || 'An unexpected error occurred');
+      setShowPreloader(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -112,6 +117,9 @@ export function SignIn() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Preloader */}
+      {showPreloader && <Preloader onComplete={() => setShowPreloader(false)} />}
+      
       {/* Left Panel - Form */}
       <div className="flex-1 bg-gray-900 flex items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-md space-y-6 sm:space-y-8">

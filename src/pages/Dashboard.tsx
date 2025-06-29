@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Preloader from '../components/ui/preloader';
 import { useDashboard } from '../hooks/useDashboard';
 import { useTasks } from '../hooks/useTasks';
 import { useClients } from '../hooks/useClients';
@@ -17,6 +18,7 @@ export function Dashboard() {
   const navigate = useNavigate();
   const [selectedYear, setSelectedYear] = useState('2024');
   const [animatingCards, setAnimatingCards] = useState<string[]>([]);
+  const [showPreloader, setShowPreloader] = useState(false);
   const { stats, recentInsights, loading, error, refreshDashboard } = useDashboard();
   const { isSearchOpen, closeSearch } = useSearch();
   const { tasks, updateTaskStatus, getUpcomingTasks, refreshTasks } = useTasks();
@@ -25,6 +27,15 @@ export function Dashboard() {
 
   // Get upcoming tasks from the tasks hook instead of dashboard
   const upcomingTasks = getUpcomingTasks(5);
+
+  // Check if user just logged in
+  useEffect(() => {
+    const justLoggedIn = sessionStorage.getItem('justLoggedIn');
+    if (justLoggedIn === 'true') {
+      setShowPreloader(true);
+      sessionStorage.removeItem('justLoggedIn');
+    }
+  }, []);
 
   // Simulate real-time updates - must be called before any conditional returns
   useEffect(() => {
@@ -258,6 +269,9 @@ export function Dashboard() {
 
   return (
     <div>
+      {/* Preloader */}
+      {showPreloader && <Preloader onComplete={() => setShowPreloader(false)} />}
+      
       <TopBar 
         title="Dashboard" 
         customAction={customAction} 
