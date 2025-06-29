@@ -1,7 +1,7 @@
 import React from 'react';
 import { Breadcrumb } from '../molecules/Breadcrumb';
 import { Button } from '../atoms/Button';
-import { Menu, Search as SearchIcon, X, Users, FileText, CheckSquare, AlertTriangle, User } from 'lucide-react';
+import { Menu, Search, X, Users, FileText, CheckSquare, AlertTriangle, User } from 'lucide-react';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { useSearch } from '../../contexts/SearchContext';
 import type { LucideIcon } from 'lucide-react';
@@ -26,7 +26,7 @@ interface TopBarProps {
 
 export function TopBar({ title, breadcrumbItems, action, customAction }: TopBarProps) {
   const { openSidebar } = useSidebar();
-  const { openSearch, isSearchOpen, closeSearch } = useSearch();
+  const { openSearch } = useSearch();
   const [searchQuery, setSearchQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -159,119 +159,16 @@ export function TopBar({ title, breadcrumbItems, action, customAction }: TopBarP
           {/* Quick search button - only show when no custom action */}
           {!customAction && !action && (
             <div ref={searchRef} className="relative mt-2 sm:mt-0">
-              <div className="relative">
-                <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                <input
-                  ref={inputRef}
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setShowResults(true)}
-                  className="w-full sm:w-64 px-4 py-2 pl-10 bg-surface-elevated border border-border-subtle rounded-xl text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all duration-200"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-tertiary hover:text-text-primary"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-tertiary hidden sm:flex items-center space-x-1">
-                  <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface border border-border-subtle rounded">⌘K</kbd>
-                </div>
-              </div>
-              
-              {/* Search Results Dropdown */}
-              {showResults && (
-                <div className="absolute top-full mt-2 right-0 w-full sm:w-96 bg-surface-elevated rounded-xl border border-border-subtle shadow-premium z-50 max-h-[70vh] overflow-y-auto">
-                  {loading ? (
-                    <div className="p-4 text-center">
-                      <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
-                      <p className="text-text-tertiary text-sm mt-2">Searching...</p>
-                    </div>
-                  ) : results.length > 0 ? (
-                    <div className="py-2">
-                      <div className="px-4 py-2">
-                        <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">
-                          Search Results
-                        </h3>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        {results.map((result, index) => (
-                          <div
-                            key={`${result.type}-${result.id}`}
-                            className={`px-4 py-3 cursor-pointer transition-colors duration-150 ${
-                              selectedIndex === index ? 'bg-primary/10' : 'hover:bg-surface-hover'
-                            }`}
-                            onClick={() => handleResultClick(result)}
-                          >
-                            <div className="flex items-start space-x-3">
-                              <div className={`p-2 rounded-lg ${
-                                selectedIndex === index ? 'bg-primary/20' : 'bg-surface'
-                              }`}>
-                                {getIconForType(result.type)}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between">
-                                  <h4 className="font-medium text-text-primary truncate">{result.title}</h4>
-                                  <span className="text-xs text-text-tertiary ml-2 flex-shrink-0 capitalize">
-                                    {result.type.replace('_', ' ')}
-                                  </span>
-                                </div>
-                                {result.description && (
-                                  <p className="text-sm text-text-secondary line-clamp-1 mt-1">
-                                    {result.description}
-                                  </p>
-                                )}
-                                {result.date && (
-                                  <p className="text-xs text-text-tertiary mt-1">
-                                    {formatDate(result.date)}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : searchQuery.length > 1 ? (
-                    <div className="p-6 text-center">
-                      <FileText className="w-8 h-8 text-text-tertiary mx-auto mb-2" />
-                      <p className="text-text-primary font-medium">No results found</p>
-                      <p className="text-text-tertiary text-sm mt-1">Try a different search term</p>
-                    </div>
-                  ) : (
-                    <div className="p-6 text-center">
-                      <SearchIcon className="w-6 h-6 text-text-tertiary mx-auto mb-2" />
-                      <p className="text-text-tertiary text-sm">Type at least 2 characters to search</p>
-                    </div>
-                  )}
-                  
-                  {/* Footer */}
-                  <div className="p-3 border-t border-border-subtle bg-surface">
-                    <div className="flex items-center justify-between text-xs text-text-tertiary">
-                      <div className="flex items-center space-x-2">
-                        <div className="flex items-center space-x-1">
-                          <kbd className="px-1.5 py-0.5 font-mono bg-surface border border-border-subtle rounded">↑</kbd>
-                          <kbd className="px-1.5 py-0.5 font-mono bg-surface border border-border-subtle rounded">↓</kbd>
-                          <span>to navigate</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <kbd className="px-1.5 py-0.5 font-mono bg-surface border border-border-subtle rounded">Enter</kbd>
-                          <span>to select</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <kbd className="px-1.5 py-0.5 font-mono bg-surface border border-border-subtle rounded">Esc</kbd>
-                        <span>to close</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={Search}
+                onClick={openSearch}
+                className="w-full sm:w-64 justify-start text-text-tertiary"
+              >
+                <span className="flex-1 text-left">Search...</span>
+                <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface border border-border-subtle rounded hidden sm:inline-block">⌘K</kbd>
+              </Button>
             </div>
           )}
         </div>
