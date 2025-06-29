@@ -87,8 +87,8 @@ export function SignUp() {
                 <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-gray-900" />
               </div>
               <div>
-                <span className="text-xl sm:text-2xl font-bold text-white tracking-tight">CPA Hex</span>
-                <p className="text-xs sm:text-sm text-gray-400 font-medium">AI Dashboard</p>
+                <span className="text-xl sm:text-2xl font-bold text-white tracking-tight">CPA OS</span>
+                <p className="text-xs sm:text-sm text-gray-400 font-medium">by Nurahex</p>
               </div>
             </div>
 
