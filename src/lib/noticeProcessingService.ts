@@ -12,6 +12,8 @@ export class NoticeProcessingService {
     clientId?: string
   ): Promise<{ data: IRSNotice | null; error: any }> {
     try {
+      console.log('🔄 Processing IRS notice for document:', documentId);
+      
       // Get current user session
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
@@ -75,6 +77,7 @@ export class NoticeProcessingService {
         .single();
 
       return {
+        console.error('❌ Document not found:', docError);
         isProcessing: !document?.is_processed,
         progress: document?.is_processed ? 100 : 0,
         status: document?.is_processed ? 'completed' : 'processing',
@@ -84,27 +87,45 @@ export class NoticeProcessingService {
         isProcessing: false,
         progress: 0,
         status: 'error',
+        console.log('📝 Updating existing notice:', existingNotice.id);
       };
     }
-  }
+          notice_type: analysis.noticeType || 'General Notice',
+          priority: analysis.priority || 'medium',
+          ai_summary: analysis.summary,
+          ai_recommendations: analysis.recommendations?.join('\n') || '',
+        body: JSON.stringify({
+          documentId,
+          userId,
+          console.error('❌ Error updating notice:', updateError);
+          clientId,
+        }),
+      });
 
-  /**
-   * Reprocesses a notice with updated AI models
-   */
-  async reprocessNotice(noticeId: string): Promise<{ success: boolean; error?: string }> {
+      if (!response.ok) {
+        console.log('🆕 Creating new notice record');
+        throw new Error(`AI processing failed: ${response.statusText}`);
+      }
+
+      const aiResult = await response.json();
+      
+          notice_type: analysis.noticeType || 'General Notice',
+          priority: analysis.priority || 'medium',
     try {
       // Get the notice and its document
       const { data: notice, error: noticeError } = await supabase
+          console.error('❌ Error creating notice:', noticeError);
         .from('irs_notices')
         .select(`
           *,
           documents:document_id (*)
         `)
-        .eq('id', noticeId)
-        .single();
+          ai_summary: analysis.summary,
+          ai_recommendations: analysis.recommendations?.join('\n') || '',
 
       if (noticeError || !notice) {
         return { success: false, error: 'Notice not found' };
+          console.warn('⚠️ Error updating notice with AI analysis:', updateError);
       }
 
       // Reprocess the document
@@ -113,14 +134,15 @@ export class NoticeProcessingService {
         notice.user_id, 
         notice.client_id
       );
-
-      if (result.error) {
+        ai_summary: analysis.summary,
         return { success: false, error: result.error.message };
       }
 
+      console.log('✅ IRS notice processing completed successfully');
       return { success: true };
 
     } catch (error: any) {
+      console.error('❌ IRS notice processing failed:', error);
       return { success: false, error: error.message };
     }
   }

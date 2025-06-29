@@ -340,6 +340,7 @@ export class DocumentService {
   private async processDocumentBackground(
     documentId: string,
     userId: string,
+    userId: string,
     options: {
       enableOCR?: boolean;
       enableAI?: boolean;
@@ -347,25 +348,60 @@ export class DocumentService {
     }
   ): Promise<void> {
     try {
-      // Get current user session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        console.error('❌ No valid session for background processing');
-        return;
-      }
-
-      // Call the process-document-ai Edge Function
+      console.log('🤖 Starting AI processing for document:', documentId);
+      
+      // Call the edge function for AI processing
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document-ai`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          document_id: documentId,
-          user_id: userId,
+          documentId,
+          userId,
         }),
       });
+
+      if (!response.ok) {
+        throw new Error(`AI processing failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.analysis) {
+        // Update document with AI analysis
+        const updates: any = {
+          ai_summary: result.analysis.summary,
+          is_processed: true,
+        };
+
+        if (options.enableOCR) {
+          // Call OCR extraction if needed
+          const ocrResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-document-text`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              documentId,
+            }),
+          });
+
+          if (ocrResponse.ok) {
+            const ocrResult = await ocrResponse.json();
+            if (ocrResult.success) {
+              updates.ocr_text = ocrResult.extractedText;
+            }
+          }
+        }
+
+        await updateDocumentProcessing(documentId, updates);
+        console.log('✅ AI processing completed successfully');
+      } else {
+        throw new Error('AI processing returned no results');
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -377,7 +413,13 @@ export class DocumentService {
       console.log('✅ Background processing completed:', result);
 
     } catch (error) {
-      console.error('Background processing failed:', error);
+      console.error('❌ AI processing failed:', error);
+      
+      // Mark as processed even if AI fails, so it doesn't get stuck
+      await updateDocumentProcessing(documentId, {
+        is_processed: true,
+        ai_summary: 'AI processing failed. Please review document manually.',
+      });
     }
   }
 
