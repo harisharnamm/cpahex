@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTasks } from '../hooks/useTasks';
 import { useClients } from '../hooks/useClients';
 import { CreateTaskDialog } from '../components/ui/create-task-dialog';
+import { TaskDetailDialog } from '../components/ui/task-detail-dialog';
 import { TopBar } from '../components/organisms/TopBar';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
@@ -29,6 +30,7 @@ export function Tasks() {
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const handleCreateTask = async (taskData: {
     title: string;
@@ -148,7 +150,8 @@ export function Tasks() {
   const TaskCard = ({ task }: { task: Task }) => (
     <div className={`group bg-surface-elevated rounded-xl border border-border-subtle p-5 shadow-soft hover:shadow-medium hover:-translate-y-1 transition-all duration-200 h-full ${
       task.status === 'completed' ? 'opacity-75' : ''
-    } h-full flex flex-col justify-between`}>
+    } h-full flex flex-col justify-between cursor-pointer`}
+      onClick={() => setSelectedTask(task)}>
       {/* Header with title and badges */}
       <div className="flex flex-col mb-3">
         <div className="flex items-start justify-between mb-2">
@@ -239,6 +242,18 @@ export function Tasks() {
         </div>
       </div>
     </div>
+
+      {/* Task Detail Dialog */}
+      <TaskDetailDialog
+        isOpen={!!selectedTask}
+        onClose={() => setSelectedTask(null)}
+        task={selectedTask}
+        clients={clients}
+        onMarkComplete={handleMarkComplete}
+        onMarkPending={handleMarkPending}
+        onMarkInProgress={handleMarkInProgress}
+        onDelete={handleDeleteTask}
+      />
   );
 
   if (loading) {
