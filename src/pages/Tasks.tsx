@@ -416,6 +416,18 @@ export function Tasks() {
           </div>
         )}
       </div>
+      
+      {/* Task Detail Dialog */}
+      <TaskDetailDialog
+        isOpen={!!selectedTask}
+        onClose={() => setSelectedTask(null)}
+        task={selectedTask}
+        clients={clients}
+        onMarkComplete={handleMarkComplete}
+        onMarkPending={handleMarkPending}
+        onMarkInProgress={handleMarkInProgress}
+        onDelete={handleDeleteTask}
+      />
 
       {/* Create Task Dialog */}
       <CreateTaskDialog
