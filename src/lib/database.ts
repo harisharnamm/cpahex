@@ -12,6 +12,7 @@ export interface Client {
   tax_id?: string;
   entity_type: 'individual' | 'llc' | 'corporation' | 's_corp' | 'partnership';
   status: 'active' | 'inactive' | 'archived';
+  required_documents?: string[];
   notes?: string;
   created_at: string;
   updated_at: string;

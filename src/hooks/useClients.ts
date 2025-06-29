@@ -76,6 +76,7 @@ export function useClients() {
         address: clientData.address,
         tax_year: clientData.taxYear,
         entity_type: clientData.entityType as Client['entity_type'],
+        required_documents: clientData.requiredDocuments,
         status: 'active'
       });
       
