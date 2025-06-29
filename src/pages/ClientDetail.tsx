@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Tab } from '@headlessui/react';
 import { useClients } from '../hooks/useClients';
-import { useState } from 'react';
 import { EditClientDialog } from '../components/ui/edit-client-dialog';
 import { TopBar } from '../components/organisms/TopBar';
 import { Search, Filter, FileText, Calendar, User, Upload, Download, Eye, Edit, DollarSign, CreditCard, ArrowUpRight, ArrowDownLeft, Banknote } from 'lucide-react';
