@@ -144,7 +144,7 @@ export function SignUp() {
           <div className="relative h-full flex flex-col justify-center items-center p-8 xl:p-12 text-white">
             <div className="text-center max-w-lg">
               <h2 className="text-3xl xl:text-4xl font-bold mb-6 leading-tight">
-                Welcome to the CPA Hex family!
+                Welcome to the CPA OS family!
               </h2>
               <p className="text-lg xl:text-xl text-white/90 leading-relaxed">
                 You're just one step away from revolutionizing your tax workflow with AI-powered insights.
