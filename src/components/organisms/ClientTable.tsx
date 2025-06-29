@@ -13,114 +13,6 @@ interface ClientTableProps {
   onViewDocuments?: (client: ClientWithDocuments) => void;
 }
 
-interface ActionsMenuProps {
-  client: ClientWithDocuments;
-  onEdit?: (client: ClientWithDocuments) => void;
-  onDelete?: (client: ClientWithDocuments) => void;
-  onSendEmail?: (client: ClientWithDocuments) => void;
-  onViewDocuments?: (client: ClientWithDocuments) => void;
-}
-
-function ActionsMenu({ client, onEdit, onDelete, onSendEmail, onViewDocuments }: ActionsMenuProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
-
-  const handleAction = (action: () => void) => {
-    action();
-    setIsOpen(false);
-  };
-
-  return (
-    <div className="relative" ref={menuRef}>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen(!isOpen);
-        }}
-        aria-label="Client actions"
-        className="h-8 w-8 p-0 hover:bg-surface-hover"
-      >
-        <MoreHorizontal className="w-4 h-4" />
-      </Button>
-      
-      {isOpen && (
-        <div className="absolute right-0 top-full mt-1 w-48 bg-surface-elevated rounded-xl border border-border-subtle shadow-premium z-[100] py-2 animate-scale-in">
-          {onViewDocuments && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAction(() => onViewDocuments(client));
-              }}
-              className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-text-primary hover:bg-surface-hover transition-colors duration-200"
-            >
-              <Eye className="w-4 h-4 text-text-tertiary" />
-              <span>View Documents</span>
-            </button>
-          )}
-          
-          {onEdit && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAction(() => onEdit(client));
-              }}
-              className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-text-primary hover:bg-surface-hover transition-colors duration-200"
-            >
-              <Edit className="w-4 h-4 text-text-tertiary" />
-              <span>Edit Client</span>
-            </button>
-          )}
-          
-          {onSendEmail && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAction(() => onSendEmail(client));
-              }}
-              className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-text-primary hover:bg-surface-hover transition-colors duration-200"
-            >
-              <Send className="w-4 h-4 text-text-tertiary" />
-              <span>Send Email</span>
-            </button>
-          )}
-          
-          <div className="h-px bg-border-subtle my-1" />
-          
-          {onDelete && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAction(() => onDelete(client));
-              }}
-              className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>Delete Client</span>
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function ClientTable({ 
   clients, 
@@ -168,25 +60,31 @@ export function ClientTable({
                   </div>
                 )}
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onViewDocuments?.(client);
-                }}
-                className="flex-shrink-0 ml-2 text-xs"
-              >
-                <FileText className="w-3 h-3 mr-1" />
-                View
-              </Button>
-              <ActionsMenu
-                client={client}
-                onEdit={onEditClient}
-                onDelete={onDeleteClient}
-                onSendEmail={onSendEmail}
-                onViewDocuments={onViewDocuments}
-              />
+              <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewDocuments?.(client);
+                  }}
+                  className="text-xs px-2 py-1"
+                >
+                  <Eye className="w-3 h-3 mr-1" />
+                  View
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditClient?.(client);
+                  }}
+                  className="text-xs px-2 py-1"
+                >
+                  <Edit className="w-3 h-3" />
+                </Button>
+              </div>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -281,13 +179,56 @@ export function ClientTable({
                     </Badge>
                   </td>
                   <td className="px-6 py-4">
-                    <ActionsMenu
-                      client={client}
-                      onEdit={onEditClient}
-                      onDelete={onDeleteClient}
-                      onSendEmail={onSendEmail}
-                      onViewDocuments={onViewDocuments}
-                    />
+                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewDocuments?.(client);
+                        }}
+                        className="h-8 w-8 p-0 hover:bg-surface-hover"
+                        title="View Documents"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditClient?.(client);
+                        }}
+                        className="h-8 w-8 p-0 hover:bg-surface-hover"
+                        title="Edit Client"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSendEmail?.(client);
+                        }}
+                        className="h-8 w-8 p-0 hover:bg-surface-hover"
+                        title="Send Email"
+                      >
+                        <Send className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteClient?.(client);
+                        }}
+                        className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
+                        title="Delete Client"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
