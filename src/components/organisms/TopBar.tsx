@@ -1,7 +1,7 @@
 import React from 'react';
 import { Breadcrumb } from '../molecules/Breadcrumb';
 import { Button } from '../atoms/Button';
-import { Menu, Search as SearchIcon, X } from 'lucide-react';
+import { Menu, Search as SearchIcon, X, Users, FileText, CheckSquare, AlertTriangle, User } from 'lucide-react';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { useSearch } from '../../contexts/SearchContext';
 import type { LucideIcon } from 'lucide-react';
