@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDashboard } from '../hooks/useDashboard';
 import { TopBar } from '../components/organisms/TopBar';
 import { StatCard } from '../components/atoms/StatCard';
@@ -8,6 +9,7 @@ import { Badge } from '../components/atoms/Badge';
 import { Users, FileText, AlertTriangle, Calendar, Search, Plus, Clock, TrendingUp } from 'lucide-react';
 
 export function Dashboard() {
+  const navigate = useNavigate();
   const [selectedYear, setSelectedYear] = useState('2024');
   const [animatingCards, setAnimatingCards] = useState<string[]>([]);
   const { stats, upcomingTasks, recentInsights, loading, error } = useDashboard();
@@ -24,6 +26,23 @@ export function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
+  // Quick action handlers
+  const handleAddNewClient = () => {
+    navigate('/clients');
+    // Small delay to allow navigation, then trigger the add client dialog
+    setTimeout(() => {
+      // Dispatch a custom event that the Clients page can listen for
+      window.dispatchEvent(new CustomEvent('dashboard:add-client'));
+    }, 100);
+  };
+
+  const handleSendW9Request = () => {
+    navigate('/1099-hub');
+  };
+
+  const handleUploadIRSNotice = () => {
+    navigate('/irs-notices?action=upload');
+  };
   const kpiData = [
     {
       id: 'clients',
@@ -262,9 +281,29 @@ export function Dashboard() {
             <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-6 shadow-soft animate-fade-in">
               <h3 className="font-semibold text-text-primary mb-4">Quick Actions</h3>
               <div className="space-y-3">
-                <Button className="w-full justify-start" icon={Plus}>Add New Client</Button>
-                <Button variant="secondary" className="w-full justify-start" icon={FileText}>Send W-9 Request</Button>
-                <Button variant="secondary" className="w-full justify-start" icon={AlertTriangle}>Upload IRS Notice</Button>
+                <Button 
+                  className="w-full justify-start bg-primary text-gray-900 hover:bg-primary-hover shadow-medium" 
+                  icon={Plus}
+                  onClick={handleAddNewClient}
+                >
+                  Add New Client
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  className="w-full justify-start hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200" 
+                  icon={FileText}
+                  onClick={handleSendW9Request}
+                >
+                  Send W-9 Request
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  className="w-full justify-start hover:bg-red-50 hover:text-red-600 hover:border-red-200" 
+                  icon={AlertTriangle}
+                  onClick={handleUploadIRSNotice}
+                >
+                  Upload IRS Notice
+                </Button>
               </div>
             </div>
 

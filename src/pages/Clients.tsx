@@ -25,6 +25,19 @@ export function Clients() {
   });
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Listen for dashboard quick action events
+  useEffect(() => {
+    const handleDashboardAddClient = () => {
+      setShowClientDialog(true);
+    };
+
+    window.addEventListener('dashboard:add-client', handleDashboardAddClient);
+    
+    return () => {
+      window.removeEventListener('dashboard:add-client', handleDashboardAddClient);
+    };
+  }, []);
+
   const handleClientClick = (client: ClientWithDocuments) => {
     navigate(`/clients/${client.id}`);
   };

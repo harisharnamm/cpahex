@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useEffect } from 'react';
 import { TopBar } from '../components/organisms/TopBar';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
@@ -26,6 +27,21 @@ export function IRSNotices() {
     noticeName: ''
   });
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Auto-focus upload section when navigated from dashboard
+  useEffect(() => {
+    // Check if we came from dashboard quick action
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'upload') {
+      // Scroll to upload section
+      setTimeout(() => {
+        const uploadSection = document.getElementById('upload-section');
+        if (uploadSection) {
+          uploadSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    }
+  }, []);
 
   // Use our hooks to get real data
   const { notices, loading: noticesLoading, createNotice, refreshNotices, deleteNotice } = useIRSNotices();
@@ -293,7 +309,7 @@ export function IRSNotices() {
             </div>
 
             {/* Upload Zone */}
-            <div className="bg-surface-elevated rounded-2xl border border-border-subtle overflow-hidden mb-8 shadow-soft">
+            <div id="upload-section" className="bg-surface-elevated rounded-2xl border border-border-subtle overflow-hidden mb-8 shadow-soft">
               <div className="p-8">
                 <div className="text-center mb-6">
                   <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl w-16 h-16 mx-auto mb-4 flex items-center justify-center">

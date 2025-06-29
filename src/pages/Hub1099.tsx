@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useVendors } from '../hooks/useVendors';
 import { TopBar } from '../components/organisms/TopBar';
 import { Badge } from '../components/atoms/Badge';
@@ -7,9 +8,33 @@ import { Input } from '../components/atoms/Input';
 import { Send, FileText, Search, Filter, TrendingUp, Clock, CheckCircle } from 'lucide-react';
 
 export function Hub1099() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const { vendors, loading, error } = useVendors();
 
+  const handleSendW9 = (vendor: any) => {
+    // Create mailto link with pre-filled W-9 request
+    const subject = encodeURIComponent(`W-9 Form Request - ${new Date().getFullYear()}`);
+    const body = encodeURIComponent(`Dear ${vendor.name},\n\nWe need you to complete a W-9 form for our tax records. Please complete and return the attached form at your earliest convenience.\n\nThis form is required for us to issue a 1099 if your payments exceed $600 for the tax year.\n\nThank you for your prompt attention to this matter.\n\nBest regards,\n[Your Name]`);
+    
+    if (vendor.email) {
+      window.open(`mailto:${vendor.email}?subject=${subject}&body=${body}`, '_blank');
+    } else {
+      // Show notification that vendor has no email
+      alert(`No email address on file for ${vendor.name}. Please update their contact information.`);
+    }
+  };
+
+  const handleViewW9 = (vendor: any) => {
+    if (vendor.w9_document_id) {
+      // Navigate to document view - you could implement this to show the W-9 document
+      console.log('View W-9 for vendor:', vendor.name);
+      // For now, just show an alert
+      alert(`W-9 document viewer would open for ${vendor.name}`);
+    } else {
+      alert(`No W-9 document on file for ${vendor.name}`);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -194,10 +219,22 @@ export function Hub1099() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex space-x-2">
-                        <Button variant="ghost" size="sm" icon={Send}>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          icon={Send}
+                          onClick={() => handleSendW9(vendor)}
+                          className="hover:bg-blue-50 hover:text-blue-600"
+                        >
                           Send W-9
                         </Button>
-                        <Button variant="ghost" size="sm" icon={FileText}>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          icon={FileText}
+                          onClick={() => handleViewW9(vendor)}
+                          className="hover:bg-green-50 hover:text-green-600"
+                        >
                           View W-9
                         </Button>
                       </div>
