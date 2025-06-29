@@ -17,6 +17,7 @@ import {
   Lock, 
   Zap,
   Clock
+  Clock
 } from 'lucide-react';
 
 export function Settings(): ReactElement {
