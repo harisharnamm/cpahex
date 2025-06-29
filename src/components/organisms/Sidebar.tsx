@@ -12,7 +12,8 @@ import {
   MessageSquare, 
   Settings,
   Sparkles,
-  X 
+  X,
+  Search
 } from 'lucide-react';
 
 
