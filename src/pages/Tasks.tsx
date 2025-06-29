@@ -146,11 +146,11 @@ export function Tasks() {
   };
 
   const TaskCard = ({ task }: { task: Task }) => (
-    <div className={`group bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft hover:shadow-medium transition-all duration-200 ${
+    <div className={`group bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft hover:shadow-medium transition-all duration-200 flex flex-col ${
       task.status === 'completed' ? 'opacity-75' : ''
     }`}>
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1 min-w-0">
+      <div className="flex flex-col mb-4 w-full">
+        <div className="flex items-start justify-between mb-2">
           <div className="flex items-center space-x-3 mb-2">
             <h3 className={`font-semibold text-lg ${
               task.status === 'completed' ? 'line-through text-text-tertiary' : 'text-text-primary'
@@ -162,36 +162,35 @@ export function Tasks() {
               <Badge variant="warning" size="sm">NEW</Badge>
             )}
           </div>
-          
-          {task.description && (
-            <div className="bg-surface rounded-lg p-4 mb-3 border border-border-subtle">
-              <div className="text-text-secondary text-sm leading-relaxed whitespace-pre-line max-h-48 overflow-y-auto w-full">
-                {task.description}
-              </div>
-            </div>
-          )}
-          
-          <div className="flex flex-wrap items-center gap-3 text-sm text-text-tertiary">
-            <div className="flex items-center space-x-1">
-              <User className="w-4 h-4" />
-              <span>{getClientName(task.client_id)}</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Calendar className="w-4 h-4" />
-              <span className={task.due_date && new Date(task.due_date) < new Date() ? 'text-red-600 font-medium' : ''}>
-                {formatDate(task.due_date)}
-              </span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Clock className="w-4 h-4" />
-              <span>Created {new Date(task.created_at).toLocaleDateString()}</span>
-            </div>
+          <div className="flex items-center space-x-2">
+          {getStatusBadge(task.status)}
+          {getPriorityBadge(task.priority)}
           </div>
         </div>
         
-        <div className="flex items-center space-x-2 ml-4">
-          {getStatusBadge(task.status)}
-          {getPriorityBadge(task.priority)}
+        {task.description && (
+          <div className="bg-surface rounded-lg p-4 mb-3 border border-border-subtle w-full">
+            <div className="text-text-secondary text-sm leading-relaxed whitespace-pre-line max-h-48 overflow-y-auto">
+              {task.description}
+            </div>
+          </div>
+        )}
+        
+        <div className="flex flex-wrap items-center gap-3 text-sm text-text-tertiary">
+          <div className="flex items-center space-x-1">
+            <User className="w-4 h-4" />
+            <span>{getClientName(task.client_id)}</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <Calendar className="w-4 h-4" />
+            <span className={task.due_date && new Date(task.due_date) < new Date() ? 'text-red-600 font-medium' : ''}>
+              {formatDate(task.due_date)}
+            </span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <Clock className="w-4 h-4" />
+            <span>Created {new Date(task.created_at).toLocaleDateString()}</span>
+          </div>
         </div>
       </div>
       
@@ -378,7 +377,7 @@ export function Tasks() {
 
         {/* Tasks Grid */}
         {filteredTasks.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             {filteredTasks.map((task) => (
               <TaskCard key={task.id} task={task} />
             ))}
