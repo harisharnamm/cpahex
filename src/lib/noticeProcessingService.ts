@@ -15,21 +15,15 @@ export class NoticeProcessingService {
       console.log('🔄 Processing IRS notice for document:', documentId);
       console.log('🔄 User ID:', userId);
       console.log('🔄 Client ID:', clientId);
-      console.log('🔄 User ID:', userId);
-      console.log('🔄 Client ID:', clientId);
       
       // Get current user session
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('🔄 Session check:', !!session?.access_token);
       console.log('🔄 Session check:', !!session?.access_token);
       if (!session?.access_token) {
         return { data: null, error: new Error('No valid session') };
       }
 
       // Call the process-document-ai Edge Function
-      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document-ai`;
-      console.log('🔄 Calling edge function:', functionUrl);
-      
       const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document-ai`;
       console.log('🔄 Calling edge function:', functionUrl);
       
@@ -49,18 +43,13 @@ export class NoticeProcessingService {
       console.log('🔄 Edge function response status:', response.status);
       console.log('🔄 Edge function response ok:', response.ok);
       
-      console.log('🔄 Edge function response status:', response.status);
-      console.log('🔄 Edge function response ok:', response.ok);
-      
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('❌ Edge function error:', errorData);
         console.error('❌ Edge function error:', errorData);
         return { data: null, error: new Error(errorData.error || 'Processing failed') };
       }
 
       const result = await response.json();
-      console.log('✅ Edge function result:', result);
       console.log('✅ Edge function result:', result);
       
       // Get the updated notice from the database
@@ -72,17 +61,14 @@ export class NoticeProcessingService {
           .single();
 
         console.log('✅ Updated notice from DB:', notice);
-        console.log('✅ Updated notice from DB:', notice);
         return { data: notice, error: fetchError };
       } else {
         // If no notice was created, return success but no data
-        console.log('ℹ️ No notice created by edge function');
         console.log('ℹ️ No notice created by edge function');
         return { data: null, error: null };
       }
 
     } catch (error) {
-      console.error('❌ Exception in processIRSNotice:', error);
       console.error('❌ Exception in processIRSNotice:', error);
       return { data: null, error };
     }
