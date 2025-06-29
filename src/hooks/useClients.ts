@@ -77,12 +77,12 @@ export function useClients() {
         email: clientData.email,
         phone: clientData.phone,
         address: clientData.address,
-        tax_year: clientData.taxYear,
         entity_type: clientData.entityType as Client['entity_type'],
         required_documents: clientData.requiredDocuments,
+        tax_year: clientData.taxYear,
         status: 'active',
-        notes: null,
-        tax_id: null
+        tax_id: null,
+        notes: null
       });
       
       console.log('✅ Client created successfully:', newClient);

@@ -13,6 +13,8 @@ export interface Client {
   entity_type: 'individual' | 'llc' | 'corporation' | 's_corp' | 'partnership';
   status: 'active' | 'inactive' | 'archived';
   required_documents?: string[];
+  address?: string;
+  tax_id?: string;
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -166,7 +168,13 @@ export const clientsApi = {
     
     const clientWithUser = {
       ...client,
-      user_id: user.id
+      user_id: user.id,
+      // Ensure all fields are explicitly set to avoid null values
+      address: client.address || null,
+      entity_type: client.entity_type || 'individual',
+      required_documents: client.required_documents || [],
+      tax_id: client.tax_id || null,
+      notes: client.notes || null
     };
     
     console.log('🔄 Creating client with data:', clientWithUser);
