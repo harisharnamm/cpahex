@@ -51,17 +51,18 @@ function ActionsMenu({ client, onEdit, onDelete, onSendEmail, onViewDocuments }:
       <Button
         variant="ghost"
         size="sm"
-        icon={MoreHorizontal}
         onClick={(e) => {
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
         aria-label="Client actions"
-        className="h-8 w-8 p-0"
-      />
+        className="h-8 w-8 p-0 hover:bg-surface-hover"
+      >
+        <MoreHorizontal className="w-4 h-4" />
+      </Button>
       
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 w-48 bg-surface-elevated rounded-xl border border-border-subtle shadow-premium z-50 py-2 animate-scale-in">
+        <div className="absolute right-0 top-full mt-1 w-48 bg-surface-elevated rounded-xl border border-border-subtle shadow-premium z-[100] py-2 animate-scale-in">
           {onViewDocuments && (
             <button
               onClick={(e) => {
@@ -170,13 +171,13 @@ export function ClientTable({
               <Button
                 variant="ghost"
                 size="sm"
-                icon={FileText}
                 onClick={(e) => {
                   e.stopPropagation();
                   onViewDocuments?.(client);
                 }}
                 className="flex-shrink-0 ml-2 text-xs"
               >
+                <FileText className="w-3 h-3 mr-1" />
                 View
               </Button>
               <ActionsMenu
