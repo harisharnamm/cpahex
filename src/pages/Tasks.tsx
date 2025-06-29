@@ -27,7 +27,7 @@ import { Task } from '../hooks/useTasks';
 export function Tasks() {
   const { tasks, loading, updateTaskStatus, deleteTask, createTask } = useTasks();
   const { clients } = useClients();
-  const { isSearchOpen, closeSearch } = useSearch();
+  const { isSearchOpen, closeSearch, openSearch } = useSearch();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
