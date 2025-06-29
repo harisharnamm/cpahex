@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Tab } from '@headlessui/react';
 import { useClients } from '../hooks/useClients';
+import { AddTransactionDialog } from '../components/ui/add-transaction-dialog';
 import { EditClientDialog } from '../components/ui/edit-client-dialog';
 import { TopBar } from '../components/organisms/TopBar';
 import { Search, Filter, FileText, Calendar, User, Upload, Download, Eye, Edit, DollarSign, CreditCard, ArrowUpRight, ArrowDownLeft, Banknote, Plus } from 'lucide-react';
@@ -20,6 +21,8 @@ export function ClientDetail() {
   const [showUpload, setShowUpload] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showAddTransactionDialog, setShowAddTransactionDialog] = useState(false);
+  const [isAddingTransaction, setIsAddingTransaction] = useState(false);
   
   // Use our document hooks
   const { documents, loading, downloadDocument, deleteDocument, getDocumentPreviewURL } = useDocuments(id);
@@ -148,6 +151,40 @@ export function ClientDetail() {
       throw error; // Re-throw to let the dialog handle the error
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleAddTransaction = async (transactionData: {
+    date: string;
+    type: 'income' | 'expense';
+    category: string;
+    description: string;
+    amount: number;
+    document?: string;
+  }) => {
+    setIsAddingTransaction(true);
+    try {
+      // Generate a unique ID for the new transaction
+      const newId = Math.random().toString(36).substring(2, 9);
+      
+      // Add the new transaction to the state
+      const newTransaction = {
+        id: newId,
+        date: transactionData.date,
+        type: transactionData.type,
+        category: transactionData.category,
+        description: transactionData.description,
+        amount: transactionData.amount,
+        document: transactionData.document || 'No document'
+      };
+      
+      setTransactions(prev => [newTransaction, ...prev]);
+      return Promise.resolve();
+    } catch (error) {
+      console.error('Failed to add transaction:', error);
+      return Promise.reject(error);
+    } finally {
+      setIsAddingTransaction(false);
     }
   };
 
@@ -372,7 +409,12 @@ export function ClientDetail() {
                       <Button variant="secondary" icon={FileText}>
                         Export
                       </Button>
-                      <Button variant="primary" icon={Plus} className="bg-primary text-gray-900 hover:bg-primary-hover">
+                      <Button 
+                        variant="primary" 
+                        icon={Plus} 
+                        className="bg-primary text-gray-900 hover:bg-primary-hover"
+                        onClick={() => setShowAddTransactionDialog(true)}
+                      >
                         Add Transaction
                       </Button>
                     </div>
@@ -652,6 +694,14 @@ export function ClientDetail() {
           onSubmit={handleEditClient}
           client={client}
           loading={isUpdating}
+        />
+        
+        {/* Add Transaction Dialog */}
+        <AddTransactionDialog
+          isOpen={showAddTransactionDialog}
+          onClose={() => setShowAddTransactionDialog(false)}
+          onSubmit={handleAddTransaction}
+          loading={isAddingTransaction}
         />
       </div>
     </div>
