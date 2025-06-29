@@ -3,7 +3,8 @@ import { useSidebar } from '../../contexts/SidebarContext';
 import { NavigationItem } from '../molecules/NavigationItem';
 import { 
   LayoutDashboard, 
-  Users, 
+  Users,
+  GraduationCap,
   FileText, 
   CheckSquare,
   AlertTriangle, 
@@ -82,6 +83,9 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
           </NavigationItem>
           <NavigationItem to="/tasks" icon={CheckSquare}>
             Tasks
+          </NavigationItem>
+          <NavigationItem to="/my-zone" icon={GraduationCap}>
+            My Zone
           </NavigationItem>
           <NavigationItem to="/1099-hub" icon={FileText}>
             1099 Hub

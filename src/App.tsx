@@ -10,6 +10,7 @@ import { Clients } from './pages/Clients';
 import { ClientDetail } from './pages/ClientDetail';
 import { Tasks } from './pages/Tasks';
 import { Hub1099 } from './pages/Hub1099';
+import { MyZone } from './pages/MyZone';
 import { IRSNotices } from './pages/IRSNotices';
 import { DeductionChat } from './pages/DeductionChat';
 import { Settings } from './pages/SettingsPage';
@@ -69,6 +70,13 @@ function AppContent() {
         <ProtectedRoute>
           <AppLayout>
             <Hub1099 />
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/my-zone" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <MyZone />
           </AppLayout>
         </ProtectedRoute>
       } />
