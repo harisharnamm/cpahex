@@ -15,7 +15,7 @@ import { ClientWithDocuments } from '../hooks/useClients';
 export function Clients() {
   const navigate = useNavigate();
   const { clients, loading, error, addClient, deleteClient } = useClients();
-  const { isSearchOpen, closeSearch } = useSearch();
+  const { isSearchOpen, closeSearch, openSearch } = useSearch();
   const [searchQuery, setSearchQuery] = useState('');
   const [showClientDialog, setShowClientDialog] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
