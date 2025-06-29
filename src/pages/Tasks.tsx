@@ -148,11 +148,11 @@ export function Tasks() {
   const TaskCard = ({ task }: { task: Task }) => (
     <div className={`group bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft hover:shadow-medium hover:-translate-y-1 transition-all duration-200 ${
       task.status === 'completed' ? 'opacity-75' : ''
-    }`}>
+    } h-full flex flex-col justify-between`}>
       {/* Header with title and badges */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
-          <h3 className={`font-semibold text-lg mb-2 ${
+          <h3 className={`font-semibold text-lg mb-2 truncate ${
             task.status === 'completed' ? 'line-through text-text-tertiary' : 'text-text-primary'
           }`}>
             {task.title}
@@ -175,18 +175,18 @@ export function Tasks() {
       
       {/* Description */}
       {task.description && (
-        <div className="bg-surface rounded-lg p-4 mb-4 border border-border-subtle">
-          <div className="text-text-secondary text-sm leading-relaxed whitespace-pre-line max-h-32 overflow-y-auto">
+        <div className="bg-surface rounded-lg p-4 mb-4 border border-border-subtle flex-grow">
+          <div className="text-text-secondary text-sm leading-relaxed line-clamp-4 overflow-hidden">
             {task.description}
           </div>
         </div>
       )}
       
       {/* Metadata */}
-      <div className="space-y-2 mb-4">
+      <div className="space-y-2 mb-4 flex-shrink-0">
         <div className="flex items-center space-x-1 text-sm text-text-tertiary">
           <User className="w-4 h-4" />
-          <span>{getClientName(task.client_id)}</span>
+          <span className="truncate">{getClientName(task.client_id)}</span>
         </div>
         <div className="flex items-center space-x-1 text-sm">
           <Calendar className="w-4 h-4 text-text-tertiary" />
@@ -201,7 +201,7 @@ export function Tasks() {
       </div>
       
       {/* Action buttons */}
-      <div className="flex items-center justify-end space-x-2 pt-4 border-t border-border-subtle opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      <div className="flex items-center justify-end space-x-2 pt-4 border-t border-border-subtle opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0">
         {task.status === 'completed' ? (
           <Button
             size="sm"
@@ -375,7 +375,7 @@ export function Tasks() {
 
         {/* Tasks Grid */}
         {filteredTasks.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-fr">
             {filteredTasks.map((task) => (
               <TaskCard key={task.id} task={task} />
             ))}
