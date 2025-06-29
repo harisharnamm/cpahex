@@ -27,6 +27,7 @@ export function useTasks() {
   const fetchTasks = useCallback(async () => {
     if (!user) return;
 
+    console.log('🔄 Fetching tasks for user:', user.id);
     setLoading(true);
     setError(null);
 
@@ -35,12 +36,13 @@ export function useTasks() {
         .from('tasks')
         .select('*')
         .eq('user_id', user.id)
-        .order('due_date', { ascending: true });
+        .order('created_at', { ascending: false });
 
       if (fetchError) {
         throw fetchError;
       }
 
+      console.log('✅ Fetched tasks:', data?.length || 0, 'tasks');
       setTasks(data || []);
     } catch (err: any) {
       console.error('Error fetching tasks:', err);
@@ -92,6 +94,13 @@ export function useTasks() {
       // Add to local state
       setTasks(prev => [data, ...prev]);
       console.log('✅ Task created and added to local state');
+      
+      // Force a refresh to ensure we have the latest data
+      setTimeout(() => {
+        console.log('🔄 Auto-refreshing tasks after creation');
+        fetchTasks();
+      }, 500);
+      
       return { success: true, data };
     } catch (err: any) {
       console.error('Error creating task:', err);
@@ -164,7 +173,7 @@ export function useTasks() {
 
   const getUpcomingTasks = useCallback((limit: number = 5) => {
     const upcomingTasks = tasks
-      .filter(task => task.status === 'pending' || task.status === 'in_progress' || task.status === 'completed')
+      .filter(task => task.status !== 'cancelled')
       .sort((a, b) => {
         // Sort by due date, then by created date
         if (a.due_date && b.due_date) {
@@ -176,15 +185,23 @@ export function useTasks() {
       })
       .slice(0, limit);
     
-    console.log('📋 Getting upcoming tasks:', upcomingTasks.length, 'tasks');
+    console.log('📋 Getting upcoming tasks:', upcomingTasks.length, 'out of', tasks.length, 'total tasks');
     return upcomingTasks;
   }, [tasks]);
 
   // Load tasks on mount
   useEffect(() => {
+    console.log('🔄 useTasks effect triggered, user:', user?.id);
     fetchTasks();
   }, [fetchTasks]);
 
+  // Debug: Log tasks whenever they change
+  useEffect(() => {
+    console.log('📋 Tasks state updated:', tasks.length, 'tasks');
+    tasks.forEach(task => {
+      console.log('  -', task.title, '(', task.status, ')');
+    });
+  }, [tasks]);
   return {
     tasks,
     loading,

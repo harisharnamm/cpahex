@@ -14,8 +14,7 @@ export function Dashboard() {
   const [selectedYear, setSelectedYear] = useState('2024');
   const [animatingCards, setAnimatingCards] = useState<string[]>([]);
   const { stats, recentInsights, loading, error, refreshDashboard } = useDashboard();
-  const { updateTaskStatus } = useTasks();
-  const { tasks, getUpcomingTasks } = useTasks();
+  const { tasks, updateTaskStatus, getUpcomingTasks, refreshTasks } = useTasks();
 
   // Get upcoming tasks from the tasks hook instead of dashboard
   const upcomingTasks = getUpcomingTasks(5);
@@ -57,6 +56,8 @@ export function Dashboard() {
       console.log('✅ Task marked as complete successfully');
       // Refresh dashboard to update stats
       refreshDashboard();
+      // Also refresh tasks to ensure we have the latest data
+      refreshTasks();
     } else {
       console.error('Failed to mark task as complete:', result.error);
     }
@@ -69,6 +70,8 @@ export function Dashboard() {
       console.log('✅ Task marked as pending successfully');
       // Refresh dashboard to update stats
       refreshDashboard();
+      // Also refresh tasks to ensure we have the latest data
+      refreshTasks();
     } else {
       console.error('Failed to mark task as pending:', result.error);
     }
@@ -264,10 +267,19 @@ export function Dashboard() {
                   </div>
                   <h2 className="text-xl font-semibold text-text-primary">Upcoming Tasks</h2>
                 </div>
-                <Button variant="ghost" size="sm">View All</Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    console.log('🔄 Refreshing tasks manually');
+                    refreshTasks();
+                  }}
+                >
+                  Refresh
+                </Button>
               </div>
               <div className="space-y-4">
-                {upcomingTasks.map((task) => (
+                {upcomingTasks.length > 0 ? upcomingTasks.map((task) => (
                   <div key={task.id} className={`group p-4 bg-surface rounded-xl border border-border-subtle hover:shadow-medium hover:border-border-light transition-all duration-200 ${
                     task.status === 'completed' ? 'opacity-60' : ''
                   }`}>
@@ -314,7 +326,13 @@ export function Dashboard() {
                       </div>
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <div className="text-center py-8">
+                    <Clock className="w-12 h-12 text-text-tertiary mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-text-primary mb-2">No upcoming tasks</h3>
+                    <p className="text-text-tertiary">Create tasks from IRS notices or add them manually</p>
+                  </div>
+                )}
               </div>
             </div>
 

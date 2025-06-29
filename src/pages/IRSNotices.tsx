@@ -217,6 +217,10 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
       due_date: selectedNotice.deadline_date,
       client_id: selectedNotice.client_id
     });
+    
+    // Show loading state
+    const originalButtonText = 'Create Task';
+    
     const result = await createTask({
       title: taskTitle,
       description: taskDescription,
@@ -228,8 +232,7 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
 
     if (result.success) {
       console.log('✅ Task created successfully');
-      // Show a simple alert for now - you could replace with a toast notification
-      alert('Task created successfully! Check your dashboard to see the new task.');
+      alert('✅ Task created successfully! Check your dashboard to see the new task.');
     } else {
       console.error('❌ Failed to create task:', result.error);
       alert(`Failed to create task: ${result.error}`);

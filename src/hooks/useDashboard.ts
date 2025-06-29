@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { dashboardApi, tasksApi, aiInsightsApi, Task, AIInsight } from '../lib/database';
+import { dashboardApi, aiInsightsApi, AIInsight } from '../lib/database';
 import { useAuthContext } from '../contexts/AuthContext';
 
 export function useDashboard() {
@@ -14,7 +14,6 @@ export function useDashboard() {
     totalNotices: 0,
     totalTasks: 0
   });
-  const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([]);
   const [recentInsights, setRecentInsights] = useState<AIInsight[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,20 +36,17 @@ export function useDashboard() {
       console.log('🔄 Dashboard: Starting data fetch... (attempt', fetchAttempts + 1, ')');
       console.log('🔄 Dashboard: User authenticated:', user?.email);
       
-      const [statsData, tasksData, insightsData] = await Promise.all([
+      const [statsData, insightsData] = await Promise.all([
         dashboardApi.getStats(),
-        tasksApi.getUpcoming(5),
         aiInsightsApi.getRecent(3)
       ]);
       
       console.log('✅ Dashboard: Data fetched successfully', {
         stats: statsData,
-        tasks: tasksData?.length,
         insights: insightsData?.length
       });
       
       setStats(statsData);
-      setUpcomingTasks(tasksData);
       setRecentInsights(insightsData);
       
       // Reset fetch attempts on successful data fetch
@@ -107,7 +103,6 @@ export function useDashboard() {
 
   return {
     stats,
-    upcomingTasks,
     recentInsights,
     loading,
     error,
