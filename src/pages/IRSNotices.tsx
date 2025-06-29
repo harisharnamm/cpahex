@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useEffect } from 'react';
 import { useTasks } from '../hooks/useTasks';
+import { useClients } from '../hooks/useClients';
 import { TopBar } from '../components/organisms/TopBar';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
-import { Copy, Download, FileText, AlertTriangle, Clock, CheckCircle, ArrowLeft, Eye, Trash2, Plus } from 'lucide-react';
+import { Copy, Download, FileText, AlertTriangle, Clock, CheckCircle, ArrowLeft, Eye, Trash2, Plus, Zap } from 'lucide-react';
 import { EnhancedFileUpload } from '../components/ui/enhanced-file-upload';
 import { EnhancedDocumentPreview } from '../components/ui/enhanced-document-preview';
 import { ConfirmDialog } from '../components/ui/confirm-dialog';
+import { AutoTaskConfirmDialog } from '../components/ui/auto-task-confirm-dialog';
 import { useIRSNotices } from '../hooks/useIRSNotices';
 import { useDocuments } from '../hooks/useDocuments';
 import { noticeProcessingService } from '../lib/noticeProcessingService';
@@ -28,6 +30,15 @@ export function IRSNotices() {
     noticeName: ''
   });
   const [isDeleting, setIsDeleting] = useState(false);
+  const [autoTaskDialog, setAutoTaskDialog] = useState<{
+    isOpen: boolean;
+    notice: EnrichedIRSNotice | null;
+    taskData: any;
+  }>({
+    isOpen: false,
+    notice: null,
+    taskData: null
+  });
 
   // Auto-focus upload section when navigated from dashboard
   useEffect(() => {
@@ -48,6 +59,7 @@ export function IRSNotices() {
   const { notices, loading: noticesLoading, createNotice, refreshNotices, deleteNotice } = useIRSNotices();
   const { getDocumentPreviewURL, downloadDocument } = useDocuments();
   const { createTask } = useTasks();
+  const { clients } = useClients();
 
   // Cast notices to enriched type since we know the query includes joins
   const enrichedNotices = notices as EnrichedIRSNotice[];
@@ -76,6 +88,12 @@ export function IRSNotices() {
         console.log('🤖 AI processing result:', result);
         // Refresh notices to get updated AI summary
         refreshNotices();
+        
+        // After AI processing completes, automatically suggest task creation
+        if (result.data && result.data.ai_summary) {
+          console.log('🎯 AI processing completed, suggesting automatic task creation');
+          handleAutoTaskCreation(result.data);
+        }
       } catch (error) {
         console.error('Failed to process notice:', error);
       } finally {
@@ -87,6 +105,114 @@ export function IRSNotices() {
         hasAiSummary: !!notice?.ai_summary
       });
     }
+  };
+
+  const handleAutoTaskCreation = (notice: EnrichedIRSNotice) => {
+    console.log('🎯 Creating automatic task suggestion for notice:', notice.id);
+    
+    // Extract key information from the AI analysis
+    const taskTitle = `Review IRS Notice: ${getNoticeDisplayName(notice)}`;
+    
+    // Create a comprehensive task description based on AI analysis
+    const taskDescription = `🚨 URGENT: IRS Notice Requires Immediate Attention
+
+📋 NOTICE DETAILS:
+• Notice Type: ${notice.notice_type}
+• Notice Number: ${notice.notice_number || 'Not specified'}
+• Tax Year: ${notice.tax_year || 'Not specified'}
+${notice.amount_owed ? `• Amount Owed: $${notice.amount_owed.toLocaleString()}` : ''}
+${notice.deadline_date ? `• Response Deadline: ${new Date(notice.deadline_date).toLocaleDateString()}` : ''}
+
+🤖 AI ANALYSIS SUMMARY:
+${notice.ai_summary || 'AI analysis pending...'}
+
+📝 RECOMMENDED ACTIONS:
+${notice.ai_recommendations || 'Review the notice and consult with tax professional for next steps.'}
+
+⚠️ IMPORTANT: This notice requires prompt attention to avoid penalties and interest charges.`;
+
+    // Determine priority based on notice priority and deadline
+    let priority: 'low' | 'medium' | 'high' = 'medium';
+    if (notice.priority === 'critical' || notice.priority === 'high') {
+      priority = 'high';
+    } else if (notice.deadline_date) {
+      const deadline = new Date(notice.deadline_date);
+      const now = new Date();
+      const daysUntilDeadline = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysUntilDeadline <= 7) {
+        priority = 'high';
+      } else if (daysUntilDeadline <= 30) {
+        priority = 'medium';
+      }
+    }
+
+    // Calculate suggested due date (5 days before IRS deadline or 7 days from now)
+    let suggestedDueDate = '';
+    if (notice.deadline_date) {
+      const irsDeadline = new Date(notice.deadline_date);
+      const suggestedDate = new Date(irsDeadline.getTime() - (5 * 24 * 60 * 60 * 1000)); // 5 days before IRS deadline
+      const now = new Date();
+      
+      // If suggested date is in the past, use tomorrow
+      if (suggestedDate <= now) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        suggestedDueDate = tomorrow.toISOString().split('T')[0];
+      } else {
+        suggestedDueDate = suggestedDate.toISOString().split('T')[0];
+      }
+    } else {
+      // Default to 7 days from now
+      const defaultDate = new Date();
+      defaultDate.setDate(defaultDate.getDate() + 7);
+      suggestedDueDate = defaultDate.toISOString().split('T')[0];
+    }
+
+    const taskData = {
+      title: taskTitle,
+      description: taskDescription,
+      task_type: 'deadline' as const,
+      priority,
+      due_date: suggestedDueDate,
+      client_id: notice.client_id
+    };
+
+    console.log('🎯 Generated task data:', taskData);
+    
+    // Show confirmation dialog
+    setAutoTaskDialog({
+      isOpen: true,
+      notice,
+      taskData
+    });
+  };
+
+  const handleConfirmAutoTask = async (taskData: any) => {
+    console.log('✅ User confirmed automatic task creation:', taskData);
+    
+    try {
+      const result = await createTask(taskData);
+      
+      if (result.success) {
+        console.log('✅ Automatic task created successfully');
+        // Close the dialog
+        setAutoTaskDialog({ isOpen: false, notice: null, taskData: null });
+        // Show success message
+        alert('✅ Task created successfully! The IRS notice review task has been added to your dashboard.');
+      } else {
+        console.error('❌ Failed to create automatic task:', result.error);
+        alert(`Failed to create task: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('❌ Exception creating automatic task:', error);
+      alert(`Failed to create task: ${error}`);
+    }
+  };
+
+  const handleDeclineAutoTask = () => {
+    console.log('❌ User declined automatic task creation');
+    setAutoTaskDialog({ isOpen: false, notice: null, taskData: null });
   };
 
   const handleUploadComplete = async (documentIds: string[]) => {
@@ -603,11 +729,11 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
                       <Button 
                         variant="primary" 
                         size="sm" 
-                        icon={Plus}
+                        icon={Zap}
                         onClick={handleCreateTask}
                         className="flex-1 sm:flex-none bg-primary text-gray-900 hover:bg-primary-hover"
                       >
-                        Create Task
+                        Quick Task
                       </Button>
                     </div>
                   </div>
@@ -638,6 +764,16 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
           confirmText="Delete"
           confirmVariant="secondary"
           loading={isDeleting}
+        />
+
+        {/* Auto Task Confirmation Dialog */}
+        <AutoTaskConfirmDialog
+          isOpen={autoTaskDialog.isOpen}
+          onClose={handleDeclineAutoTask}
+          onConfirm={handleConfirmAutoTask}
+          notice={autoTaskDialog.notice}
+          taskData={autoTaskDialog.taskData}
+          clients={clients}
         />
       </div>
     </div>
