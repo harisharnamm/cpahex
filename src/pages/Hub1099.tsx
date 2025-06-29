@@ -12,7 +12,7 @@ import { Send, FileText, Search, Filter, TrendingUp, Clock, CheckCircle } from '
 export function Hub1099() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const { isSearchOpen, closeSearch } = useSearch();
+  const { isSearchOpen, openSearch, closeSearch } = useSearch();
   const { vendors, loading, error } = useVendors();
 
   const handleSendW9 = (vendor: any) => {
