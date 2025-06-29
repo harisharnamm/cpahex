@@ -45,7 +45,7 @@ export function ClientTable({
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1 min-w-0" onClick={() => onClientClick(client)} role="button">
-                <h3 className="font-semibold text-text-primary text-base mb-1 truncate cursor-pointer hover:text-primary transition-colors">
+                <h3 className="font-semibold text-text-primary text-base mb-1 truncate cursor-pointer hover:text-text-hover transition-colors">
                   {client.name}
                 </h3>
                 <div className="flex items-center text-sm text-text-secondary mb-1">
@@ -146,7 +146,7 @@ export function ClientTable({
                     className="px-6 py-4 cursor-pointer"
                     onClick={() => onClientClick(client)}
                   >
-                    <div className="font-semibold text-text-primary group-hover:text-primary transition-colors duration-200">
+                    <div className="font-semibold text-text-primary group-hover:text-text-hover transition-colors duration-200">
                       {client.name}
                     </div>
                   </td>
