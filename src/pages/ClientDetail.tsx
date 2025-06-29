@@ -4,7 +4,7 @@ import { Tab } from '@headlessui/react';
 import { useClients } from '../hooks/useClients';
 import { EditClientDialog } from '../components/ui/edit-client-dialog';
 import { TopBar } from '../components/organisms/TopBar';
-import { Search, Filter, FileText, Calendar, User, Upload, Download, Eye, Edit, DollarSign, CreditCard, ArrowUpRight, ArrowDownLeft, Banknote } from 'lucide-react';
+import { Search, Filter, FileText, Calendar, User, Upload, Download, Eye, Edit, DollarSign, CreditCard, ArrowUpRight, ArrowDownLeft, Banknote, Plus } from 'lucide-react';
 import { Input } from '../components/atoms/Input';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
