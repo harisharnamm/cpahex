@@ -3,6 +3,7 @@ import { useTasks } from '../hooks/useTasks';
 import { useClients } from '../hooks/useClients';
 import { CreateTaskDialog } from '../components/ui/create-task-dialog';
 import { TaskDetailDialog } from '../components/ui/task-detail-dialog';
+import { TaskDetailDialog } from '../components/ui/task-detail-dialog';
 import { TopBar } from '../components/organisms/TopBar';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
@@ -30,6 +31,7 @@ export function Tasks() {
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const handleCreateTask = async (taskData: {
@@ -255,6 +257,18 @@ export function Tasks() {
           </div>
         </div>
       </div>
+      
+      {/* Task Detail Dialog */}
+      <TaskDetailDialog
+        isOpen={!!selectedTask}
+        onClose={() => setSelectedTask(null)}
+        task={selectedTask}
+        clients={clients}
+        onMarkComplete={handleMarkComplete}
+        onMarkPending={handleMarkPending}
+        onMarkInProgress={handleMarkInProgress}
+        onDelete={handleDeleteTask}
+      />
     );
   }
 
