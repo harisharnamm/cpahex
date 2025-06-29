@@ -375,7 +375,7 @@ export function DeductionChat() {
           )}
 
           {/* Message Input */}
-          <div className="flex items-end space-x-3">
+          <div className="flex items-center space-x-3">
             {/* File Upload Button */}
             <div className="flex-shrink-0">
               <input
@@ -389,7 +389,7 @@ export function DeductionChat() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isSending || isTyping || uploadingFiles.length > 0}
-                className="group relative h-11 w-11 rounded-xl bg-surface-elevated border border-border-subtle hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="group relative h-12 w-12 rounded-xl bg-surface-elevated border border-border-subtle hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary/20"
                 title="Attach documents"
               >
                 <Paperclip className="w-5 h-5 text-text-tertiary group-hover:text-primary transition-colors duration-200" />
@@ -410,9 +410,9 @@ export function DeductionChat() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask about deductions, tax questions, or attach documents for analysis..."
-                className="w-full resize-none rounded-xl border border-border-subtle px-4 py-3 bg-surface-elevated text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all duration-200 disabled:opacity-50 pr-12"
+                className="w-full resize-none rounded-xl border border-border-subtle px-4 py-3 bg-surface-elevated text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all duration-200 disabled:opacity-50 pr-12 min-h-[48px]"
                 rows={1}
-                style={{ minHeight: '44px', maxHeight: '120px' }}
+                style={{ maxHeight: '120px' }}
                 disabled={isSending || isTyping || uploadingFiles.length > 0}
               />
               
@@ -437,7 +437,7 @@ export function DeductionChat() {
               <button
                 onClick={handleSend}
                 disabled={(!input.trim() && uploadedFiles.length === 0) || isSending || isTyping || uploadingFiles.length > 0}
-                className="group relative h-11 w-11 rounded-xl bg-primary text-gray-900 hover:bg-primary-hover disabled:bg-surface-elevated disabled:text-text-tertiary disabled:cursor-not-allowed shadow-medium hover:shadow-large transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 disabled:shadow-none"
+                className="group relative h-12 w-12 rounded-xl bg-primary text-gray-900 hover:bg-primary-hover disabled:bg-surface-elevated disabled:text-text-tertiary disabled:cursor-not-allowed shadow-soft hover:shadow-medium transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:shadow-none"
                 title="Send message"
               >
                 {isSending || isTyping ? (
