@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useEffect, useRef } from 'react';
 import { TopBar } from '../components/organisms/TopBar';
 import { TypingIndicator } from '../components/molecules/TypingIndicator';
-import { Button } from '../components/atoms/Button';
-import { Send, Sparkles, FileText, Calculator, Trash2, RefreshCw, Upload, Paperclip, X } from 'lucide-react';
+import { Button } from '../atoms/Button';
+import { Send, Sparkles, FileText, Calculator, Trash2, RefreshCw, Paperclip, X } from 'lucide-react';
 import { useChat } from '../hooks/useChat';
 import { useClients } from '../hooks/useClients';
 import { useDocumentUpload } from '../hooks/useDocumentUpload';
@@ -15,7 +15,6 @@ export function DeductionChat() {
   const { messages, loading, error, isTyping, sendMessage, clearMessages, setError } = useChat(selectedClientId);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [showUpload, setShowUpload] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -238,98 +237,8 @@ export function DeductionChat() {
                 {action.label}
               </Button>
             ))}
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Upload}
-              onClick={() => setShowUpload(!showUpload)}
-              className={`text-xs ${showUpload ? 'bg-primary/10 text-primary border-primary/20' : ''}`}
-            >
-              Upload Document
-            </Button>
           </div>
         </div>
-
-        {/* File Upload Section */}
-        {showUpload && (
-          <div className="bg-surface border-b border-border-subtle p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-text-primary">Upload Documents</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon={X}
-                  onClick={() => setShowUpload(false)}
-                  className="text-text-secondary hover:text-text-primary"
-                />
-              </div>
-              
-              <div className="border-2 border-dashed border-border-subtle rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept=".pdf,.jpg,.jpeg,.png,.txt,.doc,.docx"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-                <Upload className="w-8 h-8 text-text-tertiary mx-auto mb-2" />
-                <p className="text-text-primary font-medium mb-1">Upload documents for analysis</p>
-                <p className="text-text-tertiary text-sm mb-4">
-                  Supports PDF, images, and document files up to 50MB
-                </p>
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  variant="secondary"
-                  icon={Paperclip}
-                  disabled={uploadingFiles.length > 0}
-                >
-                  Choose Files
-                </Button>
-              </div>
-
-              {/* Uploaded Files List */}
-              {(uploadedFiles.length > 0 || uploadingFiles.length > 0) && (
-                <div className="space-y-2">
-                  <h4 className="font-medium text-text-primary text-sm">
-                    Files to Upload ({uploadedFiles.length})
-                  </h4>
-                  {uploadedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-surface-elevated rounded-lg border border-border-subtle">
-                      <div className="flex items-center space-x-3">
-                        <FileText className="w-4 h-4 text-text-tertiary" />
-                        <div>
-                          <p className="text-sm font-medium text-text-primary">{file.name}</p>
-                          <p className="text-xs text-text-tertiary">{formatFileSize(file.size)}</p>
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        icon={X}
-                        onClick={() => handleRemoveFile(index)}
-                        className="text-text-secondary hover:text-red-600"
-                      />
-                    </div>
-                  ))}
-                  
-                  {uploadingFiles.map((file, index) => (
-                    <div key={`uploading-${index}`} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="flex items-center space-x-3">
-                        <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />
-                        <div>
-                          <p className="text-sm font-medium text-blue-900">{file.name}</p>
-                          <p className="text-xs text-blue-700">Uploading...</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Error Display */}
         {error && (
@@ -411,41 +320,127 @@ export function DeductionChat() {
 
         {/* Input Area */}
         <div className="border-t border-border-subtle bg-surface-elevated p-6">
-          <div className="flex space-x-4">
+          {/* File Upload Section - Show when files are selected */}
+          {(uploadedFiles.length > 0 || uploadingFiles.length > 0) && (
+            <div className="mb-4 p-4 bg-surface rounded-xl border border-border-subtle">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-medium text-text-primary text-sm">
+                  📎 Attached Files ({uploadedFiles.length + uploadingFiles.length})
+                </h4>
+                {uploadedFiles.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setUploadedFiles([])}
+                    className="text-text-secondary hover:text-red-600"
+                  >
+                    Clear All
+                  </Button>
+                )}
+              </div>
+              
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {/* Uploaded Files */}
+                {uploadedFiles.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 bg-surface-elevated rounded-lg border border-border-subtle">
+                    <div className="flex items-center space-x-2 flex-1 min-w-0">
+                      <FileText className="w-4 h-4 text-text-tertiary flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-text-primary truncate">{file.name}</p>
+                        <p className="text-xs text-text-tertiary">{formatFileSize(file.size)}</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={X}
+                      onClick={() => handleRemoveFile(index)}
+                      className="text-text-secondary hover:text-red-600 flex-shrink-0 ml-2"
+                    />
+                  </div>
+                ))}
+                
+                {/* Uploading Files */}
+                {uploadingFiles.map((file, index) => (
+                  <div key={`uploading-${index}`} className="flex items-center space-x-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                    <RefreshCw className="w-4 h-4 text-blue-600 animate-spin flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-blue-900 truncate">{file.name}</p>
+                      <p className="text-xs text-blue-700">Uploading...</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Message Input */}
+          <div className="flex space-x-3">
+            {/* File Upload Button */}
+            <div className="flex-shrink-0">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".pdf,.jpg,.jpeg,.png,.txt,.doc,.docx"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={Paperclip}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isSending || isTyping || uploadingFiles.length > 0}
+                className="h-11 w-11 text-text-secondary hover:text-primary hover:bg-primary/10"
+                title="Attach documents"
+              />
+            </div>
+
+            {/* Text Input */}
             <div className="flex-1 relative">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ask about deductions, tax questions, or upload documents for analysis..."
-                className="w-full resize-none rounded-xl border border-border-subtle px-4 py-3 bg-surface-elevated text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all duration-200 disabled:opacity-50"
+                placeholder="Ask about deductions, tax questions, or attach documents for analysis..."
+                className="w-full resize-none rounded-xl border border-border-subtle px-4 py-3 bg-surface-elevated text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all duration-200 disabled:opacity-50 pr-12"
                 rows={1}
-                style={{ minHeight: '44px' }}
+                style={{ minHeight: '44px', maxHeight: '120px' }}
                 disabled={isSending || isTyping || uploadingFiles.length > 0}
               />
               
-              {/* File attachment indicator */}
+              {/* File count indicator */}
               {uploadedFiles.length > 0 && (
-                <div className="absolute bottom-2 right-2 flex items-center space-x-1 text-xs text-text-tertiary">
+                <div className="absolute bottom-2 right-12 flex items-center space-x-1 text-xs text-primary bg-primary/10 px-2 py-1 rounded-md">
                   <Paperclip className="w-3 h-3" />
-                  <span>{uploadedFiles.length} file(s)</span>
+                  <span>{uploadedFiles.length}</span>
                 </div>
               )}
             </div>
-            <Button
-              onClick={handleSend}
-              disabled={(!input.trim() && uploadedFiles.length === 0) || isSending || isTyping || uploadingFiles.length > 0}
-              icon={Send}
-              aria-label="Send message"
-              className="shrink-0"
-            >
-              {isSending ? 'Sending...' : uploadingFiles.length > 0 ? 'Uploading...' : ''}
-            </Button>
+
+            {/* Send Button */}
+            <div className="flex-shrink-0">
+              <Button
+                onClick={handleSend}
+                disabled={(!input.trim() && uploadedFiles.length === 0) || isSending || isTyping || uploadingFiles.length > 0}
+                icon={Send}
+                className="h-11 w-11 bg-primary text-gray-900 hover:bg-primary-hover shadow-medium"
+                title="Send message"
+              />
+            </div>
           </div>
+
+          {/* Status Bar */}
           <div className="flex items-center justify-between mt-3">
-            <p className="text-xs text-text-tertiary">
-              Press Enter to send, Shift+Enter for new line
-            </p>
+            <div className="flex items-center space-x-4 text-xs text-text-tertiary">
+              <span>Press Enter to send, Shift+Enter for new line</span>
+              {uploadedFiles.length > 0 && (
+                <span className="text-primary font-medium">
+                  {uploadedFiles.length} file(s) ready to upload
+                </span>
+              )}
+            </div>
             <div className="flex items-center space-x-4 text-xs text-text-tertiary">
               {selectedClientId && (
                 <span>
