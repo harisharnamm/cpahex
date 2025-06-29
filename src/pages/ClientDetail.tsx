@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Tab } from '@headlessui/react';
+import { useClients } from '../hooks/useClients';
 import { TopBar } from '../components/organisms/TopBar';
 import { Search, Filter, FileText, Calendar, User, Upload, Download, Eye } from 'lucide-react';
 import { Input } from '../components/atoms/Input';
@@ -13,6 +14,7 @@ import { DOCUMENT_TYPE_LABELS } from '../types/documents';
 export function ClientDetail() {
   const { id } = useParams();
   const [selectedTab, setSelectedTab] = useState(0);
+  const { clients, loading: clientsLoading } = useClients();
   const [searchQuery, setSearchQuery] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   
@@ -20,7 +22,26 @@ export function ClientDetail() {
   const { documents, loading, downloadDocument, deleteDocument, getDocumentPreviewURL } = useDocuments(id);
   
   const tabs = ['Documents', 'Vendors', 'Notes'];
-  const client = { name: 'Acme LLC', email: 'contact@acme.com', phone: '(555) 123-4567' };
+  
+  // Find the actual client based on the ID from the URL
+  const client = clients.find(c => c.id === id);
+  
+  // Show loading if we're still fetching clients or if client not found
+  if (clientsLoading || !client) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated">
+        <TopBar title="Loading..." />
+        <div className="max-w-content mx-auto px-8 py-8">
+          <div className="text-center py-12">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-text-secondary">
+              {clientsLoading ? 'Loading client details...' : 'Client not found'}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const vendors = [
     { id: '1', name: 'Office Depot', amount: 1250, w9Status: 'completed' },
@@ -87,7 +108,7 @@ export function ClientDetail() {
               </div>
               <div>
                 <p className="text-sm font-medium text-text-tertiary">Tax Year</p>
-                <p className="text-sm font-semibold text-text-primary">2024</p>
+                <p className="text-sm font-semibold text-text-primary">{client.tax_year}</p>
               </div>
             </div>
           </div>
