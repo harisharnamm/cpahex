@@ -222,7 +222,22 @@ export function AutoTaskConfirmDialog({
                 
                 <div className="flex items-center space-x-2">
                   <User className="w-4 h-4 text-text-tertiary" />
-                  <span className="text-sm text-text-secondary">{getClientName(editableTaskData.client_id)}</span>
+                  {isEditing ? (
+                    <select
+                      value={editableTaskData.client_id || ''}
+                      onChange={(e) => handleInputChange('client_id', e.target.value)}
+                      className="text-sm border border-border-subtle rounded-lg px-2 py-1"
+                    >
+                      <option value="">General Task (No Client)</option>
+                      {clients.map(client => (
+                        <option key={client.id} value={client.id}>
+                          {client.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="text-sm text-text-secondary">{getClientName(editableTaskData.client_id)}</span>
+                  )}
                 </div>
               </div>
 
@@ -250,6 +265,28 @@ export function AutoTaskConfirmDialog({
                       ({Math.ceil((new Date(editableTaskData.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days from now)
                     </span>
                   </div>
+                )}
+              </div>
+
+              {/* Task Type */}
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">Task Type</label>
+                {isEditing ? (
+                  <select
+                    value={editableTaskData.task_type}
+                    onChange={(e) => handleInputChange('task_type', e.target.value)}
+                    className="text-sm border border-border-subtle rounded-lg px-2 py-1"
+                  >
+                    <option value="general">General Task</option>
+                    <option value="deadline">Deadline</option>
+                    <option value="follow_up">Follow Up</option>
+                    <option value="review">Review</option>
+                    <option value="filing">Filing</option>
+                  </select>
+                ) : (
+                  <Badge variant="neutral" size="sm" className="capitalize">
+                    {editableTaskData.task_type.replace('_', ' ')}
+                  </Badge>
                 )}
               </div>
 
