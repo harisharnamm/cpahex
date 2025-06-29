@@ -2,7 +2,6 @@ import { MoreHorizontal, Mail, Phone, Users, Edit, Trash2, FileText, Send, Eye }
 import { ClientWithDocuments } from '../../hooks/useClients';
 import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
-import { useState, useRef, useEffect } from 'react';
 
 interface ClientTableProps {
   clients: ClientWithDocuments[];
@@ -12,7 +11,6 @@ interface ClientTableProps {
   onSendEmail?: (client: ClientWithDocuments) => void;
   onViewDocuments?: (client: ClientWithDocuments) => void;
 }
-
 
 export function ClientTable({ 
   clients, 
@@ -43,12 +41,13 @@ export function ClientTable({
         {clients.map((client) => (
           <div
             key={client.id}
-            className="bg-surface-elevated rounded-xl border border-border-subtle p-4 shadow-soft hover:shadow-medium transition-all duration-200 cursor-pointer"
-            onClick={() => onClientClick(client)}
+            className="bg-surface-elevated rounded-xl border border-border-subtle p-4 shadow-soft hover:shadow-medium transition-all duration-200"
           >
             <div className="flex items-start justify-between mb-3">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-text-primary text-base mb-1 truncate">{client.name}</h3>
+              <div className="flex-1 min-w-0" onClick={() => onClientClick(client)} role="button">
+                <h3 className="font-semibold text-text-primary text-base mb-1 truncate cursor-pointer hover:text-primary transition-colors">
+                  {client.name}
+                </h3>
                 <div className="flex items-center text-sm text-text-secondary mb-1">
                   <Mail className="w-3 h-3 mr-1 text-text-tertiary flex-shrink-0" />
                   <span className="truncate">{client.email}</span>
@@ -60,7 +59,9 @@ export function ClientTable({
                   </div>
                 )}
               </div>
-              <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
+              
+              {/* Mobile Actions */}
+              <div className="flex items-center space-x-1 flex-shrink-0 ml-2">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -68,10 +69,10 @@ export function ClientTable({
                     e.stopPropagation();
                     onViewDocuments?.(client);
                   }}
-                  className="text-xs px-2 py-1"
+                  className="text-xs px-2 py-1 h-8 hover:bg-blue-50 hover:text-blue-600"
+                  title="View Documents"
                 >
-                  <Eye className="w-3 h-3 mr-1" />
-                  View
+                  <Eye className="w-3 h-3" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -80,12 +81,14 @@ export function ClientTable({
                     e.stopPropagation();
                     onEditClient?.(client);
                   }}
-                  className="text-xs px-2 py-1"
+                  className="text-xs px-2 py-1 h-8 hover:bg-green-50 hover:text-green-600"
+                  title="Edit Client"
                 >
                   <Edit className="w-3 h-3" />
                 </Button>
               </div>
             </div>
+            
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <Badge variant="neutral" size="sm">
@@ -137,10 +140,12 @@ export function ClientTable({
               {clients.map((client) => (
                 <tr
                   key={client.id}
-                  className="hover:bg-surface-hover cursor-pointer transition-all duration-200 group"
-                  onClick={() => onClientClick(client)}
+                  className="hover:bg-surface-hover transition-all duration-200 group"
                 >
-                  <td className="px-6 py-4">
+                  <td 
+                    className="px-6 py-4 cursor-pointer"
+                    onClick={() => onClientClick(client)}
+                  >
                     <div className="font-semibold text-text-primary group-hover:text-primary transition-colors duration-200">
                       {client.name}
                     </div>
@@ -149,7 +154,7 @@ export function ClientTable({
                     <div className="space-y-1">
                       <div className="flex items-center text-sm text-text-secondary">
                         <Mail className="w-4 h-4 mr-2 text-text-tertiary" />
-                        {client.email}
+                        <span className="truncate max-w-[200px]">{client.email}</span>
                       </div>
                       {client.phone && (
                         <div className="flex items-center text-sm text-text-secondary">
@@ -179,7 +184,8 @@ export function ClientTable({
                     </Badge>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center space-x-1 relative z-10">
+                    {/* Clean Action Buttons */}
+                    <div className="flex items-center space-x-1">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -187,11 +193,12 @@ export function ClientTable({
                           e.stopPropagation();
                           onViewDocuments?.(client);
                         }}
-                        className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 bg-white border-2 border-gray-600 shadow-lg relative z-50 transition-all duration-200 flex items-center justify-center"
+                        className="h-8 px-2 hover:bg-blue-50 hover:text-blue-600 text-text-secondary"
                         title="View Documents"
                       >
-                        <Eye className="w-4 h-4 stroke-[3] text-gray-900 relative z-[60]" />
+                        <Eye className="w-4 h-4" />
                       </Button>
+                      
                       <Button
                         variant="ghost"
                         size="sm"
@@ -199,11 +206,12 @@ export function ClientTable({
                           e.stopPropagation();
                           onEditClient?.(client);
                         }}
-                        className="h-8 w-8 p-0 hover:bg-green-50 hover:text-green-600 bg-white border-2 border-gray-600 shadow-lg relative z-50 transition-all duration-200 flex items-center justify-center"
+                        className="h-8 px-2 hover:bg-green-50 hover:text-green-600 text-text-secondary"
                         title="Edit Client"
                       >
-                        <Edit className="w-4 h-4 stroke-[3] text-gray-900 relative z-[60]" />
+                        <Edit className="w-4 h-4" />
                       </Button>
+                      
                       <Button
                         variant="ghost"
                         size="sm"
@@ -211,11 +219,12 @@ export function ClientTable({
                           e.stopPropagation();
                           onSendEmail?.(client);
                         }}
-                        className="h-8 w-8 p-0 hover:bg-purple-50 hover:text-purple-600 bg-white border-2 border-gray-600 shadow-lg relative z-50 transition-all duration-200 flex items-center justify-center"
+                        className="h-8 px-2 hover:bg-purple-50 hover:text-purple-600 text-text-secondary"
                         title="Send Email"
                       >
-                        <Send className="w-4 h-4 stroke-[3] text-gray-900 relative z-[60]" />
+                        <Send className="w-4 h-4" />
                       </Button>
+                      
                       <Button
                         variant="ghost"
                         size="sm"
@@ -223,10 +232,10 @@ export function ClientTable({
                           e.stopPropagation();
                           onDeleteClient?.(client);
                         }}
-                        className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 bg-white border-2 border-gray-600 shadow-lg relative z-50 transition-all duration-200 flex items-center justify-center"
+                        className="h-8 px-2 hover:bg-red-50 hover:text-red-600 text-text-secondary"
                         title="Delete Client"
                       >
-                        <Trash2 className="w-4 h-4 stroke-[3] text-gray-900 relative z-[60]" />
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </td>
