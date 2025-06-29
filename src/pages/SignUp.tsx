@@ -177,7 +177,7 @@ export function SignUp() {
           {/* Header */}
           <div className="text-center">
             <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Start your free trial</h1>
-            <p className="text-sm sm:text-base text-gray-400">Create your CPA Hex account today</p>
+            <p className="text-sm sm:text-base text-gray-400">Create your CPA OS account today</p>
           </div>
 
           {/* Form */}
