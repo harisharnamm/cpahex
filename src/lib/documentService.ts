@@ -363,8 +363,8 @@ export class DocumentService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          documentId,
-          userId,
+          document_id: documentId,
+          user_id: userId,
         }),
       });
 
