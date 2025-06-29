@@ -164,11 +164,15 @@ export const clientsApi = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
     
+    console.log('🔄 Creating client with data:', client);
+    
     const { data, error } = await supabase
       .from('clients')
       .insert([{ ...client, user_id: user.id }])
       .select()
       .single();
+    
+    console.log('✅ Client creation result:', { data, error });
     
     if (error) throw error;
     return data;

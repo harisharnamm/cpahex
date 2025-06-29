@@ -69,6 +69,8 @@ export function useClients() {
     requiredDocuments: string[];
   }) => {
     try {
+      console.log('🔄 Adding client with data:', clientData);
+      
       const newClient = await clientsApi.create({
         name: clientData.name,
         email: clientData.email,
@@ -79,6 +81,8 @@ export function useClients() {
         required_documents: clientData.requiredDocuments,
         status: 'active'
       });
+      
+      console.log('✅ Client created successfully:', newClient);
       
       // Add to local state with 0 documents
       setClients(prev => [{
