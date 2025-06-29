@@ -239,6 +239,14 @@ All CPAs must be compliant with these new regulations by ${formatDate(update.dat
                       <Button 
                         size="sm" 
                         className="bg-primary text-gray-900 hover:bg-primary-hover"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // This will be handled by the parent component
+                          const event = new CustomEvent('register-webinar', { 
+                            detail: { webinar } 
+                          });
+                          window.dispatchEvent(event);
+                        }}
                       >
                         Register
                       </Button>

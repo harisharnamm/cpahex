@@ -27,6 +27,19 @@ export function MyZone() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUpdate, setSelectedUpdate] = useState<any>(null);
   
+
+  // Listen for register-webinar events from the regulatory update dialog
+  React.useEffect(() => {
+    const handleRegisterWebinar = (event: any) => {
+      setSelectedWebinar(event.detail.webinar);
+    };
+    
+    window.addEventListener('register-webinar', handleRegisterWebinar);
+    
+    return () => {
+      window.removeEventListener('register-webinar', handleRegisterWebinar);
+    };
+  }, []);
   // Mock data for CPE credits
   const cpeCredits = {
     total: 40,
