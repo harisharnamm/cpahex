@@ -344,15 +344,14 @@ export function Tasks() {
         {/* Search and Filters */}
         <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-6 mb-8 shadow-soft">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            <div className="lg:col-span-2 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-              <Input
-                placeholder="Search tasks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12"
-              />
-            </div>
+            <Button 
+              variant="secondary" 
+              icon={Search} 
+              onClick={openSearch}
+              className="lg:col-span-2"
+            >
+              Search tasks...
+            </Button>
             
             <select
               value={statusFilter}

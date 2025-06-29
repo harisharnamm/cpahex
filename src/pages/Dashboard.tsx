@@ -22,7 +22,7 @@ export function Dashboard() {
   const { isSearchOpen, closeSearch } = useSearch();
   const { setShowPreloader } = usePreloader();
   const { tasks, updateTaskStatus, getUpcomingTasks, refreshTasks } = useTasks();
-  const { clients } = useClients();
+  const { clients, loading: clientsLoading } = useClients();
   const [showCreateTaskDialog, setShowCreateTaskDialog] = useState(false);
 
   // Get upcoming tasks from the tasks hook instead of dashboard
@@ -256,7 +256,9 @@ export function Dashboard() {
   // Create custom action for the TopBar to show the search and year selection UI
   const customAction = {
     label: "", // Empty label as we'll use custom rendering
-    onClick: () => {}, // Empty handler as we'll use the component directly
+    onClick: () => {
+      // This is just a placeholder as we're using customRender
+    },
     customRender: () => (
       <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 mt-2 sm:mt-0">
         <div className="flex items-center space-x-3 bg-surface-elevated rounded-xl border border-border-subtle px-4 py-2 shadow-soft">
@@ -269,13 +271,6 @@ export function Dashboard() {
             <option value="2024">Fiscal Year 2024</option>
             <option value="2023">Fiscal Year 2023</option>
           </select>
-        </div>
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-          <Input
-            placeholder="Quick search..."
-            className="pl-12 bg-surface-elevated shadow-soft border-border-subtle"
-          />
         </div>
       </div>
     )

@@ -294,15 +294,14 @@ export function ClientDetail() {
               {/* Search and Filters */}
               <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-6 shadow-soft">
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                    <Input
-                      placeholder="Search OCR text or filename"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-12"
-                    />
-                  </div>
+                  <Button 
+                    variant="secondary" 
+                    icon={Search} 
+                    onClick={openSearch}
+                    className="flex-1"
+                  >
+                    Search documents...
+                  </Button>
                   <Button variant="secondary" icon={Filter}>
                     Filter
                   </Button>
