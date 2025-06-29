@@ -377,7 +377,7 @@ export function DeductionChat() {
           {/* Message Input */}
           <div className="flex space-x-3">
             {/* File Upload Button */}
-            <div className="flex-shrink-0 relative z-10">
+            <div className="flex-shrink-0 relative">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -392,9 +392,11 @@ export function DeductionChat() {
                 icon={Paperclip}
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isSending || isTyping || uploadingFiles.length > 0}
-                className="h-11 w-11 text-text-secondary hover:text-primary hover:bg-primary/10 border border-border-subtle hover:border-primary/30 transition-all duration-200"
+                className="h-11 w-11 text-text-secondary hover:text-primary hover:bg-primary/10 border border-border-subtle hover:border-primary/30 transition-all duration-200 flex items-center justify-center"
                 title="Attach documents"
-              />
+              >
+                <Paperclip className="w-4 h-4" />
+              </Button>
             </div>
 
             {/* Text Input */}
@@ -412,7 +414,7 @@ export function DeductionChat() {
               
               {/* File count indicator */}
               {uploadedFiles.length > 0 && (
-                <div className="absolute bottom-2 right-12 flex items-center space-x-1 text-xs text-primary bg-primary/20 px-2 py-1 rounded-md border border-primary/30 z-20">
+                <div className="absolute bottom-2 right-12 flex items-center space-x-1 text-xs text-primary bg-primary/20 px-2 py-1 rounded-md border border-primary/30">
                   <Paperclip className="w-3 h-3" />
                   <span>{uploadedFiles.length}</span>
                 </div>
@@ -420,14 +422,16 @@ export function DeductionChat() {
             </div>
 
             {/* Send Button */}
-            <div className="flex-shrink-0 relative z-10">
+            <div className="flex-shrink-0 relative">
               <Button
                 onClick={handleSend}
                 disabled={(!input.trim() && uploadedFiles.length === 0) || isSending || isTyping || uploadingFiles.length > 0}
                 icon={Send}
-                className="h-11 w-11 bg-primary text-gray-900 hover:bg-primary-hover shadow-medium relative z-30"
+                className="h-11 w-11 bg-primary text-gray-900 hover:bg-primary-hover shadow-medium flex items-center justify-center"
                 title="Send message"
-              />
+              >
+                <Send className="w-4 h-4" />
+              </Button>
             </div>
           </div>
 
