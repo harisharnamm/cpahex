@@ -340,7 +340,6 @@ export class DocumentService {
   private async processDocumentBackground(
     documentId: string,
     userId: string,
-    userId: string,
     options: {
       enableOCR?: boolean;
       enableAI?: boolean;
@@ -402,15 +401,6 @@ export class DocumentService {
       } else {
         throw new Error('AI processing returned no results');
       }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('❌ Background processing failed:', errorData);
-        return;
-      }
-
-      const result = await response.json();
-      console.log('✅ Background processing completed:', result);
 
     } catch (error) {
       console.error('❌ AI processing failed:', error);
