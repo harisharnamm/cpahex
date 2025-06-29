@@ -1,21 +1,6 @@
 import { supabase } from './supabase';
-import { 
-  createIRSNoticeRecord, 
-  updateIRSNotice, 
-  updateDocumentProcessing 
-} from './documentQueries';
+import { updateIRSNotice } from './documentQueries';
 import { Document, IRSNotice } from '../types/documents';
-
-interface NoticeExtractionResult {
-  noticeType: string;
-  noticeNumber?: string;
-  taxYear?: number;
-  amountOwed?: number;
-  deadlineDate?: Date;
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  summary: string;
-  recommendations: string[];
-}
 
 export class NoticeProcessingService {
   /**
@@ -27,72 +12,123 @@ export class NoticeProcessingService {
     clientId?: string
   ): Promise<{ data: IRSNotice | null; error: any }> {
     try {
-      // Get the document
-      const { data: document, error: docError } = await supabase
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        return { data: null, error: new Error('No valid session') };
+      }
+
+      // Call the process-document-ai Edge Function
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document-ai`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          document_id: documentId,
+          user_id: userId,
+          client_id: clientId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return { data: null, error: new Error(errorData.error || 'Processing failed') };
+      }
+
+      const result = await response.json();
+      
+      // Get the updated notice from the database
+      if (result.notice_id) {
+        const { data: notice, error: fetchError } = await supabase
+          .from('irs_notices')
+          .select('*')
+          .eq('id', result.notice_id)
+          .single();
+
+        return { data: notice, error: fetchError };
+      } else {
+        // If no notice was created, return success but no data
+        return { data: null, error: null };
+      }
+
+    } catch (error) {
+      return { data: null, error };
+    }
+  }
+
+  /**
+   * Gets processing status for a document
+   */
+  async getProcessingStatus(documentId: string): Promise<{
+    isProcessing: boolean;
+    progress: number;
+    status: string;
+  }> {
+    try {
+      // Check if document is processed
+      const { data: document } = await supabase
         .from('documents')
-        .select('*')
+        .select('is_processed')
         .eq('id', documentId)
         .single();
 
-      if (docError || !document) {
-        return { data: null, error: docError || new Error('Document not found') };
-      }
+      return {
+        isProcessing: !document?.is_processed,
+        progress: document?.is_processed ? 100 : 0,
+        status: document?.is_processed ? 'completed' : 'processing',
+      };
+    } catch (error) {
+      return {
+        isProcessing: false,
+        progress: 0,
+        status: 'error',
+      };
+    }
+  }
 
-      // Extract text from document (this would normally use OCR service)
-      const extractedText = await this.extractTextFromDocument(document);
-      
-      // Analyze the notice content
-      const analysisResult = await this.analyzeNoticeContent(extractedText, document.original_filename);
-
-      // Check if an IRS notice record already exists for this document
-      const { data: existingNotice } = await supabase
+  /**
+   * Reprocesses a notice with updated AI models
+   */
+  async reprocessNotice(noticeId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Get the notice and its document
+      const { data: notice, error: noticeError } = await supabase
         .from('irs_notices')
-        .select('id')
-        .eq('document_id', documentId)
+        .select(`
+          *,
+          documents:document_id (*)
+        `)
+        .eq('id', noticeId)
         .single();
 
-      let notice;
-      
-      if (existingNotice) {
-        // Update existing notice with AI analysis
-        const { data: updatedNotice, error: updateError } = await updateIRSNotice(existingNotice.id, {
-          notice_type: analysisResult.noticeType,
-          notice_number: analysisResult.noticeNumber,
-          tax_year: analysisResult.taxYear,
-          amount_owed: analysisResult.amountOwed,
-          deadline_date: analysisResult.deadlineDate?.toISOString(),
-          priority: analysisResult.priority,
-          ai_summary: analysisResult.summary,
-          ai_recommendations: analysisResult.recommendations.join('\n'),
-        });
+      if (noticeError || !notice) {
+        return { success: false, error: 'Notice not found' };
+      }
 
-        if (updateError) {
-          return { data: null, error: updateError };
-        }
-        
-        notice = updatedNotice;
-      } else {
-        // Create new IRS notice record only if none exists
-        const { data: newNotice, error: noticeError } = await createIRSNoticeRecord({
-          user_id: userId,
-          client_id: clientId,
-          document_id: documentId,
-          notice_type: analysisResult.noticeType,
-          notice_number: analysisResult.noticeNumber,
-          tax_year: analysisResult.taxYear,
-          amount_owed: analysisResult.amountOwed,
-          deadline_date: analysisResult.deadlineDate?.toISOString(),
-          priority: analysisResult.priority,
-        });
+      // Reprocess the document
+      const result = await this.processIRSNotice(
+        notice.document_id!, 
+        notice.user_id, 
+        notice.client_id
+      );
 
-        if (noticeError) {
-          return { data: null, error: noticeError };
-        }
+      if (result.error) {
+        return { success: false, error: result.error.message };
+      }
 
-        // Update notice with AI analysis
-        const { data: updatedNotice, error: updateError } = await updateIRSNotice(newNotice!.id, {
-          ai_summary: analysisResult.summary,
-          ai_recommendations: analysisResult.recommendations.join('\n'),
+      return { success: true };
+
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  }
+}
+
+// Export singleton instance
+export const noticeProcessingService = new NoticeProcessingService();
+
         });
 
         if (updateError) {

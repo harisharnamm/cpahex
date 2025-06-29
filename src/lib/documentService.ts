@@ -346,25 +346,34 @@ export class DocumentService {
     }
   ): Promise<void> {
     try {
-      // This would typically call a Supabase Edge Function
-      // For now, we'll simulate processing
-      setTimeout(async () => {
-        const updates: any = {};
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.error('❌ No valid session for background processing');
+        return;
+      }
 
-        if (options.enableOCR) {
-          // Simulate OCR processing
-          updates.ocr_text = 'Extracted text from document...';
-        }
+      // Call the process-document-ai Edge Function
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document-ai`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          document_id: documentId,
+          user_id: userId,
+        }),
+      });
 
-        if (options.enableAI) {
-          // Simulate AI summary
-          updates.ai_summary = 'AI-generated summary of document content...';
-        }
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ Background processing failed:', errorData);
+        return;
+      }
 
-        updates.is_processed = true;
-
-        await updateDocumentProcessing(documentId, updates);
-      }, 2000);
+      const result = await response.json();
+      console.log('✅ Background processing completed:', result);
 
     } catch (error) {
       console.error('Background processing failed:', error);
