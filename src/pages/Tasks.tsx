@@ -146,18 +146,18 @@ export function Tasks() {
   };
 
   const TaskCard = ({ task }: { task: Task }) => (
-    <div className={`group bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft hover:shadow-medium hover:-translate-y-1 transition-all duration-200 ${
+    <div className={`group bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft hover:shadow-medium hover:-translate-y-1 transition-all duration-200 h-full ${
       task.status === 'completed' ? 'opacity-75' : ''
     } h-full flex flex-col justify-between`}>
       {/* Header with title and badges */}
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
           <h3 className={`font-semibold text-lg mb-2 truncate ${
             task.status === 'completed' ? 'line-through text-text-tertiary' : 'text-text-primary'
           }`}>
             {task.title}
           </h3>
-          <div className="flex items-center space-x-2 mb-3">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Show "NEW" badge for tasks created in the last 24 hours */}
             {new Date().getTime() - new Date(task.created_at).getTime() < 24 * 60 * 60 * 1000 && (
               <Badge variant="warning" size="sm">NEW</Badge>
@@ -175,72 +175,74 @@ export function Tasks() {
       
       {/* Description */}
       {task.description && (
-        <div className="bg-surface rounded-lg p-4 mb-4 border border-border-subtle flex-grow">
-          <div className="text-text-secondary text-sm leading-relaxed line-clamp-4 overflow-hidden">
+        <div className="bg-surface rounded-lg p-4 my-3 border border-border-subtle">
+          <div className="text-text-secondary text-sm leading-relaxed line-clamp-3 overflow-hidden">
             {task.description}
           </div>
         </div>
       )}
       
       {/* Metadata */}
-      <div className="space-y-2 mb-4 flex-shrink-0">
-        <div className="flex items-center space-x-1 text-sm text-text-tertiary">
-          <User className="w-4 h-4" />
-          <span className="truncate">{getClientName(task.client_id)}</span>
+      <div className="mt-auto">
+        <div className="grid grid-cols-1 gap-2 mb-4">
+          <div className="flex items-center space-x-1 text-sm text-text-tertiary">
+            <User className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">{getClientName(task.client_id)}</span>
+          </div>
+          <div className="flex items-center space-x-1 text-sm">
+            <Calendar className="w-4 h-4 text-text-tertiary flex-shrink-0" />
+            <span className={task.due_date && new Date(task.due_date) < new Date() ? 'text-red-600 font-medium' : 'text-text-tertiary'}>
+              {formatDate(task.due_date)}
+            </span>
+          </div>
+          <div className="flex items-center space-x-1 text-sm text-text-tertiary">
+            <Clock className="w-4 h-4 flex-shrink-0" />
+            <span>Created {new Date(task.created_at).toLocaleDateString()}</span>
+          </div>
         </div>
-        <div className="flex items-center space-x-1 text-sm">
-          <Calendar className="w-4 h-4 text-text-tertiary" />
-          <span className={task.due_date && new Date(task.due_date) < new Date() ? 'text-red-600 font-medium' : 'text-text-tertiary'}>
-            {formatDate(task.due_date)}
-          </span>
-        </div>
-        <div className="flex items-center space-x-1 text-sm text-text-tertiary">
-          <Clock className="w-4 h-4" />
-          <span>Created {new Date(task.created_at).toLocaleDateString()}</span>
-        </div>
-      </div>
-      
-      {/* Action buttons */}
-      <div className="flex items-center justify-end space-x-2 pt-4 border-t border-border-subtle opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0">
-        {task.status === 'completed' ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            icon={RotateCcw}
-            onClick={() => handleMarkPending(task.id)}
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            title="Mark as pending"
-          />
-        ) : task.status === 'pending' ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            icon={Clock}
-            onClick={() => handleMarkInProgress(task.id)}
-            className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-            title="Mark as in progress"
-          />
-        ) : null}
         
-        {task.status !== 'completed' && (
+        {/* Action buttons */}
+        <div className="flex items-center justify-end space-x-2 pt-3 border-t border-border-subtle opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          {task.status === 'completed' ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={RotateCcw}
+              onClick={() => handleMarkPending(task.id)}
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              title="Mark as pending"
+            />
+          ) : task.status === 'pending' ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={Clock}
+              onClick={() => handleMarkInProgress(task.id)}
+              className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+              title="Mark as in progress"
+            />
+          ) : null}
+          
+          {task.status !== 'completed' && (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={CheckCircle}
+              onClick={() => handleMarkComplete(task.id)}
+              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+              title="Mark as complete"
+            />
+          )}
+          
           <Button
             size="sm"
             variant="ghost"
-            icon={CheckCircle}
-            onClick={() => handleMarkComplete(task.id)}
-            className="text-green-600 hover:text-green-700 hover:bg-green-50"
-            title="Mark as complete"
+            icon={Trash2}
+            onClick={() => handleDeleteTask(task.id, task.title)}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            title="Delete task"
           />
-        )}
-        
-        <Button
-          size="sm"
-          variant="ghost"
-          icon={Trash2}
-          onClick={() => handleDeleteTask(task.id, task.title)}
-          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-          title="Delete task"
-        />
+        </div>
       </div>
     </div>
   );
@@ -375,7 +377,7 @@ export function Tasks() {
 
         {/* Tasks Grid */}
         {filteredTasks.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-fr">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTasks.map((task) => (
               <TaskCard key={task.id} task={task} />
             ))}
