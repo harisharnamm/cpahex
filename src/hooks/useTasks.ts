@@ -175,17 +175,32 @@ export function useTasks() {
     const upcomingTasks = tasks
       .filter(task => task.status !== 'cancelled')
       .sort((a, b) => {
-        // Sort by due date, then by created date
+        // Sort by most recently created first, then by due date
+        const aCreated = new Date(a.created_at).getTime();
+        const bCreated = new Date(b.created_at).getTime();
+        
+        // First, prioritize by creation date (newest first)
+        if (Math.abs(aCreated - bCreated) > 24 * 60 * 60 * 1000) { // If more than 1 day apart
+          return bCreated - aCreated; // Newest first
+        }
+        
+        // If created within the same day, then sort by due date
         if (a.due_date && b.due_date) {
           return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
         }
         if (a.due_date && !b.due_date) return -1;
         if (!a.due_date && b.due_date) return 1;
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        
+        // Final fallback: newest first
+        return bCreated - aCreated;
       })
       .slice(0, limit);
     
     console.log('📋 Getting upcoming tasks:', upcomingTasks.length, 'out of', tasks.length, 'total tasks');
+    console.log('📋 Task order (newest first):');
+    upcomingTasks.forEach((task, index) => {
+      console.log(`  ${index + 1}. ${task.title} (created: ${new Date(task.created_at).toLocaleString()}, status: ${task.status})`);
+    });
     return upcomingTasks;
   }, [tasks]);
 
