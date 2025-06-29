@@ -450,47 +450,51 @@ export function ClientDialog({ isOpen, onClose, onSubmit, loading = false }: Cli
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-border-subtle bg-surface">
-          <div className="flex space-x-3">
-            <Button
-              variant="secondary"
-              onClick={handleClose}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            
-            {step === 2 && (
+        <div className="p-6 border-t border-border-subtle bg-surface">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex space-x-3 order-2 sm:order-1">
               <Button
                 variant="secondary"
-                onClick={handleBack}
+                onClick={handleClose}
                 disabled={loading}
+                className="min-w-[100px]"
               >
-                Back
+                Cancel
               </Button>
-            )}
-          </div>
-          
-          <div className="flex space-x-3">
-            {step === 1 && (
-              <Button
-                onClick={handleNext}
-                disabled={loading}
-                className="shadow-medium"
-              >
-                Next: Select Documents
-              </Button>
-            )}
+              
+              {step === 2 && (
+                <Button
+                  variant="secondary"
+                  onClick={handleBack}
+                  disabled={loading}
+                  className="min-w-[100px]"
+                >
+                  ← Back
+                </Button>
+              )}
+            </div>
             
-            {step === 2 && (
-              <Button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="shadow-medium"
-              >
-                {loading ? 'Creating...' : 'Create Client'}
-              </Button>
-            )}
+            <div className="flex space-x-3 order-1 sm:order-2">
+              {step === 1 && (
+                <Button
+                  onClick={handleNext}
+                  disabled={loading}
+                  className="shadow-medium min-w-[180px] bg-primary text-gray-900 hover:bg-primary-hover"
+                >
+                  Next: Select Documents →
+                </Button>
+              )}
+              
+              {step === 2 && (
+                <Button
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="shadow-medium min-w-[140px] bg-primary text-gray-900 hover:bg-primary-hover"
+                >
+                  {loading ? 'Creating...' : '✓ Create Client'}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
