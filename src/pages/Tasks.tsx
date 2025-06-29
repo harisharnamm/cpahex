@@ -31,7 +31,6 @@ export function Tasks() {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const handleCreateTask = async (taskData: {
     title: string;
