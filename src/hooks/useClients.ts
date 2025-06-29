@@ -64,10 +64,7 @@ export function useClients() {
     email: string;
     phone?: string;
     address?: string;
-    address?: string;
     taxYear: number;
-    entityType?: string;
-    requiredDocuments?: string[];
     entityType: string;
     requiredDocuments: string[];
   }) => {
@@ -80,15 +77,11 @@ export function useClients() {
         email: clientData.email,
         phone: clientData.phone,
         address: clientData.address,
-        entity_type: (clientData.entityType as Client['entity_type']) || 'individual',
-        required_documents: clientData.requiredDocuments || [],
-        address: clientData.address,
         entity_type: clientData.entityType as Client['entity_type'],
         required_documents: clientData.requiredDocuments,
         tax_year: clientData.taxYear,
         status: 'active',
         tax_id: null,
-        notes: null
         notes: null
       });
       

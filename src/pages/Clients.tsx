@@ -48,7 +48,7 @@ export function Clients() {
         email: clientData.email,
         phone: clientData.phone,
         address: clientData.address,
-        taxYear: clientData.taxYear
+        taxYear: clientData.taxYear,
         entityType: clientData.entityType,
         requiredDocuments: clientData.requiredDocuments
       });
