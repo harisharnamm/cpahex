@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboard } from '../hooks/useDashboard';
 import { useTasks } from '../hooks/useTasks';
+import { useClients } from '../hooks/useClients';
+import { CreateTaskDialog } from '../components/ui/create-task-dialog';
 import { TopBar } from '../components/organisms/TopBar';
 import { StatCard } from '../components/atoms/StatCard';
 import { Input } from '../components/atoms/Input';
@@ -15,6 +17,8 @@ export function Dashboard() {
   const [animatingCards, setAnimatingCards] = useState<string[]>([]);
   const { stats, recentInsights, loading, error, refreshDashboard } = useDashboard();
   const { tasks, updateTaskStatus, getUpcomingTasks, refreshTasks } = useTasks();
+  const { clients } = useClients();
+  const [showCreateTaskDialog, setShowCreateTaskDialog] = useState(false);
 
   // Get upcoming tasks from the tasks hook instead of dashboard
   const upcomingTasks = getUpcomingTasks(5);
@@ -47,6 +51,24 @@ export function Dashboard() {
 
   const handleUploadIRSNotice = () => {
     navigate('/irs-notices?action=upload');
+  };
+
+  const handleCreateTask = async (taskData: {
+    title: string;
+    description?: string;
+    task_type: 'general' | 'deadline' | 'follow_up' | 'review' | 'filing';
+    priority: 'low' | 'medium' | 'high';
+    due_date?: string;
+    client_id?: string;
+  }) => {
+    const { createTask } = useTasks();
+    const result = await createTask(taskData);
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+    // Refresh dashboard data
+    refreshDashboard();
+    refreshTasks();
   };
 
   const handleMarkTaskComplete = async (taskId: string) => {
@@ -270,6 +292,13 @@ export function Dashboard() {
                 <Button 
                   variant="ghost" 
                   size="sm"
+                  onClick={() => setShowCreateTaskDialog(true)}
+                >
+                  Create Task
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
                   onClick={() => navigate('/tasks')}
                 >
                   View All
@@ -418,6 +447,15 @@ export function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Create Task Dialog */}
+      <CreateTaskDialog
+        isOpen={showCreateTaskDialog}
+        onClose={() => setShowCreateTaskDialog(false)}
+        onSubmit={handleCreateTask}
+        clients={clients}
+        loading={false}
+      />
     </div>
   );
 }

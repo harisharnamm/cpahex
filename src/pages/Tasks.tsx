@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTasks } from '../hooks/useTasks';
 import { useClients } from '../hooks/useClients';
+import { CreateTaskDialog } from '../components/ui/create-task-dialog';
 import { TopBar } from '../components/organisms/TopBar';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
@@ -28,6 +29,20 @@ export function Tasks() {
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+  const handleCreateTask = async (taskData: {
+    title: string;
+    description?: string;
+    task_type: 'general' | 'deadline' | 'follow_up' | 'review' | 'filing';
+    priority: 'low' | 'medium' | 'high';
+    due_date?: string;
+    client_id?: string;
+  }) => {
+    const result = await createTask(taskData);
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+  };
 
   // Filter tasks based on search and filters
   const filteredTasks = tasks.filter(task => {
@@ -389,6 +404,15 @@ export function Tasks() {
           </div>
         )}
       </div>
+
+      {/* Create Task Dialog */}
+      <CreateTaskDialog
+        isOpen={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+        onSubmit={handleCreateTask}
+        clients={clients}
+        loading={loading}
+      />
     </div>
   );
 }
