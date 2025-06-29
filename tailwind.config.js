@@ -14,7 +14,7 @@ export default {
         'text-primary': '#1F2937',
         'text-secondary': '#6B7280',
         'text-tertiary': '#9CA3AF',
-        'text-hover': '#1D4ED8',
+        'text-hover': '#A3B300',
         'background': '#FFFFFF',
         'foreground': '#1F2937',
         'muted': '#F3F4F6',
