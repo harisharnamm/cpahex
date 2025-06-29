@@ -12,9 +12,9 @@ serve(async (req) => {
   }
 
   try {
-    const { documentId, userId, clientId } = await req.json()
+    const { document_id, user_id, client_id } = await req.json()
 
-    if (!documentId || !userId) {
+    if (!document_id || !user_id) {
       return new Response(
         JSON.stringify({ error: 'Missing required parameters' }),
         { 
