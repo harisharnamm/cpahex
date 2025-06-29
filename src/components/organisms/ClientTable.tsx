@@ -187,10 +187,10 @@ export function ClientTable({
                           e.stopPropagation();
                           onViewDocuments?.(client);
                         }}
-                        className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 text-gray-800 bg-white border-2 border-gray-400 shadow-lg relative z-20 transition-all duration-200"
+                        className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 text-gray-900 bg-white border-2 border-gray-600 shadow-lg relative z-50 transition-all duration-200 flex items-center justify-center"
                         title="View Documents"
                       >
-                        <Eye className="w-4 h-4 stroke-2" />
+                        <Eye className="w-4 h-4 stroke-[3] relative z-50 text-gray-900" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -199,10 +199,10 @@ export function ClientTable({
                           e.stopPropagation();
                           onEditClient?.(client);
                         }}
-                        className="h-8 w-8 p-0 hover:bg-green-50 hover:text-green-600 text-gray-800 bg-white border-2 border-gray-400 shadow-lg relative z-20 transition-all duration-200"
+                        className="h-8 w-8 p-0 hover:bg-green-50 hover:text-green-600 text-gray-900 bg-white border-2 border-gray-600 shadow-lg relative z-50 transition-all duration-200 flex items-center justify-center"
                         title="Edit Client"
                       >
-                        <Edit className="w-4 h-4 stroke-2" />
+                        <Edit className="w-4 h-4 stroke-[3] relative z-50 text-gray-900" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -211,10 +211,10 @@ export function ClientTable({
                           e.stopPropagation();
                           onSendEmail?.(client);
                         }}
-                        className="h-8 w-8 p-0 hover:bg-purple-50 hover:text-purple-600 text-gray-800 bg-white border-2 border-gray-400 shadow-lg relative z-20 transition-all duration-200"
+                        className="h-8 w-8 p-0 hover:bg-purple-50 hover:text-purple-600 text-gray-900 bg-white border-2 border-gray-600 shadow-lg relative z-50 transition-all duration-200 flex items-center justify-center"
                         title="Send Email"
                       >
-                        <Send className="w-4 h-4 stroke-2" />
+                        <Send className="w-4 h-4 stroke-[3] relative z-50 text-gray-900" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -223,10 +223,10 @@ export function ClientTable({
                           e.stopPropagation();
                           onDeleteClient?.(client);
                         }}
-                        className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 text-gray-800 bg-white border-2 border-gray-400 shadow-lg relative z-20 transition-all duration-200"
+                        className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 text-gray-900 bg-white border-2 border-gray-600 shadow-lg relative z-50 transition-all duration-200 flex items-center justify-center"
                         title="Delete Client"
                       >
-                        <Trash2 className="w-4 h-4 stroke-2" />
+                        <Trash2 className="w-4 h-4 stroke-[3] relative z-50 text-gray-900" />
                       </Button>
                     </div>
                   </td>
