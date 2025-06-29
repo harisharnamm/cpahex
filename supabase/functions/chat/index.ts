@@ -13,11 +13,6 @@ interface ChatRequest {
   context_documents?: string[]
 }
 
-interface OpenAIMessage {
-  role: 'user' | 'assistant'
-  content: string
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -55,37 +50,8 @@ serve(async (req) => {
 
     console.log('🔄 Processing chat request for user:', user.id)
 
-    // Get recent chat history for context (last 10 messages)
-    const { data: recentMessages, error: historyError } = await supabaseClient
-      .from('chat_messages')
-      .select('role, content')
-      .eq('user_id', user.id)
-      .eq('client_id', client_id || null)
-      .order('created_at', { ascending: false })
-      .limit(10)
-
-    if (historyError) {
-      console.error('❌ Error fetching chat history:', historyError)
-    }
-
-    // Build conversation history for OpenAI
-    const conversationHistory: OpenAIMessage[] = []
-    
-    // Add system message with context
-    let systemMessage = `You are an AI tax assistant helping CPAs and tax professionals. You provide expert advice on tax deductions, compliance, document analysis, and tax strategies.
-
-Key capabilities:
-- Analyze tax documents and identify deductions
-- Provide tax compliance guidance
-- Answer questions about tax law and regulations
-- Help with tax planning strategies
-- Assist with IRS notice interpretation
-
-Guidelines:
-- Always provide accurate, up-to-date tax information
-- When uncertain, recommend consulting current tax codes or a tax professional
-- Be helpful but conservative with tax advice
-- Focus on legitimate deductions and compliance`
+    // Build context message for the assistant
+    let contextMessage = message.trim()
 
     // Add client context if available
     if (client_id) {
@@ -96,10 +62,12 @@ Guidelines:
         .single()
 
       if (client) {
-        systemMessage += `\n\nCurrent client context:
+        contextMessage = `Client Context:
 - Client: ${client.name}
 - Entity Type: ${client.entity_type}
-- Tax Year: ${client.tax_year}`
+- Tax Year: ${client.tax_year}
+
+User Question: ${message.trim()}`
       }
     }
 
@@ -112,66 +80,138 @@ Guidelines:
         .limit(5) // Limit to avoid token overflow
 
       if (documents && documents.length > 0) {
-        systemMessage += `\n\nRelevant documents:`
+        let docContext = '\n\nRelevant Documents:'
         documents.forEach(doc => {
-          systemMessage += `\n- ${doc.original_filename} (${doc.document_type})`
+          docContext += `\n- ${doc.original_filename} (${doc.document_type})`
           if (doc.ai_summary) {
-            systemMessage += `: ${doc.ai_summary.substring(0, 200)}...`
+            docContext += `: ${doc.ai_summary.substring(0, 200)}...`
           }
         })
+        contextMessage += docContext
       }
     }
 
-    // Add recent conversation history (reverse order for chronological)
-    if (recentMessages && recentMessages.length > 0) {
-      recentMessages.reverse().forEach(msg => {
-        conversationHistory.push({
-          role: msg.role as 'user' | 'assistant',
-          content: msg.content
-        })
-      })
-    }
+    console.log('🤖 Creating thread and calling OpenAI Assistant...')
 
-    // Add current user message
-    conversationHistory.push({
-      role: 'user',
-      content: message
-    })
-
-    console.log('🤖 Calling OpenAI Assistant...')
-
-    // Call OpenAI API
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Step 1: Create a thread
+    const threadResponse = await fetch('https://api.openai.com/v1/threads', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
         'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v2',
+      },
+      body: JSON.stringify({}),
+    })
+
+    if (!threadResponse.ok) {
+      const errorData = await threadResponse.text()
+      console.error('❌ OpenAI Thread creation error:', errorData)
+      throw new Error(`OpenAI Thread API error: ${threadResponse.status}`)
+    }
+
+    const threadData = await threadResponse.json()
+    const threadId = threadData.id
+
+    // Step 2: Add message to thread
+    const messageResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v2',
       },
       body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [
-          { role: 'system', content: systemMessage },
-          ...conversationHistory
-        ],
-        max_tokens: 1000,
-        temperature: 0.7,
+        role: 'user',
+        content: contextMessage,
       }),
     })
 
-    if (!openaiResponse.ok) {
-      const errorData = await openaiResponse.text()
-      console.error('❌ OpenAI API error:', errorData)
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`)
+    if (!messageResponse.ok) {
+      const errorData = await messageResponse.text()
+      console.error('❌ OpenAI Message creation error:', errorData)
+      throw new Error(`OpenAI Message API error: ${messageResponse.status}`)
     }
 
-    const openaiData = await openaiResponse.json()
-    const assistantMessage = openaiData.choices[0]?.message?.content
+    // Step 3: Run the assistant
+    const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v2',
+      },
+      body: JSON.stringify({
+        assistant_id: 'asst_HqIS3BqKjEPdNf27JbURKFMa',
+      }),
+    })
+
+    if (!runResponse.ok) {
+      const errorData = await runResponse.text()
+      console.error('❌ OpenAI Run creation error:', errorData)
+      throw new Error(`OpenAI Run API error: ${runResponse.status}`)
+    }
+
+    const runData = await runResponse.json()
+    const runId = runData.id
+
+    // Step 4: Poll for completion
+    let runStatus = 'queued'
+    let attempts = 0
+    const maxAttempts = 30 // 30 seconds timeout
+
+    while (runStatus !== 'completed' && runStatus !== 'failed' && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second
+      attempts++
+
+      const statusResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
+        headers: {
+          'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+          'OpenAI-Beta': 'assistants=v2',
+        },
+      })
+
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json()
+        runStatus = statusData.status
+        console.log(`🔄 Run status: ${runStatus} (attempt ${attempts})`)
+      }
+    }
+
+    if (runStatus !== 'completed') {
+      throw new Error(`Assistant run failed or timed out. Status: ${runStatus}`)
+    }
+
+    // Step 5: Get the assistant's response
+    const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'OpenAI-Beta': 'assistants=v2',
+      },
+    })
+
+    if (!messagesResponse.ok) {
+      const errorData = await messagesResponse.text()
+      console.error('❌ OpenAI Messages retrieval error:', errorData)
+      throw new Error(`OpenAI Messages API error: ${messagesResponse.status}`)
+    }
+
+    const messagesData = await messagesResponse.json()
+    const assistantMessages = messagesData.data.filter((msg: any) => msg.role === 'assistant')
+    
+    if (assistantMessages.length === 0) {
+      throw new Error('No response from assistant')
+    }
+
+    // Get the latest assistant message
+    const latestMessage = assistantMessages[0]
+    const assistantMessage = latestMessage.content[0]?.text?.value
 
     if (!assistantMessage) {
-      throw new Error('No response from OpenAI')
+      throw new Error('No text content in assistant response')
     }
 
-    console.log('✅ Got response from OpenAI')
+    console.log('✅ Got response from OpenAI Assistant')
 
     // Save user message to database
     const { error: userMessageError } = await supabaseClient
@@ -182,8 +222,7 @@ Guidelines:
         role: 'user',
         content: message,
         context_documents: context_documents || null,
-        ai_model: 'gpt-4',
-        tokens_used: openaiData.usage?.total_tokens || null,
+        ai_model: 'asst_HqIS3BqKjEPdNf27JbURKFMa',
       })
 
     if (userMessageError) {
@@ -199,8 +238,7 @@ Guidelines:
         role: 'assistant',
         content: assistantMessage,
         context_documents: context_documents || null,
-        ai_model: 'gpt-4',
-        tokens_used: openaiData.usage?.total_tokens || null,
+        ai_model: 'asst_HqIS3BqKjEPdNf27JbURKFMa',
       })
 
     if (assistantMessageError) {
@@ -213,7 +251,8 @@ Guidelines:
     return new Response(
       JSON.stringify({
         message: assistantMessage,
-        tokens_used: openaiData.usage?.total_tokens || 0,
+        assistant_id: 'asst_HqIS3BqKjEPdNf27JbURKFMa',
+        thread_id: threadId,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
