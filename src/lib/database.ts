@@ -160,9 +160,12 @@ export const clientsApi = {
   },
 
   async create(client: Omit<Client, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Client> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+    
     const { data, error } = await supabase
       .from('clients')
-      .insert([client])
+      .insert([{ ...client, user_id: user.id }])
       .select()
       .single();
     

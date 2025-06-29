@@ -63,15 +63,19 @@ export function useClients() {
     name: string;
     email: string;
     phone?: string;
+    address?: string;
     taxYear: number;
+    entityType: string;
+    requiredDocuments: string[];
   }) => {
     try {
       const newClient = await clientsApi.create({
         name: clientData.name,
         email: clientData.email,
         phone: clientData.phone,
+        address: clientData.address,
         tax_year: clientData.taxYear,
-        entity_type: 'individual',
+        entity_type: clientData.entityType as Client['entity_type'],
         status: 'active'
       });
       
