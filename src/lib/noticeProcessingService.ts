@@ -76,6 +76,7 @@ export class NoticeProcessingService {
         .eq('id', documentId)
         .single();
 
+      return {
         isProcessing: !document?.is_processed,
         progress: document?.is_processed ? 100 : 0,
         status: document?.is_processed ? 'completed' : 'processing'
