@@ -3,20 +3,46 @@ import { useNavigate } from 'react-router-dom';
 import { useClients } from '../hooks/useClients';
 import { TopBar } from '../components/organisms/TopBar';
 import { ClientTable } from '../components/organisms/ClientTable';
+import { ClientDialog } from '../components/ui/client-dialog';
 import { Input } from '../components/atoms/Input';
 import { Button } from '../components/atoms/Button';
-import { Search, Filter, Users as UsersIcon } from 'lucide-react';
+import { Search, Filter, Users as UsersIcon, Plus } from 'lucide-react';
 import { ClientWithDocuments } from '../hooks/useClients';
 
 export function Clients() {
   const navigate = useNavigate();
-  const { clients, loading, error } = useClients();
+  const { clients, loading, error, addClient } = useClients();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showClientDialog, setShowClientDialog] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   const handleClientClick = (client: ClientWithDocuments) => {
     navigate(`/clients/${client.id}`);
   };
 
+  const handleCreateClient = async (clientData: {
+    name: string;
+    email: string;
+    phone?: string;
+    address?: string;
+    taxYear: number;
+    entityType: string;
+  }) => {
+    setIsCreating(true);
+    try {
+      await addClient({
+        name: clientData.name,
+        email: clientData.email,
+        phone: clientData.phone,
+        taxYear: clientData.taxYear
+      });
+    } catch (error) {
+      console.error('Failed to create client:', error);
+      throw error; // Re-throw to let the dialog handle the error
+    } finally {
+      setIsCreating(false);
+    }
+  };
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     client.email.toLowerCase().includes(searchQuery.toLowerCase())
@@ -32,7 +58,11 @@ export function Clients() {
             <h1 className="text-2xl font-bold text-text-primary">Client Management</h1>
             <p className="text-text-secondary mt-1">Manage your client database and tax information</p>
           </div>
-          <Button className="bg-primary text-gray-900 hover:bg-primary-hover">
+          <Button 
+            icon={Plus}
+            onClick={() => setShowClientDialog(true)}
+            className="bg-primary text-gray-900 hover:bg-primary-hover shadow-medium"
+          >
             Add New Client
           </Button>
         </div>
@@ -110,6 +140,14 @@ export function Clients() {
         ) : (
           <ClientTable clients={filteredClients} onClientClick={handleClientClick} />
         )}
+
+        {/* Client Creation Dialog */}
+        <ClientDialog
+          isOpen={showClientDialog}
+          onClose={() => setShowClientDialog(false)}
+          onSubmit={handleCreateClient}
+          loading={isCreating}
+        />
       </div>
     </div>
   );
