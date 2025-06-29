@@ -68,8 +68,8 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
               <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900" />
             </div>
             <div>
-              <span className="text-lg sm:text-xl font-semibold text-text-primary tracking-tight">CPA Hex</span>
-              <p className="text-xs text-text-tertiary font-medium">AI Dashboard</p>
+              <span className="text-lg sm:text-xl font-semibold text-text-primary tracking-tight">CPA OS</span>
+              <p className="text-xs text-text-tertiary font-medium">by Nurahex</p>
             </div>
           </div>
         </div>
