@@ -246,27 +246,29 @@ export function Tasks() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated">
-        <TopBar title="Tasks" />
-        <div className="max-w-content mx-auto px-8 py-8">
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-text-secondary">Loading tasks...</p>
+      <>
+        <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated">
+          <TopBar title="Tasks" />
+          <div className="max-w-content mx-auto px-8 py-8">
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-4 text-text-secondary">Loading tasks...</p>
+            </div>
           </div>
         </div>
-      </div>
-      
-      {/* Task Detail Dialog */}
-      <TaskDetailDialog
-        isOpen={!!selectedTask}
-        onClose={() => setSelectedTask(null)}
-        task={selectedTask}
-        clients={clients}
-        onMarkComplete={handleMarkComplete}
-        onMarkPending={handleMarkPending}
-        onMarkInProgress={handleMarkInProgress}
-        onDelete={handleDeleteTask}
-      />
+        
+        {/* Task Detail Dialog */}
+        <TaskDetailDialog
+          isOpen={!!selectedTask}
+          onClose={() => setSelectedTask(null)}
+          task={selectedTask}
+          clients={clients}
+          onMarkComplete={handleMarkComplete}
+          onMarkPending={handleMarkPending}
+          onMarkInProgress={handleMarkInProgress}
+          onDelete={handleDeleteTask}
+        />
+      </>
     );
   }
 
