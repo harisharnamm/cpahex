@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TopBar } from '../components/organisms/TopBar';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
+import { WebinarRegistrationDialog } from '../components/ui/webinar-registration-dialog';
 import { StatCard } from '../components/atoms/StatCard';
 import { RegulatoryUpdateDialog } from '../components/ui/regulatory-update-dialog';
 import { 

@@ -28,13 +28,15 @@ interface RegulatoryUpdateDialogProps {
     fullContent?: string;
   } | null;
   suggestedWebinars: RegulationWebinar[];
+  onRegisterWebinar?: (webinar: RegulationWebinar) => void;
 }
 
 export function RegulatoryUpdateDialog({
   isOpen,
   onClose,
   update,
-  suggestedWebinars
+  suggestedWebinars,
+  onRegisterWebinar
 }: RegulatoryUpdateDialogProps) {
   if (!isOpen || !update) return null;
 
@@ -239,14 +241,7 @@ All CPAs must be compliant with these new regulations by ${formatDate(update.dat
                       <Button 
                         size="sm" 
                         className="bg-primary text-gray-900 hover:bg-primary-hover"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // This will be handled by the parent component
-                          const event = new CustomEvent('register-webinar', { 
-                            detail: { webinar } 
-                          });
-                          window.dispatchEvent(event);
-                        }}
+                        onClick={() => onRegisterWebinar?.(webinar)}
                       >
                         Register
                       </Button>
