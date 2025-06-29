@@ -270,12 +270,9 @@ export function Dashboard() {
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  onClick={() => {
-                    console.log('🔄 Refreshing tasks manually');
-                    refreshTasks();
-                  }}
+                  onClick={() => navigate('/tasks')}
                 >
-                  Refresh
+                  View All
                 </Button>
               </div>
               <div className="space-y-4">

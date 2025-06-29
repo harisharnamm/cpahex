@@ -5,6 +5,7 @@ import {
   LayoutDashboard, 
   Users, 
   FileText, 
+  CheckSquare,
   AlertTriangle, 
   MessageSquare, 
   Settings,
@@ -78,6 +79,9 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
           </NavigationItem>
           <NavigationItem to="/clients" icon={Users}>
             Clients
+          </NavigationItem>
+          <NavigationItem to="/tasks" icon={CheckSquare}>
+            Tasks
           </NavigationItem>
           <NavigationItem to="/1099-hub" icon={FileText}>
             1099 Hub

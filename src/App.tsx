@@ -8,6 +8,7 @@ import { Sidebar } from './components/organisms/Sidebar';
 import { Dashboard } from './pages/Dashboard';
 import { Clients } from './pages/Clients';
 import { ClientDetail } from './pages/ClientDetail';
+import { Tasks } from './pages/Tasks';
 import { Hub1099 } from './pages/Hub1099';
 import { IRSNotices } from './pages/IRSNotices';
 import { DeductionChat } from './pages/DeductionChat';
@@ -54,6 +55,13 @@ function AppContent() {
         <ProtectedRoute>
           <AppLayout>
             <ClientDetail />
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/tasks" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <Tasks />
           </AppLayout>
         </ProtectedRoute>
       } />
