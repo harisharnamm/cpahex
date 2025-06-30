@@ -19,7 +19,7 @@ export function ClientDetail() {
   const { id } = useParams();
   const [selectedTab, setSelectedTab] = useState(0);
   const { clients, loading: clientsLoading, updateClient } = useClients();
-  const { isSearchOpen, closeSearch } = useSearch();
+  const { isSearchOpen, closeSearch, openSearch } = useSearch();
   const [searchQuery, setSearchQuery] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
