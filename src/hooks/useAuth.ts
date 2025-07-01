@@ -161,10 +161,8 @@ export function useAuth() {
   const signIn = async (email: string, password: string) => {
     console.log('🔄 Attempting sign in for:', email);
     
-    // Don't set loading here - let the component handle it
-      // Clear any existing errors
-      setAuthState(prev => ({ ...prev, loading: true }));
-      
+    // Set loading state
+    setAuthState(prev => ({ ...prev, loading: true }));
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -182,11 +180,18 @@ export function useAuth() {
       if (data?.user) {
         console.log('✅ Sign in successful for user:', data.user.id);
         // Set flag for just logged in to trigger preloader
-        // Set with a slight delay to ensure it's picked up by the preloader
-        setTimeout(() => {
-          sessionStorage.setItem('justLoggedIn', 'true');
-          window.dispatchEvent(new Event('storage'));
-        }, 10);
+        sessionStorage.setItem('justLoggedIn', 'true');
+        
+        // Store auth in localStorage for persistence across tabs/browsers
+        try {
+          localStorage.setItem('supabase.auth.token', JSON.stringify({
+            currentSession: data.session,
+            expiresAt: Math.floor(Date.now() / 1000) + (data.session?.expires_in || 3600)
+          }));
+        } catch (storageError) {
+          console.warn('⚠️ Could not store auth in localStorage:', storageError);
+        }
+        
         // Auth state change will handle the rest
         return { data, error: null };
       } else {

@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { User, Session } from '@supabase/supabase-js';
+import { User, Session, AuthError } from '@supabase/supabase-js';
 import { Profile } from '../lib/supabase';
 
 interface AuthContextType {
@@ -12,10 +12,10 @@ interface AuthContextType {
     firstName: string;
     lastName: string;
     company: string;
-  }) => Promise<any>;
-  signIn: (email: string, password: string) => Promise<any>;
-  signOut: () => Promise<any>;
-  updateProfile: (updates: Partial<Profile>) => Promise<any>;
+  }) => Promise<{ data: any; error: AuthError | null }>;
+  signIn: (email: string, password: string) => Promise<{ data: any; error: AuthError | null }>;
+  signOut: () => Promise<{ error: AuthError | null }>;
+  updateProfile: (updates: Partial<Profile>) => Promise<{ data: Profile | null; error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

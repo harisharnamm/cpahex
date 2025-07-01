@@ -3,10 +3,15 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// Determine the site URL for auth redirects
+const siteUrl = import.meta.env.VITE_SITE_URL || 
+  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173');
+
 console.log('Environment check:', {
   url: supabaseUrl,
   key: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 10)}...` : 'Missing',
-  nodeEnv: import.meta.env.MODE
+  nodeEnv: import.meta.env.MODE,
+  siteUrl
 });
 
 if (!supabaseUrl || !supabaseAnonKey) {
@@ -21,8 +26,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce'
+    detectSessionInUrl: true, 
+    flowType: 'pkce',
+    // Add site URL for auth redirects
+    site: siteUrl
   },
   global: {
     headers: {
@@ -35,7 +42,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 console.log('🔗 Supabase client initialized', {
   url: supabaseUrl,
   hasKey: !!supabaseAnonKey,
-  keyPrefix: supabaseAnonKey?.substring(0, 20) + '...'
+  keyPrefix: supabaseAnonKey?.substring(0, 20) + '...',
+  siteUrl
 });
 
 // Enhanced connection testing with better recovery options

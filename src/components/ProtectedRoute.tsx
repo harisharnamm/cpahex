@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../contexts/AuthContext';
 
 interface ProtectedRouteProps {
@@ -9,6 +9,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuthContext();
+  const location = useLocation();
   const [timeoutReached, setTimeoutReached] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
 
@@ -55,13 +56,13 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   // If timeout reached, connection error, and still loading, redirect to sign in
   if ((timeoutReached || connectionError) && loading) {
     console.log('❌ Auth timeout reached, redirecting to sign in');
-    return <Navigate to="/signin" replace />;
+    return <Navigate to="/signin" state={{ from: location.pathname }} replace />;
   }
 
   // No user after loading is complete
   if (!user) {
     console.log('❌ No user found, redirecting to sign in');
-    return <Navigate to="/signin" replace />;
+    return <Navigate to="/signin" state={{ from: location.pathname }} replace />;
   }
 
   console.log('✅ User authenticated, rendering protected content');

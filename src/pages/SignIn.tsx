@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Sparkles, Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useAuthContext } from '../contexts/AuthContext';
 import { usePreloader } from '../contexts/PreloaderContext';
@@ -8,6 +8,7 @@ import { Button } from '../components/atoms/Button';
 
 export function SignIn() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signIn, user, loading } = useAuthContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -47,20 +48,24 @@ export function SignIn() {
   // Redirect if user is already authenticated
   useEffect(() => {
     if (user && !loading) {
+      // Redirect to the page they were trying to access, or dashboard
+      const from = location.state?.from || '/';
       console.log('✅ User already authenticated, redirecting to dashboard');
-      navigate('/', { replace: true });
+      navigate(from, { replace: true });
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, location]);
 
   // Handle forced navigation when user exists despite connection issues
   useEffect(() => {
     if (user) {
+      // Redirect to the page they were trying to access, or dashboard
+      const from = location.state?.from || '/';
       console.log('✅ User exists in SignIn, forcing navigation to dashboard');
       // Small delay to allow state updates to complete
-      const navTimer = setTimeout(() => navigate('/', { replace: true }), 100);
+      const navTimer = setTimeout(() => navigate(from, { replace: true }), 100);
       return () => clearTimeout(navTimer);
     }
-  }, [user, navigate]);
+  }, [user, navigate, location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

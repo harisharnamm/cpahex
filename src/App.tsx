@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
 import { SearchProvider } from './contexts/SearchContext';
@@ -133,11 +133,11 @@ function App() {
     <AuthProvider>
       <SearchProvider>
         <PreloaderProvider>
-          <Router>
+          <BrowserRouter>
             <SidebarProvider>
               <AppContent />
             </SidebarProvider>
-          </Router>
+          </BrowserRouter>
         </PreloaderProvider>
       </SearchProvider>
     </AuthProvider>
