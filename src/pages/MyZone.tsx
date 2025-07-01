@@ -29,8 +29,8 @@ export function MyZone() {
   const [selectedYear, setSelectedYear] = useState('2025');
   const [searchQuery, setSearchQuery] = useState('');
   const { isSearchOpen, closeSearch } = useSearch();
-  const [selectedUpdate, setSelectedUpdate] = useState<any>(null);
-  const [selectedWebinar, setSelectedWebinar] = useState<any>(null);
+  const [selectedUpdate, setSelectedUpdate] = useState<any | null>(null);
+  const [selectedWebinar, setSelectedWebinar] = useState<any | null>(null);
   
 
   // Listen for register-webinar events from the regulatory update dialog
@@ -464,7 +464,8 @@ export function MyZone() {
                       
                       {!webinar.registered && (
                         <Button 
-                          size="sm" 
+                          size="sm"
+                          onClick={() => setSelectedWebinar(webinar)}
                           className="bg-primary text-gray-900 hover:bg-primary-hover"
                         >
                           Register Now
@@ -550,14 +551,41 @@ export function MyZone() {
       </div>
       
       {/* Regulatory Update Detail Dialog */}
-      <RegulatoryUpdateDialog
-        isOpen={!!selectedUpdate}
-        onClose={() => setSelectedUpdate(null)}
-        update={selectedUpdate}
-        suggestedWebinars={upcomingWebinars.filter(webinar => 
-          webinar.creditType === selectedUpdate?.creditType
-        )}
-      />
+      {selectedUpdate && (
+        <RegulatoryUpdateDialog
+          isOpen={!!selectedUpdate}
+          onClose={() => setSelectedUpdate(null)}
+          update={selectedUpdate}
+          suggestedWebinars={upcomingWebinars.filter(webinar => 
+            webinar.creditType === selectedUpdate?.creditType
+          )}
+          onRegisterWebinar={(webinar) => setSelectedWebinar(webinar)}
+        />
+      )}
+      
+      {/* Webinar Registration Dialog */}
+      {selectedWebinar && (
+        <WebinarRegistrationDialog
+          isOpen={!!selectedWebinar}
+          onClose={() => setSelectedWebinar(null)}
+          webinar={selectedWebinar}
+          onRegister={async (webinarId, formData) => {
+            // Simulate registration process
+            console.log('Registering for webinar:', webinarId, formData);
+            
+            // Update the webinar in the state to show as registered
+            const updatedWebinars = upcomingWebinars.map(w => 
+              w.id === webinarId ? { ...w, registered: true } : w
+            );
+            
+            // Wait for "registration" to complete
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Return success
+            return Promise.resolve();
+          }}
+        />
+      )}
     </div>
   );
 }
