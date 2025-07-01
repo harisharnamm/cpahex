@@ -29,7 +29,6 @@ interface RegulatoryUpdateDialogProps {
   } | null;
   suggestedWebinars: RegulationWebinar[];
   onRegisterWebinar?: (webinar: RegulationWebinar) => void;
-  onRegisterWebinar?: (webinar: RegulationWebinar) => void;
 }
 
 export function RegulatoryUpdateDialog({
@@ -37,7 +36,6 @@ export function RegulatoryUpdateDialog({
   onClose,
   update,
   suggestedWebinars,
-  onRegisterWebinar
   onRegisterWebinar
 }: RegulatoryUpdateDialogProps) {
   if (!isOpen || !update) return null;
@@ -242,16 +240,6 @@ All CPAs must be compliant with these new regulations by ${formatDate(update.dat
                     ) : (
                       <Button 
                         size="sm"
-                        onClick={() => {
-                          if (onRegisterWebinar) {
-                            onRegisterWebinar(webinar);
-                          } else {
-                            // Dispatch event for backward compatibility
-                            window.dispatchEvent(new CustomEvent('register-webinar', { 
-                              detail: { webinar } 
-                            }));
-                          }
-                        }}
                         className="bg-primary text-gray-900 hover:bg-primary-hover"
                         onClick={() => onRegisterWebinar?.(webinar)}
                       >
