@@ -114,7 +114,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
         <div className="px-4 sm:px-6 mt-2 mb-4">
           <button
             onClick={toggleTheme}
-            className="w-full flex items-center justify-between p-3 rounded-xl bg-surface-elevated dark:bg-gray-800 border border-border-subtle dark:border-gray-700 hover:shadow-soft transition-all duration-200 group"
+            className="w-full flex items-center justify-between p-3 rounded-xl bg-surface-elevated dark:bg-black border border-border-subtle dark:border-gray-700 hover:shadow-soft transition-all duration-200 group"
           >
             <div className="flex items-center space-x-3">
               {theme === 'dark' ? (
@@ -126,7 +126,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                 {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
               </span>
             </div>
-            <div className="w-8 h-5 bg-surface dark:bg-gray-700 rounded-full flex items-center p-0.5 transition-all duration-300">
+            <div className="w-8 h-5 bg-surface dark:bg-gray-900 rounded-full flex items-center p-0.5 transition-all duration-300">
               <div className={`w-4 h-4 rounded-full bg-primary transform transition-transform duration-300 ${
                 theme === 'dark' ? 'translate-x-3' : 'translate-x-0'
               }`}></div>
