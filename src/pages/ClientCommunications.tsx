@@ -6,6 +6,10 @@ import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
 import { Input } from '../components/atoms/Input';
 import { DocumentRequestDialog } from '../components/ui/document-request-dialog';
+import { EmptyState } from '../components/ui/empty-state';
+import { Tooltip } from '../components/ui/tooltip';
+import { useToast } from '../contexts/ToastContext';
+import { Skeleton, SkeletonText } from '../components/ui/skeleton';
 import { useClients } from '../hooks/useClients';
 import { 
   Search, 
@@ -48,10 +52,12 @@ interface DocumentRequest {
 export function ClientCommunications() {
   const { isSearchOpen, closeSearch, openSearch } = useSearch();
   const { clients } = useClients();
+  const toast = useToast();
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<DocumentRequest | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isLoading, setIsLoading] = useState(true);
 
   // Mock document requests data
   const [documentRequests, setDocumentRequests] = useState<DocumentRequest[]>([
@@ -120,6 +126,15 @@ export function ClientCommunications() {
       ]
     }
   ]);
+
+  // Simulate loading state
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // Get client name from client ID
   const getClientName = (clientId: string) => {
@@ -213,9 +228,9 @@ export function ClientCommunications() {
     
     // If sendEmail is true, we would send an email to the client
     if (requestData.sendEmail) {
-      // Simulate email sending
+      // Show toast notification instead of alert
       console.log('Sending email to client:', getClientName(requestData.clientId));
-      alert(`Email sent to ${getClientName(requestData.clientId)} with document request.`);
+      toast.success('Email Sent', `Document request email sent to ${getClientName(requestData.clientId)}`);
     }
     
     return Promise.resolve();
@@ -235,7 +250,7 @@ export function ClientCommunications() {
     
     const request = documentRequests.find(req => req.id === requestId);
     if (request) {
-      alert(`Reminder sent to ${getClientName(request.clientId)} for "${request.title}".`);
+      toast.info('Reminder Sent', `Reminder email sent to ${getClientName(request.clientId)} for "${request.title}"`);
     }
   };
 
@@ -243,6 +258,7 @@ export function ClientCommunications() {
   const handleDeleteRequest = (requestId: string) => {
     if (window.confirm('Are you sure you want to delete this document request?')) {
       setDocumentRequests(prev => prev.filter(req => req.id !== requestId));
+      toast.success('Request Deleted', 'Document request has been deleted successfully');
     }
   };
 
@@ -272,7 +288,7 @@ export function ClientCommunications() {
       <div className="max-w-content mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-          <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
+          {isLoading ? <Skeleton className="h-24" /> : <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl">
                 <FileText className="w-5 h-5 text-blue-600" />
@@ -282,8 +298,8 @@ export function ClientCommunications() {
                 <p className="text-2xl font-semibold text-text-primary">{stats.total}</p>
               </div>
             </div>
-          </div>
-          
+          </div>}
+
           <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-br from-amber-100 to-amber-50 rounded-xl">
@@ -334,7 +350,7 @@ export function ClientCommunications() {
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-6 mb-8 shadow-soft">
+        {isLoading ? <Skeleton className="h-20 mb-8" /> : <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-6 mb-8 shadow-soft">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             <div className="lg:col-span-3">
               <div className="relative">
@@ -360,10 +376,10 @@ export function ClientCommunications() {
               <option value="overdue">Overdue</option>
             </select>
           </div>
-        </div>
+        </div>}
 
         {/* Document Requests List */}
-        <div className="bg-surface-elevated rounded-2xl border border-border-subtle shadow-soft overflow-hidden mb-8">
+        {isLoading ? <Skeleton className="h-96 mb-8" /> : <div className="bg-surface-elevated rounded-2xl border border-border-subtle shadow-soft overflow-hidden mb-8">
           <div className="p-6 border-b border-border-subtle">
             <h2 className="text-xl font-semibold text-text-primary">Document Requests</h2>
           </div>
@@ -381,7 +397,9 @@ export function ClientCommunications() {
                       <p className="text-text-secondary text-sm mb-2">{request.description}</p>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-text-tertiary">
                         <span className="flex items-center">
-                          <User className="w-4 h-4 mr-1" />
+                          <Tooltip content="Client associated with this request">
+                            <User className="w-4 h-4 mr-1" />
+                          </Tooltip>
                           {getClientName(request.clientId)}
                         </span>
                         <span className="flex items-center">
@@ -389,7 +407,9 @@ export function ClientCommunications() {
                           Due: {formatDate(request.dueDate)} ({getDaysUntilDue(request.dueDate)})
                         </span>
                         <span className="flex items-center">
-                          <Clock className="w-4 h-4 mr-1" />
+                          <Tooltip content="Date when this request was created">
+                            <Clock className="w-4 h-4 mr-1" />
+                          </Tooltip>
                           Created: {formatDate(request.createdAt)}
                         </span>
                         {request.lastReminder && (
@@ -404,6 +424,8 @@ export function ClientCommunications() {
                     <div className="flex items-center space-x-2">
                       <Button
                         variant="secondary"
+                        title="Send a reminder email to the client"
+                        aria-label="Send reminder email"
                         size="sm"
                         icon={Send}
                         onClick={() => handleSendReminder(request.id)}
@@ -413,6 +435,8 @@ export function ClientCommunications() {
                       </Button>
                       <Button
                         variant="secondary"
+                        title="View detailed information about this request"
+                        aria-label="View request details"
                         size="sm"
                         icon={Eye}
                         onClick={() => setSelectedRequest(request)}
@@ -421,6 +445,8 @@ export function ClientCommunications() {
                       </Button>
                       <Button
                         variant="ghost"
+                        title="Delete this document request"
+                        aria-label="Delete request"
                         size="sm"
                         icon={Trash2}
                         onClick={() => handleDeleteRequest(request.id)}
@@ -477,26 +503,20 @@ export function ClientCommunications() {
               ))}
             </div>
           ) : (
-            <div className="p-12 text-center">
-              <FileText className="w-16 h-16 text-text-tertiary mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-text-primary mb-2">No Document Requests</h3>
-              <p className="text-text-tertiary mb-6">
-                {searchQuery || statusFilter !== 'all' 
-                  ? 'No requests match your search criteria. Try adjusting your filters.' 
-                  : 'Create your first document request to start collecting files from clients.'}
-              </p>
-              {!searchQuery && statusFilter === 'all' && (
-                <Button 
-                  onClick={() => setShowRequestDialog(true)} 
-                  icon={Plus}
-                  className="bg-primary text-gray-900 hover:bg-primary-hover"
-                >
-                  Create First Request
-                </Button>
-              )}
-            </div>
+            <EmptyState
+              icon={FileText}
+              title="No Document Requests"
+              description={searchQuery || statusFilter !== 'all' 
+                ? 'No requests match your search criteria. Try adjusting your filters.' 
+                : 'Create your first document request to start collecting files from clients.'}
+              action={!searchQuery && statusFilter === 'all' ? {
+                label: "Create First Request",
+                onClick: () => setShowRequestDialog(true),
+                icon: Plus
+              } : undefined}
+            />
           )}
-        </div>
+        </div>}
 
         {/* Communication Features Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -514,6 +534,8 @@ export function ClientCommunications() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
+                      <Tooltip content="Email notification sent to client">
+                      </Tooltip>
                       <h4 className="font-medium text-text-primary">Document Request Sent</h4>
                       <span className="text-xs text-text-tertiary">2 hours ago</span>
                     </div>
@@ -527,6 +549,8 @@ export function ClientCommunications() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
+                      <Tooltip content="Client uploaded requested documents">
+                      </Tooltip>
                       <h4 className="font-medium text-text-primary">Documents Received</h4>
                       <span className="text-xs text-text-tertiary">1 day ago</span>
                     </div>
@@ -540,6 +564,8 @@ export function ClientCommunications() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
+                      <Tooltip content="Client sent a message with a question">
+                      </Tooltip>
                       <h4 className="font-medium text-text-primary">Client Query</h4>
                       <span className="text-xs text-text-tertiary">2 days ago</span>
                     </div>
@@ -569,6 +595,8 @@ export function ClientCommunications() {
                   icon={Plus}
                   onClick={() => setShowRequestDialog(true)}
                 >
+                  <Tooltip content="Create a new document request for a client">
+                  </Tooltip>
                   New Document Request
                 </Button>
                 
@@ -577,6 +605,8 @@ export function ClientCommunications() {
                   className="w-full justify-start hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200" 
                   icon={Mail}
                 >
+                  <Tooltip content="Send reminders to all clients with pending documents">
+                  </Tooltip>
                   Send Bulk Reminders
                 </Button>
                 
@@ -585,6 +615,8 @@ export function ClientCommunications() {
                   className="w-full justify-start hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200" 
                   icon={MessageSquare}
                 >
+                  <Tooltip content="Start a new conversation with a client">
+                  </Tooltip>
                   Create Client Query
                 </Button>
                 
@@ -593,6 +625,8 @@ export function ClientCommunications() {
                   className="w-full justify-start hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200" 
                   icon={Download}
                 >
+                  <Tooltip content="Generate a report of all document requests and their status">
+                  </Tooltip>
                   Download Document Report
                 </Button>
               </div>
@@ -618,7 +652,7 @@ export function ClientCommunications() {
         </div>
 
         {/* Upcoming Deadlines */}
-        <div className="bg-surface-elevated rounded-2xl border border-border-subtle shadow-soft overflow-hidden mb-8">
+        {isLoading ? <Skeleton className="h-96 mb-8" /> : <div className="bg-surface-elevated rounded-2xl border border-border-subtle shadow-soft overflow-hidden mb-8">
           <div className="p-6 border-b border-border-subtle">
             <h2 className="text-xl font-semibold text-text-primary">Upcoming Deadlines</h2>
           </div>
@@ -719,7 +753,7 @@ export function ClientCommunications() {
               </tbody>
             </table>
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Document Request Dialog */}

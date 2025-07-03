@@ -5,6 +5,9 @@ import { CreateTaskDialog } from '../components/ui/create-task-dialog';
 import { GlobalSearch } from '../components/molecules/GlobalSearch';
 import { useSearch } from '../contexts/SearchContext';
 import { TaskDetailDialog } from '../components/ui/task-detail-dialog';
+import { EmptyState } from '../components/ui/empty-state';
+import { useToast } from '../contexts/ToastContext';
+import { Skeleton, SkeletonText } from '../components/ui/skeleton';
 import { TopBar } from '../components/organisms/TopBar';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
@@ -27,6 +30,7 @@ import { Task } from '../hooks/useTasks';
 export function Tasks() {
   const { tasks, loading, updateTaskStatus, deleteTask, createTask } = useTasks();
   const { clients } = useClients();
+  const toast = useToast();
   const { isSearchOpen, closeSearch, openSearch } = useSearch();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -45,7 +49,10 @@ export function Tasks() {
   }) => {
     const result = await createTask(taskData);
     if (!result.success) {
+      toast.error('Failed to create task', result.error);
       throw new Error(result.error);
+    } else {
+      toast.success('Task Created', 'New task has been created successfully');
     }
   };
 
@@ -72,30 +79,38 @@ export function Tasks() {
 
   const handleMarkComplete = async (taskId: string) => {
     const result = await updateTaskStatus(taskId, 'completed');
-    if (!result.success) {
-      alert(`Failed to mark task as complete: ${result.error}`);
+    if (result.success) {
+      toast.success('Task Completed', 'Task has been marked as complete');
+    } else {
+      toast.error('Action Failed', 'Failed to mark task as complete');
     }
   };
 
   const handleMarkPending = async (taskId: string) => {
     const result = await updateTaskStatus(taskId, 'pending');
-    if (!result.success) {
-      alert(`Failed to mark task as pending: ${result.error}`);
+    if (result.success) {
+      toast.success('Task Updated', 'Task has been marked as pending');
+    } else {
+      toast.error('Action Failed', 'Failed to mark task as pending');
     }
   };
 
   const handleMarkInProgress = async (taskId: string) => {
     const result = await updateTaskStatus(taskId, 'in_progress');
-    if (!result.success) {
-      alert(`Failed to mark task as in progress: ${result.error}`);
+    if (result.success) {
+      toast.success('Task Updated', 'Task has been marked as in progress');
+    } else {
+      toast.error('Action Failed', 'Failed to mark task as in progress');
     }
   };
 
   const handleDeleteTask = async (taskId: string, taskTitle: string) => {
     if (window.confirm(`Are you sure you want to delete "${taskTitle}"? This action cannot be undone.`)) {
       const result = await deleteTask(taskId);
-      if (!result.success) {
-        alert(`Failed to delete task: ${result.error}`);
+      if (result.success) {
+        toast.success('Task Deleted', 'Task has been deleted successfully');
+      } else {
+        toast.error('Delete Failed', result.error || 'Failed to delete task');
       }
     }
   };
@@ -253,9 +268,31 @@ export function Tasks() {
         <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated">
           <TopBar title="Tasks" />
           <div className="max-w-content mx-auto px-8 py-8">
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-text-secondary">Loading tasks...</p>
+            <div className="space-y-8">
+              {/* Stats skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-24" />
+                ))}
+              </div>
+              
+              {/* Search and filters skeleton */}
+              <Skeleton className="h-20" />
+              
+              {/* Tasks grid skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="bg-surface-elevated rounded-xl border border-border-subtle p-5 shadow-soft">
+                    <Skeleton className="h-6 w-3/4 mb-3" />
+                    <SkeletonText lines={2} className="mb-4" />
+                    <Skeleton className="h-20 mb-4" />
+                    <div className="flex justify-between">
+                      <Skeleton className="h-4 w-1/3" />
+                      <Skeleton className="h-4 w-1/3" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -399,26 +436,22 @@ export function Tasks() {
             ))}
           </div>
         ) : (
-          <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-12 text-center shadow-soft">
-            <Clock className="w-16 h-16 text-text-tertiary mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-text-primary mb-2">
-              {searchQuery || statusFilter !== 'all' || priorityFilter !== 'all' || typeFilter !== 'all' 
-                ? 'No tasks match your filters' 
-                : 'No tasks yet'
-              }
-            </h3>
-            <p className="text-text-tertiary mb-4">
-              {searchQuery || statusFilter !== 'all' || priorityFilter !== 'all' || typeFilter !== 'all'
-                ? 'Try adjusting your search or filters'
-                : 'Create your first task or upload IRS notices to generate tasks automatically'
-              }
-            </p>
-            {(!searchQuery && statusFilter === 'all' && priorityFilter === 'all' && typeFilter === 'all') && (
-              <Button onClick={() => setShowCreateDialog(true)} icon={Plus}>
-                Create First Task
-              </Button>
-            )}
-          </div>
+          <EmptyState
+            icon={Clock}
+            title={searchQuery || statusFilter !== 'all' || priorityFilter !== 'all' || typeFilter !== 'all' 
+              ? 'No tasks match your filters' 
+              : 'No tasks yet'
+            }
+            description={searchQuery || statusFilter !== 'all' || priorityFilter !== 'all' || typeFilter !== 'all'
+              ? 'Try adjusting your search or filters to find what you\'re looking for'
+              : 'Create your first task or upload IRS notices to generate tasks automatically'
+            }
+            action={(!searchQuery && statusFilter === 'all' && priorityFilter === 'all' && typeFilter === 'all') ? {
+              label: "Create First Task",
+              onClick: () => setShowCreateDialog(true),
+              icon: Plus
+            } : undefined}
+          />
         )}
       </div>
       

@@ -7,6 +7,9 @@ import { useSearch } from '../contexts/SearchContext';
 import { ClientTable } from '../components/organisms/ClientTable';
 import { ClientDialog } from '../components/ui/client-dialog';
 import { ConfirmDialog } from '../components/ui/confirm-dialog';
+import { EmptyState } from '../components/ui/empty-state';
+import { useToast } from '../contexts/ToastContext';
+import { Skeleton, SkeletonText } from '../components/ui/skeleton';
 import { Input } from '../components/atoms/Input';
 import { Button } from '../components/atoms/Button';
 import { Search, Filter, Users as UsersIcon, Plus, Mail } from 'lucide-react';
@@ -15,6 +18,7 @@ import { ClientWithDocuments } from '../hooks/useClients';
 export function Clients() {
   const navigate = useNavigate();
   const { clients, loading, error, addClient, deleteClient } = useClients();
+  const toast = useToast();
   const { isSearchOpen, closeSearch, openSearch } = useSearch();
   const [searchQuery, setSearchQuery] = useState('');
   const [showClientDialog, setShowClientDialog] = useState(false);
@@ -70,6 +74,7 @@ export function Clients() {
       });
     } catch (error) {
       console.error('Failed to create client:', error);
+      toast.error('Failed to create client', error instanceof Error ? error.message : 'An unexpected error occurred');
       throw error; // Re-throw to let the dialog handle the error
     } finally {
       setIsCreating(false);
@@ -97,9 +102,10 @@ export function Clients() {
     try {
       await deleteClient(deleteConfirm.client.id);
       setDeleteConfirm({ isOpen: false, client: null });
+      toast.success('Client Deleted', `${deleteConfirm.client.name} has been deleted successfully`);
     } catch (error) {
       console.error('Failed to delete client:', error);
-      // TODO: Show error toast
+      toast.error('Delete Failed', error instanceof Error ? error.message : 'Failed to delete client');
     } finally {
       setIsDeleting(false);
     }
@@ -114,6 +120,7 @@ export function Clients() {
     const subject = encodeURIComponent(`Tax Documents Request - ${new Date().getFullYear()}`);
     const body = encodeURIComponent(`Dear ${client.name},\n\nI hope this email finds you well. As we prepare for the upcoming tax season, I wanted to reach out regarding the documents we'll need to complete your ${new Date().getFullYear()} tax return.\n\nPlease let me know if you have any questions or if you'd like to schedule a meeting to discuss your tax situation.\n\nBest regards,\n[Your Name]`);
     
+    toast.info('Email Client', `Opening email to ${client.name}`);
     window.open(`mailto:${client.email}?subject=${subject}&body=${body}`, '_blank');
   };
 
@@ -210,21 +217,34 @@ export function Clients() {
         </div>
 
         {loading ? (
-          <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-12 shadow-soft">
-            <div className="text-center">
-              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-text-secondary">Loading clients...</p>
-            </div>
+          <div className="space-y-6">
+            <Skeleton className="h-12" />
+            <SkeletonTable rows={5} columns={5} />
           </div>
         ) : (
-          <ClientTable 
-            clients={filteredClients} 
-            onClientClick={handleClientClick}
-            onEditClient={handleEditClient}
-            onDeleteClient={handleDeleteClient}
-            onSendEmail={handleSendEmail}
-            onViewDocuments={handleViewDocuments}
-          />
+          filteredClients.length > 0 ? (
+            <ClientTable 
+              clients={filteredClients} 
+              onClientClick={handleClientClick}
+              onEditClient={handleEditClient}
+              onDeleteClient={handleDeleteClient}
+              onSendEmail={handleSendEmail}
+              onViewDocuments={handleViewDocuments}
+            />
+          ) : (
+            <EmptyState
+              icon={Users}
+              title={searchQuery ? "No clients match your search" : "No clients yet"}
+              description={searchQuery 
+                ? "Try adjusting your search term or clear filters to see all clients" 
+                : "Add your first client to get started with managing their tax information"}
+              action={{
+                label: "Add New Client",
+                onClick: () => setShowClientDialog(true),
+                icon: Plus
+              }}
+            />
+          )
         )}
 
         {/* Client Creation Dialog */}

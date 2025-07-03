@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
 import { SearchProvider } from './contexts/SearchContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { PreloaderProvider } from './contexts/PreloaderContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Sidebar } from './components/organisms/Sidebar';
@@ -139,15 +140,17 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <AuthProvider>
-      <SearchProvider>
-        <PreloaderProvider>
-          <BrowserRouter>
-            <SidebarProvider>
-              <AppContent />
-            </SidebarProvider>
-          </BrowserRouter>
-        </PreloaderProvider>
-      </SearchProvider>
+      <ToastProvider>
+        <SearchProvider>
+          <PreloaderProvider>
+            <BrowserRouter>
+              <SidebarProvider>
+                <AppContent />
+              </SidebarProvider>
+            </BrowserRouter>
+          </PreloaderProvider>
+        </SearchProvider>
+      </ToastProvider>
     </AuthProvider>
   );
 }
