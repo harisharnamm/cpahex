@@ -1,261 +1,257 @@
-import { useState, useEffect } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase, Profile } from '../lib/supabase';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useVendors } from '../hooks/useVendors';
+import { TopBar } from '../components/organisms/TopBar';
+import { GlobalSearch } from '../components/molecules/GlobalSearch';
+import { useSearch } from '../contexts/SearchContext';
+import { Badge } from '../components/atoms/Badge';
+import { Button } from '../components/atoms/Button';
+import { Input } from '../components/atoms/Input';
+import { Send, FileText, Search, Filter, TrendingUp, Clock, CheckCircle } from 'lucide-react';
 
-interface AuthState {
-  user: User | null;
-  profile: Profile | null;
-  session: Session | null;
-  loading: boolean;
-}
+export function Hub1099() {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
+  const { isSearchOpen, openSearch, closeSearch } = useSearch();
+  const { vendors, loading, error } = useVendors();
 
-export function useAuth() {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    profile: null,
-    session: null,
-    loading: true,
-  });
-
-  useEffect(() => {
-    let mounted = true;
+  const handleSendW9 = (vendor: any) => {
+    // Create mailto link with pre-filled W-9 request
+    const subject = encodeURIComponent(`W-9 Form Request - ${new Date().getFullYear()}`);
+    const body = encodeURIComponent(`Dear ${vendor.name},\n\nWe need you to complete a W-9 form for our tax records. Please complete and return the attached form at your earliest convenience.\n\nThis form is required for us to issue a 1099 if your payments exceed $600 for the tax year.\n\nThank you for your prompt attention to this matter.\n\nBest regards,\n[Your Name]`);
     
-    // Get initial session
-    const initializeAuth = async () => {
-      try {
-        console.log('🔄 Initializing auth...');
-        
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('❌ Error getting session:', error);
-          if (mounted) {
-            setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
-          }
-          return;
-        }
-        
-        console.log('✅ Initial session:', session?.user?.email || 'No session');
-        
-        if (mounted) {
-          if (session?.user) {
-            setAuthState(prev => ({ 
-              ...prev, 
-              session, 
-              user: session.user, 
-              loading: false // Set loading false immediately if we have a user
-            }));
-            // Try to fetch profile, but don't block on it
-            fetchProfile(session.user.id);
-          } else {
-            setAuthState(prev => ({ ...prev, session, user: null, loading: false }));
-          }
-        }
-      } catch (error) {
-        console.error('❌ Auth initialization error:', error);
-        if (mounted) {
-          setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
-        }
-      }
-    };
-    
-    initializeAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔄 Auth state changed:', event, session?.user?.email);
-        
-        if (mounted) {
-          if (session?.user) {
-            setAuthState(prev => ({ 
-              ...prev, 
-              session, 
-              user: session.user, 
-              loading: false // Always set loading false when we get auth state change
-            }));
-            // Try to fetch profile, but don't block on it
-            fetchProfile(session.user.id);
-          } else {
-            setAuthState(prev => ({ ...prev, session, user: null, profile: null, loading: false }));
-          }
-        }
-      }
-    );
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const fetchProfile = async (userId: string) => {
-    if (!userId) {
-      console.error('❌ No userId provided to fetchProfile');
-      return;
+    if (vendor.email) {
+      window.open(`mailto:${vendor.email}?subject=${subject}&body=${body}`, '_blank');
+    } else {
+      // Show notification that vendor has no email
+      alert(`No email address on file for ${vendor.name}. Please update their contact information.`);
     }
-    
-    try {
-      console.log('🔄 Fetching profile for user:', userId);
+  };
+
+  const handleViewW9 = (vendor: any) => {
+    if (vendor.w9_document_id) {
+      // Navigate to document view - you could implement this to show the W-9 document
+      console.log('View W-9 for vendor:', vendor.name);
+      // For now, just show an alert
+      alert(`W-9 document viewer would open for ${vendor.name}`);
+    } else {
+      alert(`No W-9 document on file for ${vendor.name}`);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <Badge variant="success">✓ Complete</Badge>;
+      case 'pending':
+        return <Badge variant="warning">⏳ Pending</Badge>;
+      default:
+        return <Badge variant="error">✗ Missing</Badge>;
+    }
+  };
+
+  const completedCount = vendors.filter(v => v.w9_status === 'completed').length;
+  const progressPercentage = (completedCount / vendors.length) * 100;
+
+  const filteredVendors = vendors.filter(vendor =>
+    vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    vendor.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated">
+      <TopBar title="1099 Hub" />
+
+      {/* Global Search */}
+      <GlobalSearch isOpen={isSearchOpen} onClose={closeSearch} />
       
-      // Fetch profile with timeout protection, but don't block auth loading on it
-      const profilePromise = supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 15000);
-      });
-      
-      const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
+      <div className="max-w-content mx-auto px-8 py-8">
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+            <p className="text-red-700">Error: {error}</p>
+          </div>
+        )}
 
-      if (error) {
-        if (error.message === 'Profile fetch timeout') {
-          console.warn('⚠️ Profile fetch timed out, continuing without profile');
-        } else if (error.code === 'PGRST116') {
-          console.log('ℹ️ No profile found, this is normal for new users');
-        } else {
-          console.error('❌ Error fetching profile:', error);
-        }
-      } else {
-        console.log('✅ Profile fetched successfully:', profile);
-      }
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-xl">
+                <CheckCircle className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-text-tertiary">Completed</p>
+                <p className="text-2xl font-semibold text-text-primary">{loading ? '...' : completedCount}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-amber-100 to-amber-50 rounded-xl">
+                <Clock className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-text-tertiary">Pending</p>
+                <p className="text-2xl font-semibold text-text-primary">
+                  {loading ? '...' : vendors.filter(v => v.w9_status === 'pending').length}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-red-100 to-red-50 rounded-xl">
+                <FileText className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-text-tertiary">Missing</p>
+                <p className="text-2xl font-semibold text-text-primary">
+                  {loading ? '...' : vendors.filter(v => v.w9_status === 'missing').length}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl">
+                <TrendingUp className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-text-tertiary">Progress</p>
+                <p className="text-2xl font-semibold text-text-primary">
+                  {loading ? '...' : Math.round(progressPercentage)}%
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      // Update only the profile, don't touch loading state
-      setAuthState(prev => ({ ...prev, profile }));
-    } catch (error) {
-      console.error('❌ Error in fetchProfile:', error);
-      // Don't set loading to false here - it should already be false
-    }
-  };
+        {/* Progress Bar */}
+        <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-6 mb-8 shadow-soft">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-text-primary">W-9 Collection Progress</h2>
+            <span className="text-sm font-medium text-text-tertiary">{completedCount} of {vendors.length} completed</span>
+          </div>
+          <div className="w-full bg-surface rounded-full h-3 overflow-hidden">
+            <div 
+              className="bg-emerald-500 h-3 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+        </div>
 
-  const signUp = async (email: string, password: string, userData: {
-    firstName: string;
-    lastName: string;
-    company: string;
-  }) => {
-    console.log('🔄 Signing up user:', email);
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            first_name: userData.firstName,
-            last_name: userData.lastName,
-            company: userData.company,
-          },
-        },
-      });
+        {/* Deadline Warning */}
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6 mb-8 shadow-soft">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-amber-100 rounded-xl">
+              <Clock className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-amber-800">1099 Deadline Approaching</p>
+              <p className="text-amber-700 text-sm">45 days remaining. Ensure all W-9 forms are collected and verified.</p>
+            </div>
+          </div>
+        </div>
 
-      console.log('✅ Sign up response:', { userId: data?.user?.id, error });
-      return { data, error };
-    } catch (err) {
-      console.error('❌ Sign up error:', err);
-      return { data: null, error: err as any };
-    }
-  };
+        {/* Search and Filter */}
+        <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-6 mb-8 shadow-soft">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button 
+              variant="secondary" 
+              icon={Search} 
+              onClick={openSearch}
+              className="flex-1"
+            >
+              Search vendors...
+            </Button>
+            <Button variant="secondary" icon={Filter}>
+              Filter
+            </Button>
+          </div>
+        </div>
 
-  const signIn = async (email: string, password: string) => {
-    console.log('🔄 Attempting sign in for:', email);
-    
-    // Set loading state
-    setAuthState(prev => ({ ...prev, loading: true }));
-    
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        console.error('❌ Sign in error:', error);
-        setAuthState(prev => ({ ...prev, loading: false }));
-        sessionStorage.removeItem('justLoggedIn'); 
-        return { data, error };
-      }
-
-      if (data?.user) {
-        console.log('✅ Sign in successful for user:', data.user.id);
-        // Set flag for just logged in to trigger preloader
-        sessionStorage.setItem('justLoggedIn', 'true');
-        
-        // Store auth in localStorage for persistence across tabs/browsers
-        try {
-          localStorage.setItem('supabase.auth.token', JSON.stringify({
-            currentSession: data.session,
-            expiresAt: Math.floor(Date.now() / 1000) + (data.session?.expires_in || 3600)
-          }));
-        } catch (storageError) {
-          console.warn('⚠️ Could not store auth in localStorage:', storageError);
-        }
-        
-        // Auth state change will handle the rest
-        return { data, error: null };
-      } else {
-        console.error('❌ Sign in returned no user data');
-        setAuthState(prev => ({ ...prev, loading: false }));
-        return { data, error: { message: 'No user data returned' } as any };
-      }
-    } catch (err) {
-      console.error('❌ Sign in catch block:', err);
-      setAuthState(prev => ({ ...prev, loading: false }));
-      return { data: null, error: err as any };
-    }
-  };
-
-  const signOut = async () => {
-    console.log('🔄 Signing out...');
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('❌ Sign out error:', error);
-      } else {
-        console.log('✅ Signed out successfully');
-      }
-      return { error };
-    } catch (err) {
-      console.error('❌ Sign out catch block:', err);
-      return { error: err as any };
-    }
-  };
-
-  const updateProfile = async (updates: Partial<Profile>) => {
-    if (!authState.user) {
-      console.error('❌ No user logged in for profile update');
-      return { error: new Error('No user logged in') };
-    }
-
-    console.log('🔄 Updating profile for user:', authState.user.id);
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', authState.user.id)
-        .select()
-        .single();
-
-      if (!error && data) {
-        console.log('✅ Profile updated successfully');
-        setAuthState(prev => ({ ...prev, profile: data }));
-      } else if (error) {
-        console.error('❌ Profile update error:', error);
-      }
-
-      return { data, error };
-    } catch (err) {
-      console.error('❌ Profile update catch block:', err);
-      return { data: null, error: err as any };
-    }
-  };
-
-  return {
-    ...authState,
-    signUp,
-    signIn,
-    signOut,
-    updateProfile,
-  };
+        {/* Vendor Table */}
+        {loading ? (
+          <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-12 shadow-soft">
+            <div className="text-center">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-text-secondary">Loading vendors...</p>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-surface-elevated rounded-2xl border border-border-subtle overflow-hidden shadow-soft">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-surface border-b border-border-subtle">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                    Vendor Name
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                    W-9 Status
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                    Amount Paid
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                    Last Contact
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-subtle">
+                {filteredVendors.map((vendor) => (
+                  <tr key={vendor.id} className="hover:bg-surface-hover transition-colors duration-200">
+                    <td className="px-6 py-4 font-semibold text-text-primary">
+                      {vendor.name}
+                    </td>
+                    <td className="px-6 py-4 text-text-secondary">
+                      {vendor.email}
+                    </td>
+                    <td className="px-6 py-4">
+                      {getStatusBadge(vendor.w9_status)}
+                    </td>
+                    <td className="px-6 py-4 font-semibold text-text-primary">
+                      ${vendor.total_paid.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 text-text-secondary text-sm">
+                      {vendor.last_contact_date ? new Date(vendor.last_contact_date).toLocaleDateString() : 'Never'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex space-x-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          icon={Send}
+                          onClick={() => handleSendW9(vendor)}
+                          className="hover:bg-blue-50 hover:text-blue-600"
+                        >
+                          Send W-9
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          icon={FileText}
+                          onClick={() => handleViewW9(vendor)}
+                          className="hover:bg-green-50 hover:text-green-600"
+                        >
+                          View W-9
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        )}
+      </div>
+    </div>
+  );
 }

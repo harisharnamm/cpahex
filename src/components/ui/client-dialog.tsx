@@ -1,296 +1,504 @@
-import { useState, useEffect } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase, Profile } from '../lib/supabase';
+import React, { useState } from 'react';
+import { User, Mail, Phone, Building, Calendar, FileText, Receipt, CreditCard, Banknote, AlertTriangle, FileCheck, CheckCircle, X } from 'lucide-react';
+import { Button } from '../atoms/Button';
+import { Input } from '../atoms/Input';
+import { cn } from '../../lib/utils';
 
-interface AuthState {
-  user: User | null;
-  profile: Profile | null;
-  session: Session | null;
-  loading: boolean;
+interface ClientDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (clientData: {
+    name: string;
+    email: string;
+    phone?: string;
+    address?: string;
+    taxYear: number;
+    entityType: string;
+    requiredDocuments: string[];
+  }) => Promise<void>;
+  loading?: boolean;
 }
 
-export function useAuth() {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    profile: null,
-    session: null,
-    loading: true,
+const documentTypes = [
+  {
+    id: 'w2',
+    name: 'W-2 Forms',
+    description: 'Wage and tax statements from employers',
+    icon: FileText,
+    category: 'income'
+  },
+  {
+    id: '1099',
+    name: '1099 Forms',
+    description: 'Miscellaneous income statements',
+    icon: Receipt,
+    category: 'income'
+  },
+  {
+    id: 'bank_statement',
+    name: 'Bank Statements',
+    description: 'Monthly bank account statements',
+    icon: CreditCard,
+    category: 'financial'
+  },
+  {
+    id: 'receipt',
+    name: 'Business Receipts',
+    description: 'Receipts for business expenses',
+    icon: Receipt,
+    category: 'expenses'
+  },
+  {
+    id: 'invoice',
+    name: 'Invoices',
+    description: 'Business invoices and billing documents',
+    icon: FileCheck,
+    category: 'business'
+  },
+  {
+    id: 'irs_notice',
+    name: 'IRS Notices',
+    description: 'Letters and notices from the IRS',
+    icon: AlertTriangle,
+    category: 'compliance'
+  },
+  {
+    id: 'w9',
+    name: 'W-9 Forms',
+    description: 'Vendor tax identification forms',
+    icon: FileText,
+    category: 'vendor'
+  },
+  {
+    id: 'other',
+    name: 'Other Documents',
+    description: 'Additional tax-related documents',
+    icon: FileText,
+    category: 'other'
+  }
+];
+
+const categories = [
+  { id: 'income', name: '📊 Income Documents', color: 'emerald' },
+  { id: 'financial', name: '💳 Financial Records', color: 'blue' },
+  { id: 'expenses', name: '🧾 Business Expenses', color: 'amber' },
+  { id: 'business', name: '📋 Business Documents', color: 'purple' },
+  { id: 'compliance', name: '⚠️ Tax Compliance', color: 'red' },
+  { id: 'vendor', name: '👥 Vendor Forms', color: 'indigo' },
+  { id: 'other', name: '📄 Other Documents', color: 'gray' }
+];
+
+export function ClientDialog({ isOpen, onClose, onSubmit, loading = false }: ClientDialogProps) {
+  const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    taxYear: new Date().getFullYear(),
+    entityType: 'individual'
   });
+  const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    let mounted = true;
-    
-    // Check if supabase client exists
-    if (!supabase) {
-      console.error('❌ Supabase client not initialized in useAuth');
-      if (mounted) {
-        setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
-      }
-      return;
+  const handleInputChange = (field: string, value: string | number) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
-    
-    // Get initial session
-    const initializeAuth = async () => {
-      try {
-        console.log('🔄 Initializing auth...');
-        
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('❌ Error getting session:', error);
-          if (mounted) {
-            setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
-          }
-          return;
-        }
-        
-        console.log('✅ Initial session:', session?.user?.email || 'No session');
-        
-        if (mounted) {
-          if (session?.user) {
-            setAuthState(prev => ({ 
-              ...prev, 
-              session, 
-              user: session.user, 
-              loading: false // Set loading false immediately if we have a user
-            }));
-            // Try to fetch profile, but don't block on it
-            fetchProfile(session.user.id);
-          } else {
-            setAuthState(prev => ({ ...prev, session, user: null, loading: false }));
-          }
-        }
-      } catch (error) {
-        console.error('❌ Auth initialization error:', error);
-        if (mounted) {
-          setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
-        }
-      }
-    };
-    
-    initializeAuth();
+  };
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔄 Auth state changed:', event, session?.user?.email);
-        
-        if (mounted) {
-          if (session?.user) {
-            setAuthState(prev => ({ 
-              ...prev, 
-              session, 
-              user: session.user, 
-              loading: false // Always set loading false when we get auth state change
-            }));
-            // Try to fetch profile, but don't block on it
-            fetchProfile(session.user.id);
-          } else {
-            setAuthState(prev => ({ ...prev, session, user: null, profile: null, loading: false }));
-          }
-        }
-      }
+  const validateStep1 = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Client name is required';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (formData.taxYear < 2020 || formData.taxYear > new Date().getFullYear() + 1) {
+      newErrors.taxYear = 'Please enter a valid tax year';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleNext = () => {
+    if (validateStep1()) {
+      setStep(2);
+    }
+  };
+
+  const handleBack = () => {
+    setStep(1);
+  };
+
+  const handleDocumentToggle = (documentId: string) => {
+    setSelectedDocuments(prev => 
+      prev.includes(documentId) 
+        ? prev.filter(id => id !== documentId)
+        : [...prev, documentId]
     );
+  };
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const fetchProfile = async (userId: string) => {
-    if (!userId) {
-      console.error('❌ No userId provided to fetchProfile');
-      return;
-    }
-    
-    // Check if supabase client exists
-    if (!supabase) {
-      console.error('❌ Supabase client not initialized in fetchProfile');
-      return;
-    }
-    
+  const handleSubmit = async () => {
     try {
-      console.log('🔄 Fetching profile for user:', userId);
-      
-      // Fetch profile with timeout protection, but don't block auth loading on it
-      const profilePromise = supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 15000);
+      await onSubmit({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim() || undefined,
+        address: formData.address.trim() || undefined,
+        taxYear: formData.taxYear,
+        entityType: formData.entityType,
+        requiredDocuments: selectedDocuments
       });
       
-      const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
-
-      if (error) {
-        if (error.message === 'Profile fetch timeout') {
-          console.warn('⚠️ Profile fetch timed out, continuing without profile');
-        } else if (error.code === 'PGRST116') {
-          console.log('ℹ️ No profile found, this is normal for new users');
-        } else {
-          console.error('❌ Error fetching profile:', error);
-        }
-      } else {
-        console.log('✅ Profile fetched successfully:', profile);
-      }
-
-      // Update only the profile, don't touch loading state
-      setAuthState(prev => ({ ...prev, profile }));
+      // Reset form on success
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        taxYear: new Date().getFullYear(),
+        entityType: 'individual'
+      });
+      setSelectedDocuments([]);
+      setErrors({});
+      setStep(1);
+      onClose();
     } catch (error) {
-      console.error('❌ Error in fetchProfile:', error);
-      // Don't set loading to false here - it should already be false
+      console.error('Failed to create client:', error);
     }
   };
 
-  const signUp = async (email: string, password: string, userData: {
-    firstName: string;
-    lastName: string;
-    company: string;
-  }) => {
-    console.log('🔄 Signing up user:', email);
-    
-    // Check if supabase client exists
-    if (!supabase) {
-      console.error('❌ Supabase client not initialized in signUp');
-      return { data: null, error: new Error('Authentication service not available') };
-    }
-    
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            first_name: userData.firstName,
-            last_name: userData.lastName,
-            company: userData.company,
-          },
-        },
-      });
-
-      console.log('✅ Sign up response:', { userId: data?.user?.id, error });
-      return { data, error };
-    } catch (err) {
-      console.error('❌ Sign up error:', err);
-      return { data: null, error: err as any };
-    }
+  const handleClose = () => {
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      taxYear: new Date().getFullYear(),
+      entityType: 'individual'
+    });
+    setSelectedDocuments([]);
+    setErrors({});
+    setStep(1);
+    onClose();
   };
 
-  const signIn = async (email: string, password: string) => {
-    console.log('🔄 Attempting sign in for:', email);
-
-    // Check if supabase client exists
-    if (!supabase) {
-      console.error('❌ Supabase client not initialized in signIn');
-      return { data: null, error: new Error('Authentication service not available') };
-    }
-    
-    // Set loading state
-    setAuthState(prev => ({ ...prev, loading: true }));
-    
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        console.error('❌ Sign in error:', error);
-        setAuthState(prev => ({ ...prev, loading: false }));
-        sessionStorage.removeItem('justLoggedIn'); 
-        return { data, error };
-      }
-
-      if (data?.user) {
-        console.log('✅ Sign in successful for user:', data.user.id);
-        // Set flag for just logged in to trigger preloader
-        sessionStorage.setItem('justLoggedIn', 'true');
-        
-        // Store auth in localStorage for persistence across tabs/browsers
-        try {
-          localStorage.setItem('supabase.auth.token', JSON.stringify({
-            currentSession: data.session,
-            expiresAt: Math.floor(Date.now() / 1000) + (data.session?.expires_in || 3600)
-          }));
-        } catch (storageError) {
-          console.warn('⚠️ Could not store auth in localStorage:', storageError);
-        }
-        
-        // Auth state change will handle the rest
-        return { data, error: null };
-      } else {
-        console.error('❌ Sign in returned no user data');
-        setAuthState(prev => ({ ...prev, loading: false }));
-        return { data, error: { message: 'No user data returned' } as any };
-      }
-    } catch (err) {
-      console.error('❌ Sign in catch block:', err);
-      setAuthState(prev => ({ ...prev, loading: false }));
-      return { data: null, error: err as any };
-    }
+  const getCategoryDocuments = (category: string) => {
+    return documentTypes.filter(doc => doc.category === category);
   };
 
-  const signOut = async () => {
-    console.log('🔄 Signing out...');
-    
-    // Check if supabase client exists
-    if (!supabase) {
-      console.error('❌ Supabase client not initialized in signOut');
-      return { error: new Error('Authentication service not available') };
-    }
-    
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('❌ Sign out error:', error);
-      } else {
-        console.log('✅ Signed out successfully');
-      }
-      return { error };
-    } catch (err) {
-      console.error('❌ Sign out catch block:', err);
-      return { error: err as any };
-    }
-  };
+  if (!isOpen) return null;
 
-  const updateProfile = async (updates: Partial<Profile>) => {
-    if (!authState.user) {
-      console.error('❌ No user logged in for profile update');
-      return { error: new Error('No user logged in') };
-    }
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-surface-elevated rounded-xl sm:rounded-2xl shadow-2xl max-w-4xl w-full h-full sm:h-auto sm:max-h-[95vh] flex flex-col overflow-hidden animate-scale-in">
+        {/* Header */}
+        <div className="flex-shrink-0 flex items-center justify-between p-4 sm:p-6 border-b border-border-subtle">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl">
+              <User className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-text-primary">Add New Client</h2>
+              <p className="text-text-tertiary text-sm">
+                {step === 1 ? 'Enter client information and details' : 'Select required documents for this client'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleClose}
+            className="p-2 text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-xl"
+            aria-label="Close dialog"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-    console.log('🔄 Updating profile for user:', authState.user.id);
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', authState.user.id)
-        .select()
-        .single();
+        {/* Progress indicator */}
+        <div className="flex-shrink-0 px-4 sm:px-6 py-3 sm:py-4 bg-surface border-b border-border-subtle">
+          <div className="flex items-center space-x-4">
+            <div className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200",
+              step >= 1 ? "bg-primary text-gray-900" : "bg-surface-elevated text-text-tertiary border border-border-subtle"
+            )}>
+              1
+            </div>
+            <div className={cn(
+              "flex-1 h-2 rounded-full transition-all duration-300",
+              step >= 2 ? "bg-primary" : "bg-surface-elevated border border-border-subtle"
+            )} />
+            <div className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200",
+              step >= 2 ? "bg-primary text-gray-900" : "bg-surface-elevated text-text-tertiary border border-border-subtle"
+            )}>
+              2
+            </div>
+          </div>
+          <div className="flex justify-between mt-2">
+            <span className="text-xs font-medium text-text-secondary">Details</span>
+            <span className="text-xs font-medium text-text-secondary">Documents</span>
+          </div>
+        </div>
 
-      if (!error && data) {
-        console.log('✅ Profile updated successfully');
-        setAuthState(prev => ({ ...prev, profile: data }));
-      } else if (error) {
-        console.error('❌ Profile update error:', error);
-      }
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          {step === 1 && (
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+              {/* Client Name */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-text-primary">Client Name *</label>
+                <div className="relative">
+                  <Input
+                    placeholder="Enter client name"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    disabled={loading}
+                    className="pl-12"
+                  />
+                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                </div>
+                {errors.name && (
+                  <p className="text-sm text-red-600 font-medium">{errors.name}</p>
+                )}
+              </div>
 
-      return { data, error };
-    } catch (err) {
-      console.error('❌ Profile update catch block:', err);
-      return { data: null, error: err as any };
-    }
-  };
+              {/* Email */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-text-primary">Email Address *</label>
+                <div className="relative">
+                  <Input
+                    type="email"
+                    placeholder="client@example.com"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    disabled={loading}
+                    className="pl-12"
+                  />
+                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                </div>
+                {errors.email && (
+                  <p className="text-sm text-red-600 font-medium">{errors.email}</p>
+                )}
+              </div>
 
-  return {
-    ...authState,
-    signUp,
-    signIn,
-    signOut,
-    updateProfile,
-  };
+              {/* Phone */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-text-primary">Phone Number</label>
+                <div className="relative">
+                  <Input
+                    type="tel"
+                    placeholder="(555) 123-4567"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    disabled={loading}
+                    className="pl-12"
+                  />
+                  <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                </div>
+              </div>
+
+              {/* Address */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-text-primary">Address</label>
+                <div className="relative">
+                  <textarea
+                    placeholder="Enter client address"
+                    value={formData.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    disabled={loading}
+                    rows={3}
+                    className="w-full px-4 py-3 pl-12 bg-surface-elevated border border-border-subtle rounded-xl text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all duration-200 resize-none"
+                  />
+                  <Building className="absolute left-4 top-3 w-4 h-4 text-text-tertiary" />
+                </div>
+              </div>
+
+              {/* Tax Year and Entity Type */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-text-primary">Tax Year *</label>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min="2020"
+                      max={new Date().getFullYear() + 1}
+                      value={formData.taxYear}
+                      onChange={(e) => handleInputChange('taxYear', parseInt(e.target.value))}
+                      disabled={loading}
+                      className="pl-12"
+                    />
+                    <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                  </div>
+                  {errors.taxYear && (
+                    <p className="text-sm text-red-600 font-medium">{errors.taxYear}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-text-primary">Entity Type</label>
+                  <select
+                    value={formData.entityType}
+                    onChange={(e) => handleInputChange('entityType', e.target.value)}
+                    disabled={loading}
+                    className="w-full px-4 py-3 bg-surface-elevated border border-border-subtle rounded-xl text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all duration-200"
+                  >
+                    <option value="individual">Individual</option>
+                    <option value="llc">LLC</option>
+                    <option value="corporation">Corporation</option>
+                    <option value="s_corp">S Corporation</option>
+                    <option value="partnership">Partnership</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="p-4 sm:p-6">
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-text-primary mb-2">Required Documents</h3>
+                  <p className="text-sm text-text-tertiary mb-6">
+                    Select the types of documents you'll need from this client for their tax preparation.
+                  </p>
+                </div>
+
+                <div className="space-y-8">
+                  {categories.map(category => {
+                    const categoryDocs = getCategoryDocuments(category.id);
+                    if (categoryDocs.length === 0) return null;
+
+                    return (
+                      <div key={category.id} className="space-y-4">
+                        <h4 className="font-semibold text-text-primary text-sm uppercase tracking-wide">
+                          {category.name}
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {categoryDocs.map(doc => {
+                            const Icon = doc.icon;
+                            const isSelected = selectedDocuments.includes(doc.id);
+                            
+                            return (
+                              <div
+                                key={doc.id}
+                                onClick={() => handleDocumentToggle(doc.id)}
+                                className={cn(
+                                  "relative cursor-pointer rounded-xl border p-4 hover:shadow-medium transition-all duration-200 group",
+                                  isSelected 
+                                    ? "border-primary bg-primary/5 shadow-soft" 
+                                    : "border-border-subtle hover:border-border-light bg-surface-elevated"
+                                )}
+                              >
+                                <div className="flex items-start space-x-3">
+                                  <div className={cn(
+                                    "p-2 rounded-lg transition-all duration-200",
+                                    isSelected 
+                                      ? "bg-primary text-gray-900" 
+                                      : "bg-surface group-hover:bg-surface-hover"
+                                  )}>
+                                    <Icon className="w-4 h-4" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <h5 className="font-semibold text-sm text-text-primary">{doc.name}</h5>
+                                    <p className="text-xs text-text-tertiary mt-1 leading-relaxed">{doc.description}</p>
+                                  </div>
+                                  {isSelected && (
+                                    <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {selectedDocuments.length > 0 && (
+                  <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl p-4 border border-primary/20">
+                    <h4 className="font-semibold text-sm text-text-primary mb-3">
+                      Selected Documents ({selectedDocuments.length})
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedDocuments.map(docId => {
+                        const doc = documentTypes.find(d => d.id === docId);
+                        return doc ? (
+                          <span
+                            key={docId}
+                            className="inline-flex items-center px-3 py-1 rounded-lg bg-primary text-gray-900 text-xs font-semibold"
+                          >
+                            {doc.name}
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex-shrink-0 p-4 sm:p-6 border-t border-border-subtle bg-surface">
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 sm:gap-4">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
+              <Button
+                variant="secondary"
+                onClick={handleClose}
+                disabled={loading}
+                className="w-full sm:w-auto sm:min-w-[100px]"
+              >
+                Cancel
+              </Button>
+              
+              
+              {step === 2 && (
+                <Button
+                  variant="secondary"
+                  onClick={handleBack}
+                  disabled={loading}
+                  className="w-full sm:w-auto sm:min-w-[100px]"
+                >
+                  ← Back
+                </Button>
+              )}
+            </div>
+            
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
+              {step === 1 && (
+                <Button
+                  onClick={handleNext}
+                  disabled={loading}
+                  className="w-full sm:w-auto shadow-medium sm:min-w-[180px] bg-primary text-gray-900 hover:bg-primary-hover"
+                >
+                  Next: Select Documents →
+                </Button>
+              )}
+              
+              {step === 2 && (
+                <Button
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="w-full sm:w-auto shadow-medium sm:min-w-[140px] bg-primary text-gray-900 hover:bg-primary-hover"
+                >
+                  {loading ? 'Creating...' : '✓ Create Client'}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

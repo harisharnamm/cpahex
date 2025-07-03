@@ -2,12 +2,7 @@ import { supabase } from './supabase';
 
 // Enhanced error handling for database operations
 function handleDatabaseError(error: any, operation: string): never {
-  console.error(`❌ Database ${operation} failed:`, error?.message || error);
-  
-  // Check if supabase client is null
-  if (!supabase) {
-    throw new Error(`Database error: Supabase client not initialized. Please check your environment variables.`);
-  }
+  console.error(`❌ Database ${operation} failed:`, error);
   
   if (error?.message?.includes('Failed to fetch')) {
     throw new Error(`Network error: Cannot connect to database. Please check your internet connection and try again.`);
@@ -163,11 +158,6 @@ export interface PaymentTransaction {
 export const clientsApi = {
   async getAll(): Promise<Client[]> {
     try {
-      // Check if supabase client exists
-      if (!supabase) {
-        throw new Error('Database error: Supabase client not initialized. Please check your environment variables.');
-      }
-      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
       

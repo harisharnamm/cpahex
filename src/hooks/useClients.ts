@@ -15,11 +15,6 @@ export function useClients() {
 
   const fetchClients = async () => {
     try {
-      // Check if supabase client exists
-      if (!supabase) {
-        throw new Error('Supabase client not initialized. Please check your environment variables.');
-      }
-      
       setLoading(true);
       setError(null);
       
@@ -29,8 +24,7 @@ export function useClients() {
       // Test connection first
       const connectionTest = await testSupabaseConnection();
       if (!connectionTest.success) {
-        console.error('❌ Supabase connection test failed:', connectionTest.error);
-        throw new Error(connectionTest.error || 'Failed to connect to database. Please check your internet connection and try again.');
+        throw new Error(connectionTest.error || 'Connection test failed');
       }
       
       const clientsData = await clientsApi.getAll();
@@ -62,16 +56,14 @@ export function useClients() {
       console.error('❌ Clients: Error fetching data:', err);
       
       let errorMessage = 'Failed to fetch clients';
-      
-      // More detailed error messages
-      if (err instanceof Error && err.message.includes('Failed to fetch')) {
-        errorMessage = 'Cannot connect to the database server. Please check your internet connection and try again.';
-      } else if (err instanceof Error && err.message.includes('not initialized')) {
-        errorMessage = 'Database connection not properly configured. Please check your environment setup.';
-      } else if (err instanceof Error && err.message.includes('User not authenticated')) {
-        errorMessage = 'Please sign in to view your clients.';
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
+      if (err instanceof Error) {
+        if (err.message.includes('Network error')) {
+          errorMessage = 'Cannot connect to the server. Please check your internet connection and try again.';
+        } else if (err.message.includes('User not authenticated')) {
+          errorMessage = 'Please sign in to view your clients.';
+        } else {
+          errorMessage = err.message;
+        }
       }
       
       setError(errorMessage);
