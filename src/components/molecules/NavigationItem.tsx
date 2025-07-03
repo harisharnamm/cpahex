@@ -2,7 +2,6 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { DivideIcon as LucideIcon } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useTheme } from '../../contexts/ThemeContext';
 
 interface NavigationItemProps {
   to: string;
@@ -12,7 +11,6 @@ interface NavigationItemProps {
 
 export function NavigationItem({ to, icon: Icon, children }: NavigationItemProps) {
   const location = useLocation();
-  const { theme } = useTheme();
   const { theme } = useTheme();
   const isActive = location.pathname === to;
 
