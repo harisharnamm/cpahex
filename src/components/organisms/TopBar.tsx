@@ -4,20 +4,57 @@ import { useSidebar } from '../../contexts/SidebarContext';
 import { useSearch } from '../../contexts/SearchContext';
 import { Breadcrumb } from '../molecules/Breadcrumb';
 import { GlobalSearch } from '../molecules/GlobalSearch';
+import { Button } from '../atoms/Button';
 
 interface TopBarProps {
   title?: string;
   breadcrumbItems?: Array<{ label: string; href?: string }>;
-  action?: React.ReactNode;
-  customAction?: React.ReactNode;
+  action?: React.ReactNode | { label: string; onClick: () => void; icon?: React.ReactNode };
+  customAction?: React.ReactNode | { customRender: () => React.ReactNode };
 }
 
 export function TopBar({ title, breadcrumbItems, action, customAction }: TopBarProps) {
   const { toggleSidebar } = useSidebar();
   const { isSearchOpen, toggleSearch } = useSearch();
 
+  const renderAction = (actionProp: TopBarProps['action']) => {
+    if (!actionProp) return null;
+    
+    if (React.isValidElement(actionProp)) {
+      return actionProp;
+    }
+    
+    if (typeof actionProp === 'object' && 'label' in actionProp && 'onClick' in actionProp) {
+      return (
+        <Button
+          onClick={actionProp.onClick}
+          variant="primary"
+          size="sm"
+        >
+          {actionProp.icon && <span className="mr-2">{actionProp.icon}</span>}
+          {actionProp.label}
+        </Button>
+      );
+    }
+    
+    return null;
+  };
+
+  const renderCustomAction = (customActionProp: TopBarProps['customAction']) => {
+    if (!customActionProp) return null;
+    
+    if (React.isValidElement(customActionProp)) {
+      return customActionProp;
+    }
+    
+    if (typeof customActionProp === 'object' && 'customRender' in customActionProp) {
+      return customActionProp.customRender();
+    }
+    
+    return null;
+  };
   return (
-    <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+    <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between relative">
       <div className="flex items-center space-x-4">
         <button
           onClick={toggleSidebar}
@@ -41,11 +78,16 @@ export function TopBar({ title, breadcrumbItems, action, customAction }: TopBarP
           <Search className="w-5 h-5 text-gray-600" />
         </button>
         
-        {customAction}
-        {action}
+        {renderCustomAction(customAction)}
+        {renderAction(action)}
       </div>
 
-      {isSearchOpen && <GlobalSearch />}
+      {isSearchOpen && (
+        <GlobalSearch 
+          isOpen={isSearchOpen}
+          onClose={toggleSearch}
+        />
+      )}
     </div>
   );
 }
