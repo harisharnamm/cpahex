@@ -4,6 +4,9 @@ import { useDashboard } from '../hooks/useDashboard';
 import { useTasks } from '../hooks/useTasks';
 import { useClients } from '../hooks/useClients';
 import { usePreloader } from '../contexts/PreloaderContext';
+import { useToast } from '../contexts/ToastContext';
+import { Tooltip } from '../components/ui/tooltip';
+import { Skeleton, SkeletonText } from '../components/ui/skeleton';
 import { CreateTaskDialog } from '../components/ui/create-task-dialog';
 import { GlobalSearch } from '../components/molecules/GlobalSearch';
 import { useSearch } from '../contexts/SearchContext';
@@ -19,6 +22,7 @@ export function Dashboard() {
   const [selectedYear, setSelectedYear] = useState('2024');
   const [animatingCards, setAnimatingCards] = useState<string[]>([]);
   const { stats, recentInsights, loading, error, refreshDashboard } = useDashboard();
+  const toast = useToast();
   const { isSearchOpen, closeSearch } = useSearch();
   const { setShowPreloader } = usePreloader();
   const { tasks, updateTaskStatus, getUpcomingTasks, refreshTasks } = useTasks();
@@ -103,6 +107,7 @@ export function Dashboard() {
     console.log('🔄 Marking task as complete:', taskId);
     const result = await updateTaskStatus(taskId, 'completed');
     if (result.success) {
+      toast.success('Task Completed', 'Task has been marked as complete');
       console.log('✅ Task marked as complete successfully');
       // Refresh dashboard to update stats
       refreshDashboard();
@@ -110,6 +115,7 @@ export function Dashboard() {
       refreshTasks();
     } else {
       console.error('Failed to mark task as complete:', result.error);
+      toast.error('Action Failed', 'Failed to mark task as complete');
     }
   };
 
@@ -117,6 +123,7 @@ export function Dashboard() {
     console.log('🔄 Marking task as pending:', taskId);
     const result = await updateTaskStatus(taskId, 'pending');
     if (result.success) {
+      toast.success('Task Updated', 'Task has been marked as pending');
       console.log('✅ Task marked as pending successfully');
       // Refresh dashboard to update stats
       refreshDashboard();
@@ -124,6 +131,7 @@ export function Dashboard() {
       refreshTasks();
     } else {
       console.error('Failed to mark task as pending:', result.error);
+      toast.error('Action Failed', 'Failed to mark task as pending');
     }
   };
 
@@ -206,8 +214,27 @@ export function Dashboard() {
       <div>
         <TopBar title="Dashboard" />
         <div className="max-w-content mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8">
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <div className="space-y-8">
+            {/* Stats skeleton */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-32" />
+              ))}
+            </div>
+            
+            <div className="grid grid-cols-12 gap-8">
+              {/* Main content skeleton */}
+              <div className="col-span-8 space-y-8">
+                <Skeleton className="h-96" />
+                <Skeleton className="h-64" />
+              </div>
+              
+              {/* Sidebar skeleton */}
+              <div className="col-span-4 space-y-6">
+                <Skeleton className="h-48" />
+                <Skeleton className="h-64" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -220,7 +247,21 @@ export function Dashboard() {
         <TopBar title="Dashboard" />
         <div className="max-w-content mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8">
           <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-            <p className="text-red-700">Error loading dashboard: {error}</p>
+            <div className="flex items-start space-x-3">
+              <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-red-700 font-medium">Error loading dashboard</p>
+                <p className="text-red-600 mt-1">{error}</p>
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="mt-3 text-red-600 border-red-200 hover:bg-red-50"
+                  onClick={refreshDashboard}
+                >
+                  Try Again
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -318,7 +359,10 @@ export function Dashboard() {
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  onClick={() => setShowCreateTaskDialog(true)}
+                  onClick={() => {
+                    setShowCreateTaskDialog(true);
+                    toast.info('Create Task', 'Creating a new task');
+                  }}
                 >
                   Create Task
                 </Button>
@@ -341,7 +385,9 @@ export function Dashboard() {
                           <h3 className={`font-semibold group-hover:text-text-hover transition-colors duration-200 ${
                             task.status === 'completed' ? 'line-through text-text-tertiary' : 'text-text-primary'
                           }`}>
+                            <Tooltip content={task.description || 'No description provided'}>
                             {task.title}
+                            </Tooltip>
                           </h3>
                           {task.status === 'completed' && (
                             <Badge variant="success" size="sm">Completed</Badge>
@@ -370,20 +416,20 @@ export function Dashboard() {
                           {task.status === 'completed' ? (
                             <Button
                               size="sm"
+                              title="Mark as pending"
                               variant="ghost"
                               icon={RotateCcw}
                               onClick={() => handleMarkTaskPending(task.id)}
                               className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                              title="Mark as pending"
                             />
                           ) : (
                             <Button
                               size="sm"
+                              title="Mark as complete"
                               variant="ghost"
                               icon={CheckCircle}
                               onClick={() => handleMarkTaskComplete(task.id)}
                               className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                              title="Mark as complete"
                             />
                           )}
                         </div>
@@ -407,14 +453,15 @@ export function Dashboard() {
                   <TrendingUp className="w-5 h-5 text-emerald-600" />
                 </div>
                 <h2 className="text-xl font-semibold text-text-primary">Recent Activity</h2>
-                <h2 className="text-xl font-semibold text-text-primary">Recent Activity</h2>
               </div>
               <div className="space-y-4">
                 {timelineEvents.map((event) => (
                   <div key={event.id} className="flex items-start space-x-4 p-3 rounded-xl hover:bg-surface transition-colors duration-200">
                     <div className="text-lg">{getEventIcon(event.type)}</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-text-primary">{event.event}</p>
+                      <p className="text-sm font-medium text-text-primary">
+                        <Tooltip content={`Event type: ${event.type}`}>{event.event}</Tooltip>
+                      </p>
                       <p className="text-xs text-text-tertiary mt-1">{event.time}</p>
                     </div>
                   </div>
@@ -432,7 +479,10 @@ export function Dashboard() {
                 <Button 
                   className="w-full justify-start bg-primary text-gray-900 hover:bg-primary-hover shadow-medium" 
                   icon={Plus}
-                  onClick={handleAddNewClient}
+                  onClick={() => {
+                    handleAddNewClient();
+                    toast.info('Navigation', 'Redirecting to client creation');
+                  }}
                 >
                   Add New Client
                 </Button>
@@ -440,7 +490,10 @@ export function Dashboard() {
                   variant="secondary" 
                   className="w-full justify-start hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200" 
                   icon={FileText}
-                  onClick={handleSendW9Request}
+                  onClick={() => {
+                    handleSendW9Request();
+                    toast.info('Navigation', 'Redirecting to W-9 hub');
+                  }}
                 >
                   Send W-9 Request
                 </Button>
@@ -448,7 +501,10 @@ export function Dashboard() {
                   variant="secondary" 
                   className="w-full justify-start hover:bg-red-50 hover:text-red-600 hover:border-red-200" 
                   icon={AlertTriangle}
-                  onClick={handleUploadIRSNotice}
+                  onClick={() => {
+                    handleUploadIRSNotice();
+                    toast.info('Navigation', 'Redirecting to IRS notices page');
+                  }}
                 >
                   Upload IRS Notice
                 </Button>

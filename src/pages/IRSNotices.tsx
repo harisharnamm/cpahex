@@ -9,6 +9,10 @@ import { GlobalSearch } from '../components/molecules/GlobalSearch';
 import { useSearch } from '../contexts/SearchContext';
 import { Copy, Download, FileText, AlertTriangle, Clock, CheckCircle, ArrowLeft, Eye, Trash2, Plus, Zap, Search, Filter } from 'lucide-react';
 import { EnhancedFileUpload } from '../components/ui/enhanced-file-upload';
+import { EmptyState } from '../components/ui/empty-state';
+import { useToast } from '../contexts/ToastContext';
+import { Tooltip } from '../components/ui/tooltip';
+import { Skeleton, SkeletonText } from '../components/ui/skeleton';
 import { EnhancedDocumentPreview } from '../components/ui/enhanced-document-preview';
 import { ConfirmDialog } from '../components/ui/confirm-dialog';
 import { AutoTaskConfirmDialog } from '../components/ui/auto-task-confirm-dialog';
@@ -20,6 +24,7 @@ import { EnrichedIRSNotice } from '../types/documents';
 export function IRSNotices() {
   const [selectedNoticeId, setSelectedNoticeId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const toast = useToast();
   const { isSearchOpen, closeSearch, openSearch } = useSearch();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -88,6 +93,7 @@ export function IRSNotices() {
           notice.user_id, 
           notice.client_id
         );
+        toast.success('AI Processing Complete', 'The IRS notice has been processed successfully');
         console.log('🤖 AI processing result:', result);
         // Refresh notices to get updated AI summary
         refreshNotices();
@@ -99,6 +105,7 @@ export function IRSNotices() {
         }
       } catch (error) {
         console.error('Failed to process notice:', error);
+        toast.error('Processing Failed', 'Failed to process the IRS notice with AI');
       } finally {
         setIsProcessing(false);
       }
@@ -199,17 +206,16 @@ ${notice.ai_recommendations || 'Review the notice and consult with tax professio
       
       if (result.success) {
         console.log('✅ Automatic task created successfully');
+        toast.success('Task Created', 'A new task has been created based on the IRS notice');
         // Close the dialog
         setAutoTaskDialog({ isOpen: false, notice: null, taskData: null });
-        // Show success message
-        alert('✅ Task created successfully! The IRS notice review task has been added to your dashboard.');
       } else {
         console.error('❌ Failed to create automatic task:', result.error);
-        alert(`Failed to create task: ${result.error}`);
+        toast.error('Task Creation Failed', result.error || 'Failed to create task');
       }
     } catch (error) {
       console.error('❌ Exception creating automatic task:', error);
-      alert(`Failed to create task: ${error}`);
+      toast.error('Task Creation Failed', error instanceof Error ? error.message : 'An unexpected error occurred');
     }
   };
 
@@ -220,7 +226,8 @@ ${notice.ai_recommendations || 'Review the notice and consult with tax professio
 
   const handleUploadComplete = async (documentIds: string[]) => {
     console.log('IRS Notice uploaded successfully:', documentIds);
-    
+    toast.success('Upload Complete', `${documentIds.length} document(s) uploaded successfully`);
+
     // Create IRS notice records for each uploaded document
     for (const documentId of documentIds) {
       try {
@@ -255,6 +262,7 @@ ${notice.ai_recommendations || 'Review the notice and consult with tax professio
       console.log('⬇️ Downloading document:', documentId);
       const result = await downloadDocument(documentId, filename);
       if (!result.success) {
+        toast.error('Download Failed', result.error || 'Failed to download document');
         console.error('❌ Download failed:', result.error);
       }
     } catch (error) {
@@ -270,6 +278,7 @@ ${notice.ai_recommendations || 'Review the notice and consult with tax professio
       if (result.url) {
         console.log('✅ Setting preview URL and opening modal');
         setPreviewUrl(result.url);
+        toast.info('Preview Ready', 'Document preview is now available');
         setShowPreview(true);
       } else {
         console.error('❌ No preview URL returned:', result.error);
@@ -301,6 +310,7 @@ ${notice.ai_recommendations || 'Review the notice and consult with tax professio
     try {
       const result = await deleteNotice(deleteConfirm.noticeId);
       if (result.success) {
+        toast.success('Notice Deleted', 'The IRS notice has been deleted successfully');
         // Close confirmation dialog
         setDeleteConfirm({ isOpen: false, noticeId: null, noticeName: '' });
         // If we were viewing the deleted notice, go back to list
@@ -308,7 +318,7 @@ ${notice.ai_recommendations || 'Review the notice and consult with tax professio
           setSelectedNoticeId(null);
         }
       } else {
-        console.error('Failed to delete notice:', result.error);
+        toast.error('Delete Failed', result.error || 'Failed to delete the IRS notice');
         // TODO: Show error toast
       }
     } catch (error) {
@@ -361,9 +371,9 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
 
     if (result.success) {
       console.log('✅ Task created successfully');
-      alert('✅ Task created successfully! Check your dashboard to see the new task.');
+      toast.success('Task Created', 'A new task has been created based on the IRS notice');
     } else {
-      console.error('❌ Failed to create task:', result.error);
+      toast.error('Task Creation Failed', result.error || 'Failed to create task');
       alert(`Failed to create task: ${result.error}`);
     }
   };
@@ -425,9 +435,22 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
       <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated">
         <TopBar title="IRS Notices" />
         <div className="max-w-content mx-auto px-8 py-8">
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-text-secondary">Loading IRS notices...</p>
+          <div className="space-y-8">
+            {/* Stats skeleton */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-24" />
+              ))}
+            </div>
+            
+            {/* Upload zone skeleton */}
+            <Skeleton className="h-64" />
+            
+            {/* Search skeleton */}
+            <Skeleton className="h-12" />
+            
+            {/* Notices list skeleton */}
+            <Skeleton className="h-96" />
           </div>
         </div>
       </div>
@@ -610,11 +633,21 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
                 </div>
               </div>
             ) : (
-              <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-12 text-center shadow-soft">
-                <AlertTriangle className="w-16 h-16 text-text-tertiary mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-text-primary mb-2">No IRS Notices Yet</h3>
-                <p className="text-text-tertiary mb-4">Upload your first IRS notice to get started with AI-powered analysis</p>
-              </div>
+              <EmptyState
+                icon={AlertTriangle}
+                title="No IRS Notices Yet"
+                description="Upload your first IRS notice to get started with AI-powered analysis"
+                action={{
+                  label: "Upload IRS Notice",
+                  onClick: () => {
+                    const uploadSection = document.getElementById('upload-section');
+                    if (uploadSection) {
+                      uploadSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                  },
+                  icon: FileText
+                }}
+              />
             )}
           </div>
         ) : selectedNotice ? (
@@ -636,14 +669,16 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
                 <div className="p-6 border-b border-border-subtle flex items-center justify-between">
                   <h3 className="font-semibold text-text-primary">Document Preview</h3>
                   {selectedNotice.documents && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      icon={Eye}
-                      onClick={() => handlePreviewDocument(selectedNotice.document_id!)}
-                    >
-                      Full Preview
-                    </Button>
+                    <Tooltip content="View the full document in a larger preview window">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        icon={Eye}
+                        onClick={() => handlePreviewDocument(selectedNotice.document_id!)}
+                      >
+                        Full Preview
+                      </Button>
+                    </Tooltip>
                   )}
                 </div>
                 <div className="aspect-[4/3] bg-surface">
@@ -735,9 +770,14 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
                         size="sm" 
                         icon={Copy} 
                         className="flex-1 sm:flex-none"
-                        onClick={() => navigator.clipboard.writeText(selectedNotice.ai_summary || '')}
+                        onClick={() => {
+                          navigator.clipboard.writeText(selectedNotice.ai_summary || '');
+                          toast.success('Copied', 'AI summary copied to clipboard');
+                        }}
                       >
-                        Copy Summary
+                        <Tooltip content="Copy the AI summary to your clipboard">
+                          Copy Summary
+                        </Tooltip>
                       </Button>
                       <Button 
                         variant="secondary" 
@@ -745,7 +785,9 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
                         icon={Download} 
                         className="flex-1 sm:flex-none"
                       >
-                        Download Report
+                        <Tooltip content="Download a PDF report with the AI analysis">
+                          Download Report
+                        </Tooltip>
                       </Button>
                       <Button 
                         variant="primary" 
@@ -754,7 +796,9 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
                         onClick={handleCreateTask}
                         className="flex-1 sm:flex-none bg-primary text-gray-900 hover:bg-primary-hover"
                       >
-                        Quick Task
+                        <Tooltip content="Create a task based on this IRS notice">
+                          Quick Task
+                        </Tooltip>
                       </Button>
                     </div>
                   </div>
