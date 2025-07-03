@@ -22,7 +22,8 @@ import {
   Eye, 
   Download, 
   Trash2,
-  MessageSquare
+  MessageSquare,
+  User
 } from 'lucide-react';
 
 // Mock data for document requests
