@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Sparkles, Eye, EyeOff, Mail, Lock } from 'lucide-react';
-import { useAuthContext } from '../contexts/AuthContext';
-import { usePreloader } from '../contexts/PreloaderContext';
-import { Button } from '../components/atoms/Button';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { usePreloader } from '../../contexts/PreloaderContext';
+import { Button } from '../atoms/Button';
 
 export function SignIn() {
   const navigate = useNavigate();
