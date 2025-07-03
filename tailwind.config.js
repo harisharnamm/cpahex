@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
@@ -9,30 +10,102 @@ export default {
       colors: {
         primary: '#D7FF1E',
         'primary-hover': '#C8F000',
-        'primary-light': '#F0FF8A',
-        'primary-foreground': '#1F2937',
-        'text-primary': '#1F2937',
-        'text-secondary': '#6B7280',
-        'text-tertiary': '#9CA3AF',
-        'text-hover': '#A3B300',
-        'background': '#FFFFFF',
-        'foreground': '#1F2937',
-        'muted': '#F3F4F6',
-        'muted-foreground': '#6B7280',
-        'accent': '#F1F5F9',
-        'accent-foreground': '#1F2937',
-        'destructive': '#EF4444',
-        'destructive-foreground': '#FFFFFF',
-        'secondary': '#F8F9FB',
-        'secondary-foreground': '#1F2937',
-        'input': '#E5E7EB',
-        'ring': '#D7FF1E',
-        'border-light': '#E5E7EB',
-        'border-subtle': '#F3F4F6',
-        'border': '#E5E7EB',
-        'surface': '#F8F9FB',
-        'surface-elevated': '#FFFFFF',
-        'surface-hover': '#F1F5F9',
+        'primary-light': {
+          DEFAULT: '#F0FF8A',
+          dark: '#A3B300'
+        },
+        'primary-foreground': {
+          DEFAULT: '#1F2937',
+          dark: '#1F2937'
+        },
+        'text-primary': {
+          DEFAULT: '#1F2937',
+          dark: '#F9FAFB'
+        },
+        'text-secondary': {
+          DEFAULT: '#6B7280',
+          dark: '#9CA3AF'
+        },
+        'text-tertiary': {
+          DEFAULT: '#9CA3AF',
+          dark: '#6B7280'
+        },
+        'text-hover': {
+          DEFAULT: '#A3B300',
+          dark: '#F0FF8A'
+        },
+        'background': {
+          DEFAULT: '#FFFFFF',
+          dark: '#111827'
+        },
+        'foreground': {
+          DEFAULT: '#1F2937',
+          dark: '#F9FAFB'
+        },
+        'muted': {
+          DEFAULT: '#F3F4F6',
+          dark: '#1F2937'
+        },
+        'muted-foreground': {
+          DEFAULT: '#6B7280',
+          dark: '#9CA3AF'
+        },
+        'accent': {
+          DEFAULT: '#F1F5F9',
+          dark: '#1E293B'
+        },
+        'accent-foreground': {
+          DEFAULT: '#1F2937',
+          dark: '#F9FAFB'
+        },
+        'destructive': {
+          DEFAULT: '#EF4444',
+          dark: '#F87171'
+        },
+        'destructive-foreground': {
+          DEFAULT: '#FFFFFF',
+          dark: '#1F2937'
+        },
+        'secondary': {
+          DEFAULT: '#F8F9FB',
+          dark: '#1E293B'
+        },
+        'secondary-foreground': {
+          DEFAULT: '#1F2937',
+          dark: '#F9FAFB'
+        },
+        'input': {
+          DEFAULT: '#E5E7EB',
+          dark: '#374151'
+        },
+        'ring': {
+          DEFAULT: '#D7FF1E',
+          dark: '#A3B300'
+        },
+        'border-light': {
+          DEFAULT: '#E5E7EB',
+          dark: '#374151'
+        },
+        'border-subtle': {
+          DEFAULT: '#F3F4F6',
+          dark: '#1F2937'
+        },
+        'border': {
+          DEFAULT: '#E5E7EB',
+          dark: '#374151'
+        },
+        'surface': {
+          DEFAULT: '#F8F9FB',
+          dark: '#1E293B'
+        },
+        'surface-elevated': {
+          DEFAULT: '#FFFFFF',
+          dark: '#111827'
+        },
+        'surface-hover': {
+          DEFAULT: '#F1F5F9',
+          dark: '#1E293B'
+        },
       },
       borderRadius: {
         'default': '8px',

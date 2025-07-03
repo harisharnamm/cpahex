@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
 import { SearchProvider } from './contexts/SearchContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { PreloaderProvider } from './contexts/PreloaderContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -119,9 +120,9 @@ function AppContent() {
 // Separate component for the main layout with sidebar
 function MainLayout({ children }: { children: React.ReactNode }) {
   const sidebar = useSidebar();
-  
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated font-inter">
+    <div className="min-h-screen light-gradient dark-gradient font-inter dark:text-white">
       <Sidebar isOpen={sidebar.isOpen} onClose={sidebar.closeSidebar} />
       <div className="lg:ml-72 transition-all duration-300">
         {children}
@@ -140,17 +141,19 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <AuthProvider>
-      <ToastProvider>
-        <SearchProvider>
-          <PreloaderProvider>
-            <BrowserRouter>
-              <SidebarProvider>
-                <AppContent />
-              </SidebarProvider>
-            </BrowserRouter>
-          </PreloaderProvider>
-        </SearchProvider>
-      </ToastProvider>
+      <ThemeProvider>
+        <ToastProvider>
+          <SearchProvider>
+            <PreloaderProvider>
+              <BrowserRouter>
+                <SidebarProvider>
+                  <AppContent />
+                </SidebarProvider>
+              </BrowserRouter>
+            </PreloaderProvider>
+          </SearchProvider>
+        </ToastProvider>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

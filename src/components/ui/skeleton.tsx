@@ -16,7 +16,7 @@ export function Skeleton({
   height,
   count = 1
 }: SkeletonProps) {
-  const baseStyles = "animate-pulse bg-surface-hover";
+  const baseStyles = "animate-pulse bg-surface-hover dark:bg-gray-800";
   
   const getVariantStyles = () => {
     switch (variant) {
@@ -63,7 +63,7 @@ export function SkeletonText({ lines = 3, lastLineWidth = '60%', className }: { 
 
 export function SkeletonCard({ className }: { className?: string }) {
   return (
-    <div className={cn("bg-surface-elevated rounded-xl p-6 border border-border-subtle", className)}>
+    <div className={cn("bg-surface-elevated dark:bg-gray-900 rounded-xl p-6 border border-border-subtle dark:border-gray-800", className)}>
       <Skeleton variant="rectangular" className="h-40 mb-4" />
       <Skeleton variant="text" className="mb-2" />
       <SkeletonText lines={2} />

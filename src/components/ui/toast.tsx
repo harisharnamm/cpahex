@@ -53,13 +53,13 @@ function Toast({ id, type, title, message, duration = 5000, onClose }: ToastProp
   const getStyles = () => {
     switch (type) {
       case 'success':
-        return 'bg-emerald-50 border-emerald-200';
+        return 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800';
       case 'error':
-        return 'bg-red-50 border-red-200';
+        return 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800';
       case 'warning':
-        return 'bg-amber-50 border-amber-200';
+        return 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800';
       case 'info':
-        return 'bg-blue-50 border-blue-200';
+        return 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800';
     }
   };
   
@@ -71,7 +71,7 @@ function Toast({ id, type, title, message, duration = 5000, onClose }: ToastProp
       transition={{ duration: 0.2 }}
       onAnimationComplete={handleAnimationComplete}
       className={cn(
-        "w-full max-w-sm rounded-xl border shadow-medium p-4 pointer-events-auto",
+        "w-full max-w-sm rounded-xl border shadow-medium p-4 pointer-events-auto dark:border-gray-700",
         getStyles()
       )}
     >
@@ -79,13 +79,13 @@ function Toast({ id, type, title, message, duration = 5000, onClose }: ToastProp
         <div className="flex-shrink-0">
           {getIcon()}
         </div>
-        <div className="ml-3 w-0 flex-1 pt-0.5">
-          <p className="text-sm font-medium text-gray-900">{title}</p>
-          {message && <p className="mt-1 text-sm text-gray-600">{message}</p>}
+        <div className="ml-3 w-0 flex-1 pt-0.5 dark:text-white">
+          <p className="text-sm font-medium text-gray-900 dark:text-white">{title}</p>
+          {message && <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{message}</p>}
         </div>
         <div className="ml-4 flex-shrink-0 flex">
           <button
-            className="bg-transparent rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="bg-transparent rounded-md inline-flex text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:focus:ring-primary-light-dark/20"
             onClick={handleClose}
           >
             <span className="sr-only">Close</span>
