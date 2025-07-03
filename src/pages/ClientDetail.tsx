@@ -192,7 +192,7 @@ export function ClientDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated">
+    <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800">
       <TopBar
         title={client.name}
         breadcrumbItems={[
@@ -211,7 +211,7 @@ export function ClientDetail() {
       
       <div className="max-w-content mx-auto px-8 py-8">
         {/* Client Info Card */}
-        <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-6 mb-8 shadow-soft">
+        <div className="bg-surface-elevated dark:bg-gray-900 rounded-2xl border border-border-subtle dark:border-gray-800 p-6 mb-8 shadow-soft">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl">
@@ -244,15 +244,15 @@ export function ClientDetail() {
         </div>
 
         <Tab.Group selectedIndex={selectedTab} onChange={setSelectedTab}>
-          <Tab.List className="flex space-x-1 rounded-2xl bg-surface-elevated border border-border-subtle p-2 mb-8 shadow-soft">
+          <Tab.List className="flex space-x-1 rounded-2xl bg-surface-elevated dark:bg-gray-900 border border-border-subtle dark:border-gray-800 p-2 mb-8 shadow-soft">
             {tabs.map((tab) => (
               <Tab
                 key={tab}
                 className={({ selected }) =>
                   `w-full rounded-xl py-3 text-sm font-semibold leading-5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 ${
                     selected
-                      ? 'bg-gradient-to-r from-primary to-primary-hover text-gray-900 shadow-soft'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                      ? 'bg-gradient-to-r from-primary to-primary-hover dark:from-primary-light-dark dark:to-primary-light-dark/90 text-gray-900 shadow-soft'
+                      : 'text-text-secondary dark:text-gray-400 hover:text-text-primary dark:hover:text-white hover:bg-surface-hover dark:hover:bg-gray-800'
                   }`
                 }
               >
@@ -264,7 +264,7 @@ export function ClientDetail() {
           <Tab.Panels>
             <Tab.Panel className="space-y-6">
               {/* Enhanced Upload Zone */}
-              <div className="bg-surface-elevated rounded-2xl border border-border-subtle overflow-hidden shadow-soft">
+              <div className="bg-surface-elevated dark:bg-gray-900 rounded-2xl border border-border-subtle dark:border-gray-800 overflow-hidden shadow-soft">
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
@@ -292,7 +292,7 @@ export function ClientDetail() {
               </div>
 
               {/* Search and Filters */}
-              <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-6 shadow-soft">
+              <div className="bg-surface-elevated dark:bg-gray-900 rounded-2xl border border-border-subtle dark:border-gray-800 p-6 shadow-soft">
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button 
                     variant="secondary" 
@@ -376,7 +376,7 @@ export function ClientDetail() {
             </Tab.Panel>
             
             <Tab.Panel>
-              <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-8 shadow-soft">
+              <div className="bg-surface-elevated dark:bg-gray-900 rounded-2xl border border-border-subtle dark:border-gray-800 p-8 shadow-soft">
                 <div className="text-center py-12">
                   <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <User className="w-8 h-8 text-blue-600" />
@@ -678,7 +678,7 @@ export function ClientDetail() {
             </Tab.Panel>
             
             <Tab.Panel>
-              <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-8 shadow-soft">
+              <div className="bg-surface-elevated dark:bg-gray-900 rounded-2xl border border-border-subtle dark:border-gray-800 p-8 shadow-soft">
                 <div className="text-center py-12">
                   <div className="p-4 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-2xl w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <FileText className="w-8 h-8 text-emerald-600" />

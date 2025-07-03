@@ -179,7 +179,7 @@ export function DeductionChat() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-surface to-surface-elevated">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-surface to-surface-elevated dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800">
       <TopBar title="Deduction Chat" />
 
       {/* Global Search */}
@@ -187,7 +187,7 @@ export function DeductionChat() {
       
       <div className="flex-1 max-w-content mx-auto w-full flex flex-col">
         {/* Chat Header */}
-        <div className="bg-surface-elevated border-b border-border-subtle p-6">
+        <div className="bg-surface-elevated dark:bg-gray-900 border-b border-border-subtle dark:border-gray-800 p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl">
@@ -229,7 +229,7 @@ export function DeductionChat() {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-surface-elevated border-b border-border-subtle p-6">
+        <div className="bg-surface-elevated dark:bg-gray-900 border-b border-border-subtle dark:border-gray-800 p-6">
           <div className="flex flex-wrap gap-3">
             {quickActions.map((action) => (
               <Button
@@ -248,14 +248,14 @@ export function DeductionChat() {
 
         {/* Error Display */}
         {error && (
-          <div className="bg-red-50 border-b border-red-200 p-4">
+          <div className="bg-red-50 dark:bg-red-900/30 border-b border-red-200 dark:border-red-800 p-4">
             <div className="flex items-center justify-between">
-              <p className="text-red-700 text-sm">{error}</p>
+              <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setError(null)}
-                className="text-red-600 hover:text-red-700"
+                className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
               >
                 Dismiss
               </Button>
@@ -325,10 +325,10 @@ export function DeductionChat() {
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-border-subtle bg-surface-elevated p-6">
+        <div className="border-t border-border-subtle dark:border-gray-800 bg-surface-elevated dark:bg-gray-900 p-6">
           {/* File Upload Section - Show when files are selected */}
           {(uploadedFiles.length > 0 || uploadingFiles.length > 0) && (
-            <div className="mb-4 p-4 bg-surface rounded-xl border border-border-subtle">
+            <div className="mb-4 p-4 bg-surface dark:bg-gray-800 rounded-xl border border-border-subtle dark:border-gray-700">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-medium text-text-primary text-sm">
                   📎 Attached Files ({uploadedFiles.length + uploadingFiles.length})
@@ -348,7 +348,7 @@ export function DeductionChat() {
               <div className="space-y-2 max-h-32 overflow-y-auto">
                 {/* Uploaded Files */}
                 {uploadedFiles.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-surface-elevated rounded-lg border border-border-subtle">
+                  <div key={index} className="flex items-center justify-between p-2 bg-surface-elevated dark:bg-gray-900 rounded-lg border border-border-subtle dark:border-gray-700">
                     <div className="flex items-center space-x-2 flex-1 min-w-0">
                       <FileText className="w-4 h-4 text-text-tertiary flex-shrink-0" />
                       <div className="min-w-0 flex-1">
@@ -368,11 +368,11 @@ export function DeductionChat() {
                 
                 {/* Uploading Files */}
                 {uploadingFiles.map((file, index) => (
-                  <div key={`uploading-${index}`} className="flex items-center space-x-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
-                    <RefreshCw className="w-4 h-4 text-blue-600 animate-spin flex-shrink-0" />
+                  <div key={`uploading-${index}`} className="flex items-center space-x-2 p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <RefreshCw className="w-4 h-4 text-blue-600 dark:text-blue-400 animate-spin flex-shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-blue-900 truncate">{file.name}</p>
-                      <p className="text-xs text-blue-700">Uploading...</p>
+                      <p className="text-sm font-medium text-blue-900 dark:text-blue-300 truncate">{file.name}</p>
+                      <p className="text-xs text-blue-700 dark:text-blue-400">Uploading...</p>
                     </div>
                   </div>
                 ))}
@@ -461,13 +461,13 @@ export function DeductionChat() {
           </div>
 
           {/* Status Bar */}
-          <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center justify-between mt-3 text-text-tertiary dark:text-gray-400">
             <div className="flex items-center space-x-4 text-xs text-text-tertiary">
               <div className="flex items-center space-x-1">
-                <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface border border-border-subtle rounded">Enter</kbd>
+                <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface dark:bg-gray-800 border border-border-subtle dark:border-gray-700 rounded">Enter</kbd>
                 <span>to send</span>
                 <span className="text-text-tertiary/60">•</span>
-                <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface border border-border-subtle rounded">Shift+Enter</kbd>
+                <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface dark:bg-gray-800 border border-border-subtle dark:border-gray-700 rounded">Shift+Enter</kbd>
                 <span>for new line</span>
               </div>
               {uploadedFiles.length > 0 && (
@@ -483,7 +483,7 @@ export function DeductionChat() {
                   Client: {clients.find(c => c.id === selectedClientId)?.name || 'Unknown'}
                 </span>
               )}
-              <span className="flex items-center space-x-1">
+              <span className="flex items-center space-x-1 text-text-tertiary dark:text-gray-400">
                 <div className={`w-2 h-2 rounded-full transition-colors duration-200 ${
                   error ? 'bg-red-500' : isTyping ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'
                 }`}></div>

@@ -19,7 +19,7 @@ export function NavigationItem({ to, icon: Icon, children }: NavigationItemProps
       to={to}
       className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 focus:ring-offset-surface-elevated ${
         isActive
-          ? 'bg-primary dark:bg-primary-light-dark text-gray-900 shadow-soft'
+          ? 'bg-primary dark:bg-primary-light-dark text-gray-900 dark:text-gray-900 shadow-soft'
           : 'text-text-secondary dark:text-gray-400 hover:text-text-primary dark:hover:text-white hover:bg-surface-hover dark:hover:bg-gray-800'
       }`}
       aria-current={isActive ? 'page' : undefined}
