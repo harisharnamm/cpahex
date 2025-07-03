@@ -1,7 +1,6 @@
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useTheme } from '../../contexts/ThemeContext';
 import { NavigationItem } from '../molecules/NavigationItem';
 import { 
   LayoutDashboard, 
@@ -27,7 +26,6 @@ interface SidebarProps {
 export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const { profile, signOut } = useAuthContext();
   const { closeSidebar } = useSidebar();
-  const { theme } = useTheme();
   const { theme } = useTheme();
   
   const handleSignOut = async () => {
