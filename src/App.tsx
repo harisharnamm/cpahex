@@ -16,6 +16,7 @@ import { MyZone } from './pages/MyZone';
 import { IRSNotices } from './pages/IRSNotices';
 import { DeductionChat } from './pages/DeductionChat';
 import { Settings } from './pages/SettingsPage';
+import { ClientCommunications } from './pages/ClientCommunications';
 import { SignIn } from './pages/SignIn';
 import { SignUp } from './pages/SignUp';
 
@@ -93,6 +94,13 @@ function AppContent() {
         <ProtectedRoute>
           <AppLayout>
             <DeductionChat />
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/client-communications" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <ClientCommunications />
           </AppLayout>
         </ProtectedRoute>
       } />

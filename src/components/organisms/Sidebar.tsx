@@ -4,11 +4,12 @@ import { NavigationItem } from '../molecules/NavigationItem';
 import { 
   LayoutDashboard, 
   Users,
+  MessageSquare as MessageSquareIcon,
   GraduationCap,
   FileText, 
   CheckSquare,
   AlertTriangle, 
-  MessageSquare, 
+  MessageSquare as ChatIcon, 
   Settings,
   Sparkles,
   X,
@@ -94,7 +95,10 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
           <NavigationItem to="/irs-notices" icon={AlertTriangle}>
             IRS Notices
           </NavigationItem>
-          <NavigationItem to="/deduction-chat" icon={MessageSquare}>
+          <NavigationItem to="/client-communications" icon={MessageSquareIcon}>
+            Client Communications
+          </NavigationItem>
+          <NavigationItem to="/deduction-chat" icon={ChatIcon}>
             Deduction Chat
           </NavigationItem>
           <NavigationItem to="/settings" icon={Settings}>
