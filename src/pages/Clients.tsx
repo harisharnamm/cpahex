@@ -9,7 +9,7 @@ import { ClientDialog } from '../components/ui/client-dialog';
 import { ConfirmDialog } from '../components/ui/confirm-dialog';
 import { EmptyState } from '../components/ui/empty-state';
 import { useToast } from '../contexts/ToastContext';
-import { Skeleton, SkeletonText } from '../components/ui/skeleton';
+import { Skeleton, SkeletonText, SkeletonTable } from '../components/ui/skeleton';
 import { Input } from '../components/atoms/Input';
 import { Button } from '../components/atoms/Button';
 import { Search, Filter, Users as UsersIcon, Plus, Mail } from 'lucide-react';
