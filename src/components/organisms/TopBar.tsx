@@ -30,8 +30,8 @@ export function TopBar({ title, breadcrumbItems, action, customAction }: TopBarP
           onClick={actionProp.onClick}
           variant="primary"
           size="sm"
+          icon={actionProp.icon}
         >
-          {actionProp.icon && <span className="mr-2">{actionProp.icon}</span>}
           {actionProp.label}
         </Button>
       );
