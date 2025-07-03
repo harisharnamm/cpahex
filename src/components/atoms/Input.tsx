@@ -10,7 +10,7 @@ export function Input({ label, error, className = '', ...props }: InputProps) {
   return (
     <div className="space-y-2">
       {label && (
-        <label className="block text-sm font-semibold text-text-primary">
+        <label className="block text-sm font-semibold text-text-primary dark:text-white">
           {label}
         </label>
       )}
