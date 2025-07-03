@@ -1,81 +1,296 @@
-import { AlertTriangle, X } from 'lucide-react';
-import { Button } from '../atoms/Button';
+import { useState, useEffect } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase, Profile } from '../lib/supabase';
 
-interface ConfirmDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  title: string;
-  message: string;
-  confirmText?: string;
-  confirmVariant?: 'primary' | 'secondary';
-  loading?: boolean;
+interface AuthState {
+  user: User | null;
+  profile: Profile | null;
+  session: Session | null;
+  loading: boolean;
 }
 
-export function ConfirmDialog({
-  isOpen,
-  onClose,
-  onConfirm,
-  title,
-  message,
-  confirmText = 'Confirm',
-  confirmVariant = 'primary',
-  loading = false
-}: ConfirmDialogProps) {
-  if (!isOpen) return null;
+export function useAuth() {
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    profile: null,
+    session: null,
+    loading: true,
+  });
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm" 
-        onClick={onClose}
-      />
+  useEffect(() => {
+    let mounted = true;
+    
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in useAuth');
+      if (mounted) {
+        setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
+      }
+      return;
+    }
+    
+    // Get initial session
+    const initializeAuth = async () => {
+      try {
+        console.log('🔄 Initializing auth...');
+        
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('❌ Error getting session:', error);
+          if (mounted) {
+            setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
+          }
+          return;
+        }
+        
+        console.log('✅ Initial session:', session?.user?.email || 'No session');
+        
+        if (mounted) {
+          if (session?.user) {
+            setAuthState(prev => ({ 
+              ...prev, 
+              session, 
+              user: session.user, 
+              loading: false // Set loading false immediately if we have a user
+            }));
+            // Try to fetch profile, but don't block on it
+            fetchProfile(session.user.id);
+          } else {
+            setAuthState(prev => ({ ...prev, session, user: null, loading: false }));
+          }
+        }
+      } catch (error) {
+        console.error('❌ Auth initialization error:', error);
+        if (mounted) {
+          setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
+        }
+      }
+    };
+    
+    initializeAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('🔄 Auth state changed:', event, session?.user?.email);
+        
+        if (mounted) {
+          if (session?.user) {
+            setAuthState(prev => ({ 
+              ...prev, 
+              session, 
+              user: session.user, 
+              loading: false // Always set loading false when we get auth state change
+            }));
+            // Try to fetch profile, but don't block on it
+            fetchProfile(session.user.id);
+          } else {
+            setAuthState(prev => ({ ...prev, session, user: null, profile: null, loading: false }));
+          }
+        }
+      }
+    );
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const fetchProfile = async (userId: string) => {
+    if (!userId) {
+      console.error('❌ No userId provided to fetchProfile');
+      return;
+    }
+    
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in fetchProfile');
+      return;
+    }
+    
+    try {
+      console.log('🔄 Fetching profile for user:', userId);
       
-      {/* Dialog */}
-      <div className="relative bg-surface-elevated rounded-2xl border border-border-subtle shadow-premium w-full max-w-md mx-4 animate-scale-in">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border-subtle">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-red-100 rounded-xl">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-text-primary">{title}</h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-xl"
-            aria-label="Close dialog"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+      // Fetch profile with timeout protection, but don't block auth loading on it
+      const profilePromise = supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 15000);
+      });
+      
+      const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
 
-        {/* Content */}
-        <div className="p-6">
-          <p className="text-text-secondary leading-relaxed">{message}</p>
-        </div>
+      if (error) {
+        if (error.message === 'Profile fetch timeout') {
+          console.warn('⚠️ Profile fetch timed out, continuing without profile');
+        } else if (error.code === 'PGRST116') {
+          console.log('ℹ️ No profile found, this is normal for new users');
+        } else {
+          console.error('❌ Error fetching profile:', error);
+        }
+      } else {
+        console.log('✅ Profile fetched successfully:', profile);
+      }
 
-        {/* Actions */}
-        <div className="flex gap-3 p-6 border-t border-border-subtle">
-          <Button
-            variant="secondary"
-            onClick={onClose}
-            disabled={loading}
-            className="flex-1"
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            onClick={onConfirm}
-            disabled={loading}
-            className={`flex-1 ${confirmVariant === 'secondary' ? 'bg-red-600 hover:bg-red-700 text-white' : ''}`}
-          >
-            {loading ? 'Processing...' : confirmText}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+      // Update only the profile, don't touch loading state
+      setAuthState(prev => ({ ...prev, profile }));
+    } catch (error) {
+      console.error('❌ Error in fetchProfile:', error);
+      // Don't set loading to false here - it should already be false
+    }
+  };
+
+  const signUp = async (email: string, password: string, userData: {
+    firstName: string;
+    lastName: string;
+    company: string;
+  }) => {
+    console.log('🔄 Signing up user:', email);
+    
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in signUp');
+      return { data: null, error: new Error('Authentication service not available') };
+    }
+    
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+            company: userData.company,
+          },
+        },
+      });
+
+      console.log('✅ Sign up response:', { userId: data?.user?.id, error });
+      return { data, error };
+    } catch (err) {
+      console.error('❌ Sign up error:', err);
+      return { data: null, error: err as any };
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    console.log('🔄 Attempting sign in for:', email);
+
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in signIn');
+      return { data: null, error: new Error('Authentication service not available') };
+    }
+    
+    // Set loading state
+    setAuthState(prev => ({ ...prev, loading: true }));
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('❌ Sign in error:', error);
+        setAuthState(prev => ({ ...prev, loading: false }));
+        sessionStorage.removeItem('justLoggedIn'); 
+        return { data, error };
+      }
+
+      if (data?.user) {
+        console.log('✅ Sign in successful for user:', data.user.id);
+        // Set flag for just logged in to trigger preloader
+        sessionStorage.setItem('justLoggedIn', 'true');
+        
+        // Store auth in localStorage for persistence across tabs/browsers
+        try {
+          localStorage.setItem('supabase.auth.token', JSON.stringify({
+            currentSession: data.session,
+            expiresAt: Math.floor(Date.now() / 1000) + (data.session?.expires_in || 3600)
+          }));
+        } catch (storageError) {
+          console.warn('⚠️ Could not store auth in localStorage:', storageError);
+        }
+        
+        // Auth state change will handle the rest
+        return { data, error: null };
+      } else {
+        console.error('❌ Sign in returned no user data');
+        setAuthState(prev => ({ ...prev, loading: false }));
+        return { data, error: { message: 'No user data returned' } as any };
+      }
+    } catch (err) {
+      console.error('❌ Sign in catch block:', err);
+      setAuthState(prev => ({ ...prev, loading: false }));
+      return { data: null, error: err as any };
+    }
+  };
+
+  const signOut = async () => {
+    console.log('🔄 Signing out...');
+    
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in signOut');
+      return { error: new Error('Authentication service not available') };
+    }
+    
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('❌ Sign out error:', error);
+      } else {
+        console.log('✅ Signed out successfully');
+      }
+      return { error };
+    } catch (err) {
+      console.error('❌ Sign out catch block:', err);
+      return { error: err as any };
+    }
+  };
+
+  const updateProfile = async (updates: Partial<Profile>) => {
+    if (!authState.user) {
+      console.error('❌ No user logged in for profile update');
+      return { error: new Error('No user logged in') };
+    }
+
+    console.log('🔄 Updating profile for user:', authState.user.id);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', authState.user.id)
+        .select()
+        .single();
+
+      if (!error && data) {
+        console.log('✅ Profile updated successfully');
+        setAuthState(prev => ({ ...prev, profile: data }));
+      } else if (error) {
+        console.error('❌ Profile update error:', error);
+      }
+
+      return { data, error };
+    } catch (err) {
+      console.error('❌ Profile update catch block:', err);
+      return { data: null, error: err as any };
+    }
+  };
+
+  return {
+    ...authState,
+    signUp,
+    signIn,
+    signOut,
+    updateProfile,
+  };
 }

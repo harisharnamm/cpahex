@@ -1,581 +1,261 @@
-import React, { useState, ReactElement } from 'react';
-import { useAuthContext } from '../contexts/AuthContext';
-import { TopBar } from '../components/organisms/TopBar';
-import { GlobalSearch } from '../components/molecules/GlobalSearch';
-import { useSearch } from '../contexts/SearchContext';
-import { Input } from '../components/atoms/Input';
-import { Button } from '../components/atoms/Button';
-import { 
-  User,
-  Mail,
-  Bell,
-  Save,
-  Globe,
-  CheckCircle, 
-  Smartphone, 
-  Lock, 
-  Zap,
-  Clock,
-  Shield
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase, Profile } from '../lib/supabase';
 
-export function Settings(): ReactElement {
-  const { profile, updateProfile } = useAuthContext();
-  const [activeSection, setActiveSection] = useState('profile');
-  const { isSearchOpen, closeSearch } = useSearch();
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [updateMessage, setUpdateMessage] = useState<string | null>(null);
-  
-  const [profileData, setProfileData] = useState({
-    first_name: profile?.first_name || '',
-    last_name: profile?.last_name || '',
-    company: profile?.company || '',
-    phone: profile?.phone || '',
+interface AuthState {
+  user: User | null;
+  profile: Profile | null;
+  session: Session | null;
+  loading: boolean;
+}
+
+export function useAuth() {
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    profile: null,
+    session: null,
+    loading: true,
   });
-  
-  const handleProfileUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsUpdating(true);
-    setUpdateMessage(null);
+
+  useEffect(() => {
+    let mounted = true;
+    
+    // Get initial session
+    const initializeAuth = async () => {
+      try {
+        console.log('🔄 Initializing auth...');
+        
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('❌ Error getting session:', error);
+          if (mounted) {
+            setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
+          }
+          return;
+        }
+        
+        console.log('✅ Initial session:', session?.user?.email || 'No session');
+        
+        if (mounted) {
+          if (session?.user) {
+            setAuthState(prev => ({ 
+              ...prev, 
+              session, 
+              user: session.user, 
+              loading: false // Set loading false immediately if we have a user
+            }));
+            // Try to fetch profile, but don't block on it
+            fetchProfile(session.user.id);
+          } else {
+            setAuthState(prev => ({ ...prev, session, user: null, loading: false }));
+          }
+        }
+      } catch (error) {
+        console.error('❌ Auth initialization error:', error);
+        if (mounted) {
+          setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
+        }
+      }
+    };
+    
+    initializeAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('🔄 Auth state changed:', event, session?.user?.email);
+        
+        if (mounted) {
+          if (session?.user) {
+            setAuthState(prev => ({ 
+              ...prev, 
+              session, 
+              user: session.user, 
+              loading: false // Always set loading false when we get auth state change
+            }));
+            // Try to fetch profile, but don't block on it
+            fetchProfile(session.user.id);
+          } else {
+            setAuthState(prev => ({ ...prev, session, user: null, profile: null, loading: false }));
+          }
+        }
+      }
+    );
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const fetchProfile = async (userId: string) => {
+    if (!userId) {
+      console.error('❌ No userId provided to fetchProfile');
+      return;
+    }
     
     try {
-      const { error } = await updateProfile(profileData);
+      console.log('🔄 Fetching profile for user:', userId);
       
+      // Fetch profile with timeout protection, but don't block auth loading on it
+      const profilePromise = supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 15000);
+      });
+      
+      const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
+
       if (error) {
-        setUpdateMessage('Error updating profile');
+        if (error.message === 'Profile fetch timeout') {
+          console.warn('⚠️ Profile fetch timed out, continuing without profile');
+        } else if (error.code === 'PGRST116') {
+          console.log('ℹ️ No profile found, this is normal for new users');
+        } else {
+          console.error('❌ Error fetching profile:', error);
+        }
       } else {
-        setUpdateMessage('Profile updated successfully');
+        console.log('✅ Profile fetched successfully:', profile);
       }
-    } catch (err) {
-      setUpdateMessage('An unexpected error occurred');
-    } finally {
-      setIsUpdating(false);
+
+      // Update only the profile, don't touch loading state
+      setAuthState(prev => ({ ...prev, profile }));
+    } catch (error) {
+      console.error('❌ Error in fetchProfile:', error);
+      // Don't set loading to false here - it should already be false
     }
   };
 
-  const sections = [
-    {
-      id: 'profile',
-      title: 'Profile Settings',
-      icon: User,
-      description: 'Manage your personal information',
-      content: (
-        <div className="space-y-8">
-          {updateMessage && (
-            <div className={`p-4 rounded-xl animate-fade-in ${
-              updateMessage.includes('successfully') 
-                ? 'bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 border border-emerald-200' 
-                : 'bg-gradient-to-r from-red-50 to-red-100 text-red-700 border border-red-200'
-            }`}>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                <span>{updateMessage}</span>
-              </div>
-            </div>
-          )}
-          
-          <div className="bg-gradient-to-br from-surface-elevated to-surface p-6 rounded-2xl border border-border-subtle shadow-soft mb-8">
-            <div className="flex items-center space-x-4 mb-6">
-              <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center shadow-soft">
-                <span className="text-xl font-bold text-gray-900">
-                  {profile?.first_name?.[0] || ''}{profile?.last_name?.[0] || ''}
-                </span>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-text-primary">
-                  {profile?.first_name || ''} {profile?.last_name || ''}
-                </h3>
-                <p className="text-text-tertiary">{profile?.company || 'CPA Firm'}</p>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div className="bg-surface rounded-xl p-4 border border-border-subtle">
-                <div className="flex items-center space-x-2 text-text-tertiary mb-1">
-                  <Mail className="w-4 h-4" />
-                  <span className="text-sm">Email</span>
-                </div>
-                <p className="text-text-primary font-medium">user@example.com</p>
-              </div>
-              
-              <div className="bg-surface rounded-xl p-4 border border-border-subtle">
-                <div className="flex items-center space-x-2 text-text-tertiary mb-1">
-                  <Shield className="w-4 h-4" />
-                  <span className="text-sm">Account Status</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-emerald-100 text-emerald-700 text-xs font-medium">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Active
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            <form onSubmit={handleProfileUpdate} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-text-primary">First Name</label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                    <Input 
-                      value={profileData.first_name}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, first_name: e.target.value }))}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-text-primary">Last Name</label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                    <Input 
-                      value={profileData.last_name}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, last_name: e.target.value }))}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-text-primary">Phone Number</label>
-                <div className="relative">
-                  <Smartphone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                  <Input 
-                    type="tel" 
-                    value={profileData.phone}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-text-primary">Company</label>
-                <div className="relative">
-                  <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                  <Input 
-                    value={profileData.company}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, company: e.target.value }))}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              
-              <div className="pt-4">
-                <Button 
-                  type="submit" 
-                  icon={Save} 
-                  disabled={isUpdating}
-                  className="bg-primary text-gray-900 hover:bg-primary-hover shadow-medium"
-                >
-                  {isUpdating ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      ),
-    },
-    {
-      id: 'email',
-      title: 'Email Templates',
-      icon: Mail,
-      description: 'Customize your email communications',
-      content: (
-        <div className="space-y-8">
-          <div className="bg-gradient-to-br from-surface-elevated to-surface p-6 rounded-2xl border border-border-subtle shadow-soft">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-3 bg-blue-100 rounded-xl">
-                <Mail className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-text-primary">Email Templates</h3>
-                <p className="text-text-tertiary text-sm">Customize your client communications</p>
-              </div>
-            </div>
-            
-            <div className="space-y-6">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-semibold text-text-primary">
-                    W-9 Request Template
-                  </label>
-                  <div className="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-medium">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Active
-                  </div>
-                </div>
-                <textarea
-                  className="w-full h-40 px-4 py-3 bg-surface border border-border-subtle rounded-xl text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all duration-200"
-                  defaultValue="Dear [Vendor Name],
+  const signUp = async (email: string, password: string, userData: {
+    firstName: string;
+    lastName: string;
+    company: string;
+  }) => {
+    console.log('🔄 Signing up user:', email);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+            company: userData.company,
+          },
+        },
+      });
 
-We need you to complete a W-9 form for our tax records. Please complete and return the attached form at your earliest convenience.
+      console.log('✅ Sign up response:', { userId: data?.user?.id, error });
+      return { data, error };
+    } catch (err) {
+      console.error('❌ Sign up error:', err);
+      return { data: null, error: err as any };
+    }
+  };
 
-Thank you,
-[Your Name]"
-                />
-                <div className="flex items-center space-x-2 mt-2">
-                  <span className="text-xs text-text-tertiary">Available variables:</span>
-                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-surface-elevated text-text-secondary text-xs font-mono">
-                    [Vendor Name]
-                  </span>
-                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-surface-elevated text-text-secondary text-xs font-mono">
-                    [Your Name]
-                  </span>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-semibold text-text-primary">
-                    IRS Notice Follow-up Template
-                  </label>
-                  <div className="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-medium">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Active
-                  </div>
-                </div>
-                <textarea
-                  className="w-full h-32 px-4 py-3 bg-surface border border-border-subtle rounded-xl text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all duration-200"
-                  defaultValue="Dear [Client Name],
+  const signIn = async (email: string, password: string) => {
+    console.log('🔄 Attempting sign in for:', email);
+    
+    // Set loading state
+    setAuthState(prev => ({ ...prev, loading: true }));
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-We have received an IRS notice regarding your account. Please review the attached summary and let us know if you have any questions.
+      if (error) {
+        console.error('❌ Sign in error:', error);
+        setAuthState(prev => ({ ...prev, loading: false }));
+        sessionStorage.removeItem('justLoggedIn'); 
+        return { data, error };
+      }
 
-Best regards,
-[Your Name]"
-                />
-                <div className="flex items-center space-x-2 mt-2">
-                  <span className="text-xs text-text-tertiary">Available variables:</span>
-                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-surface-elevated text-text-secondary text-xs font-mono">
-                    [Client Name]
-                  </span>
-                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-surface-elevated text-text-secondary text-xs font-mono">
-                    [Your Name]
-                  </span>
-                </div>
-              </div>
-              
-              <Button icon={Save} className="bg-primary text-gray-900 hover:bg-primary-hover shadow-medium">
-                Save Templates
-              </Button>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      id: 'notifications',
-      title: 'Notifications',
-      icon: Bell,
-      description: 'Configure your notification preferences',
-      content: (
-        <div className="space-y-8">
-          <div className="bg-gradient-to-br from-surface-elevated to-surface p-6 rounded-2xl border border-border-subtle shadow-soft">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-3 bg-amber-100 rounded-xl">
-                <Bell className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-text-primary">Notification Preferences</h3>
-                <p className="text-text-tertiary text-sm">Choose how you want to be notified</p>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="bg-surface rounded-xl border border-border-subtle overflow-hidden">
-                <div className="p-5 border-b border-border-subtle">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold text-text-primary">Email Notifications</h4>
-                      <p className="text-sm text-text-tertiary mt-1">Receive email updates about important events</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" defaultChecked className="sr-only peer" />
-                      <div className="w-11 h-6 bg-surface-hover peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="p-5 border-b border-border-subtle bg-surface-elevated">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-amber-50 rounded-lg">
-                        <Clock className="w-4 h-4 text-amber-600" />
-                      </div>
-                      <div>
-                        <h5 className="font-medium text-text-primary">Deadline Reminders</h5>
-                        <p className="text-xs text-text-tertiary mt-1">Get reminded about upcoming tax deadlines</p>
-                      </div>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" defaultChecked className="sr-only peer" />
-                      <div className="w-11 h-6 bg-surface-hover peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="p-5 border-b border-border-subtle">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-blue-50 rounded-lg">
-                        <Zap className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <div>
-                        <h5 className="font-medium text-text-primary">AI Insights</h5>
-                        <p className="text-xs text-text-tertiary mt-1">Receive notifications when AI detects important patterns</p>
-                      </div>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" defaultChecked className="sr-only peer" />
-                      <div className="w-11 h-6 bg-surface-hover peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-emerald-50 rounded-lg">
-                        <User className="w-4 h-4 text-emerald-600" />
-                      </div>
-                      <div>
-                        <h5 className="font-medium text-text-primary">Client Updates</h5>
-                        <p className="text-xs text-text-tertiary mt-1">Get notified when clients upload documents</p>
-                      </div>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" />
-                      <div className="w-11 h-6 bg-surface-hover peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-surface rounded-xl border border-border-subtle p-5">
-                <h4 className="font-semibold text-text-primary mb-3">Notification Channels</h4>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Mail className="w-4 h-4 text-text-tertiary" />
-                      <span className="text-text-primary">Email</span>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" defaultChecked className="sr-only peer" />
-                      <div className="w-11 h-6 bg-surface-hover peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Smartphone className="w-4 h-4 text-text-tertiary" />
-                      <span className="text-text-primary">Mobile Push</span>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" defaultChecked className="sr-only peer" />
-                      <div className="w-11 h-6 bg-surface-hover peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-              
-              <Button icon={Save} className="bg-primary text-gray-900 hover:bg-primary-hover shadow-medium">
-                Save Preferences
-              </Button>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      id: 'security',
-      title: 'Security',
-      icon: Lock,
-      description: 'Manage your account security',
-      content: (
-        <div className="space-y-8">
-          <div className="bg-gradient-to-br from-surface-elevated to-surface p-6 rounded-2xl border border-border-subtle shadow-soft">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-3 bg-emerald-100 rounded-xl">
-                <Lock className="w-5 h-5 text-emerald-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-text-primary">Account Security</h3>
-                <p className="text-text-tertiary text-sm">Manage your password and security settings</p>
-              </div>
-            </div>
-            
-            <div className="space-y-6">
-              <div className="bg-surface rounded-xl border border-border-subtle p-5">
-                <h4 className="font-semibold text-text-primary mb-4">Change Password</h4>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-text-primary">Current Password</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                      <Input 
-                        type="password"
-                        placeholder="Enter your current password"
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-text-primary">New Password</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                      <Input 
-                        type="password"
-                        placeholder="Enter new password"
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-text-primary">Confirm New Password</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                      <Input 
-                        type="password"
-                        placeholder="Confirm new password"
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  
-                  <Button className="bg-primary text-gray-900 hover:bg-primary-hover shadow-medium">
-                    Update Password
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="bg-surface rounded-xl border border-border-subtle p-5">
-                <h4 className="font-semibold text-text-primary mb-4">Two-Factor Authentication</h4>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-text-primary">Enhance your account security with 2FA</p>
-                    <p className="text-sm text-text-tertiary mt-1">Protect your account with an additional layer of security</p>
-                  </div>
-                  <Button variant="secondary">Enable 2FA</Button>
-                </div>
-              </div>
-              
-              <div className="bg-surface rounded-xl border border-border-subtle p-5">
-                <h4 className="font-semibold text-text-primary mb-4">Login Sessions</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-surface-elevated rounded-lg border border-border-subtle">
-                    <div>
-                      <p className="text-text-primary font-medium">Current Session</p>
-                      <p className="text-xs text-text-tertiary mt-1">Chrome on Windows • IP: 192.168.1.1</p>
-                    </div>
-                    <div className="inline-flex items-center px-2 py-1 rounded-md bg-emerald-100 text-emerald-700 text-xs font-medium">
-                      Active Now
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 bg-surface-elevated rounded-lg border border-border-subtle">
-                    <div>
-                      <p className="text-text-primary font-medium">Mobile App</p>
-                      <p className="text-xs text-text-tertiary mt-1">iPhone • Last active: 2 hours ago</p>
-                    </div>
-                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                      Revoke
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-  ];
+      if (data?.user) {
+        console.log('✅ Sign in successful for user:', data.user.id);
+        // Set flag for just logged in to trigger preloader
+        sessionStorage.setItem('justLoggedIn', 'true');
+        
+        // Store auth in localStorage for persistence across tabs/browsers
+        try {
+          localStorage.setItem('supabase.auth.token', JSON.stringify({
+            currentSession: data.session,
+            expiresAt: Math.floor(Date.now() / 1000) + (data.session?.expires_in || 3600)
+          }));
+        } catch (storageError) {
+          console.warn('⚠️ Could not store auth in localStorage:', storageError);
+        }
+        
+        // Auth state change will handle the rest
+        return { data, error: null };
+      } else {
+        console.error('❌ Sign in returned no user data');
+        setAuthState(prev => ({ ...prev, loading: false }));
+        return { data, error: { message: 'No user data returned' } as any };
+      }
+    } catch (err) {
+      console.error('❌ Sign in catch block:', err);
+      setAuthState(prev => ({ ...prev, loading: false }));
+      return { data: null, error: err as any };
+    }
+  };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated">
-      <TopBar title="Settings" />
+  const signOut = async () => {
+    console.log('🔄 Signing out...');
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('❌ Sign out error:', error);
+      } else {
+        console.log('✅ Signed out successfully');
+      }
+      return { error };
+    } catch (err) {
+      console.error('❌ Sign out catch block:', err);
+      return { error: err as any };
+    }
+  };
 
-      {/* Global Search */}
-      <GlobalSearch isOpen={isSearchOpen} onClose={closeSearch} />
-      
-      <div className="max-w-content mx-auto px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Settings Navigation */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-gradient-to-br from-surface-elevated to-surface rounded-2xl border border-border-subtle p-6 shadow-soft sticky top-8">
-              <h3 className="font-semibold text-text-primary mb-6">Settings</h3>
-              <nav className="space-y-3">
-                {sections.map((section) => (
-                  <button
-                    key={section.id}
-                    onClick={() => setActiveSection(section.id)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
-                      activeSection === section.id
-                        ? 'bg-gradient-to-r from-primary to-primary-hover text-gray-900 shadow-soft'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover border border-transparent hover:border-border-subtle'
-                    }`}
-                  >
-                    <div className={`p-2 rounded-lg ${
-                      activeSection === section.id
-                        ? 'bg-white/20'
-                        : 'bg-surface'
-                    }`}>
-                      <section.icon className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium block">{section.title}</span>
-                      {section.description && (
-                        <span className="text-xs opacity-80 truncate block">{section.description}</span>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </nav>
-            </div>
-            
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl border border-blue-200 p-6 shadow-soft hidden lg:block sticky top-[calc(8rem+1.5rem)] z-10">
-              <div className="flex items-center space-x-3 mb-4 relative">
-                <div className="p-2 bg-blue-200 rounded-lg">
-                  <Zap className="w-4 h-4 text-blue-700" />
-                </div>
-                <h4 className="font-semibold text-blue-800">Need Help?</h4>
-              </div>
-              <p className="text-sm text-blue-700 mb-4">
-                Our support team is available to help you with any questions about your account settings.
-              </p>
-              <Button variant="secondary" className="w-full border-blue-300 bg-blue-100/50 hover:bg-blue-200/50 text-blue-700 relative">
-                Contact Support
-              </Button>
-            </div>
-          </div>
+  const updateProfile = async (updates: Partial<Profile>) => {
+    if (!authState.user) {
+      console.error('❌ No user logged in for profile update');
+      return { error: new Error('No user logged in') };
+    }
 
-          {/* Settings Content */}
-          <div className="lg:col-span-3">
-            <div className="bg-gradient-to-br from-surface-elevated to-surface rounded-2xl border border-border-subtle shadow-soft overflow-hidden">
-              <div className="p-6 border-b border-border-subtle bg-surface-elevated">
-                <h2 className="text-xl font-bold text-text-primary">
-                  {sections.find(s => s.id === activeSection)?.title}
-                </h2>
-                <p className="text-text-tertiary">
-                  {sections.find(s => s.id === activeSection)?.description}
-                </p>
-              </div>
-              <div className="p-6">
-                <div className="animate-fade-in">
-                  {sections.find(s => s.id === activeSection)?.content}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    console.log('🔄 Updating profile for user:', authState.user.id);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', authState.user.id)
+        .select()
+        .single();
+
+      if (!error && data) {
+        console.log('✅ Profile updated successfully');
+        setAuthState(prev => ({ ...prev, profile: data }));
+      } else if (error) {
+        console.error('❌ Profile update error:', error);
+      }
+
+      return { data, error };
+    } catch (err) {
+      console.error('❌ Profile update catch block:', err);
+      return { data: null, error: err as any };
+    }
+  };
+
+  return {
+    ...authState,
+    signUp,
+    signIn,
+    signOut,
+    updateProfile,
+  };
 }
-
-// Add default export for compatibility
-export default Settings;

@@ -1,314 +1,261 @@
-import React, { useState } from 'react';
-import { X, Calendar, User, Flag, FileText, Clock, CheckCircle, RotateCcw, Pencil, Trash2 } from 'lucide-react';
-import { Button } from '../atoms/Button';
-import { Badge } from '../atoms/Badge';
-import { Task } from '../../hooks/useTasks';
-import { ClientWithDocuments } from '../../hooks/useClients';
+import { useState, useEffect } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase, Profile } from '../lib/supabase';
 
-interface TaskDetailDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  task: Task | null;
-  clients: ClientWithDocuments[];
-  onMarkComplete: (taskId: string) => Promise<void>;
-  onMarkPending: (taskId: string) => Promise<void>;
-  onMarkInProgress: (taskId: string) => Promise<void>;
-  onDelete: (taskId: string, taskTitle: string) => Promise<void>;
-  onEdit?: (task: Task) => void;
+interface AuthState {
+  user: User | null;
+  profile: Profile | null;
+  session: Session | null;
+  loading: boolean;
 }
 
-export function TaskDetailDialog({
-  isOpen,
-  onClose,
-  task,
-  clients,
-  onMarkComplete,
-  onMarkPending,
-  onMarkInProgress,
-  onDelete,
-  onEdit
-}: TaskDetailDialogProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+export function useAuth() {
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    profile: null,
+    session: null,
+    loading: true,
+  });
 
-  if (!isOpen || !task) return null;
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <Badge variant="success">Completed</Badge>;
-      case 'in_progress':
-        return <Badge variant="warning">In Progress</Badge>;
-      case 'pending':
-        return <Badge variant="neutral">Pending</Badge>;
-      case 'cancelled':
-        return <Badge variant="error">Cancelled</Badge>;
-      default:
-        return <Badge variant="neutral">{status}</Badge>;
-    }
-  };
-
-  const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return <Badge variant="error">High Priority</Badge>;
-      case 'medium':
-        return <Badge variant="warning">Medium Priority</Badge>;
-      default:
-        return <Badge variant="neutral">Low Priority</Badge>;
-    }
-  };
-
-  const getClientName = (clientId?: string) => {
-    if (!clientId) return 'General Task';
-    const client = clients.find(c => c.id === clientId);
-    return client ? client.name : 'Unknown Client';
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'No due date';
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = date.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  useEffect(() => {
+    let mounted = true;
     
-    if (diffDays < 0) {
-      return `Overdue by ${Math.abs(diffDays)} day(s)`;
-    } else if (diffDays === 0) {
-      return 'Due today';
-    } else if (diffDays === 1) {
-      return 'Due tomorrow';
-    } else {
-      return `Due in ${diffDays} day(s)`;
-    }
-  };
-
-  const handleMarkComplete = async () => {
-    setIsUpdatingStatus(true);
-    try {
-      await onMarkComplete(task.id);
-    } finally {
-      setIsUpdatingStatus(false);
-    }
-  };
-
-  const handleMarkPending = async () => {
-    setIsUpdatingStatus(true);
-    try {
-      await onMarkPending(task.id);
-    } finally {
-      setIsUpdatingStatus(false);
-    }
-  };
-
-  const handleMarkInProgress = async () => {
-    setIsUpdatingStatus(true);
-    try {
-      await onMarkInProgress(task.id);
-    } finally {
-      setIsUpdatingStatus(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete "${task.title}"? This action cannot be undone.`)) {
-      setIsDeleting(true);
+    // Get initial session
+    const initializeAuth = async () => {
       try {
-        await onDelete(task.id, task.title);
-        onClose();
-      } finally {
-        setIsDeleting(false);
+        console.log('🔄 Initializing auth...');
+        
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('❌ Error getting session:', error);
+          if (mounted) {
+            setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
+          }
+          return;
+        }
+        
+        console.log('✅ Initial session:', session?.user?.email || 'No session');
+        
+        if (mounted) {
+          if (session?.user) {
+            setAuthState(prev => ({ 
+              ...prev, 
+              session, 
+              user: session.user, 
+              loading: false // Set loading false immediately if we have a user
+            }));
+            // Try to fetch profile, but don't block on it
+            fetchProfile(session.user.id);
+          } else {
+            setAuthState(prev => ({ ...prev, session, user: null, loading: false }));
+          }
+        }
+      } catch (error) {
+        console.error('❌ Auth initialization error:', error);
+        if (mounted) {
+          setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
+        }
       }
+    };
+    
+    initializeAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('🔄 Auth state changed:', event, session?.user?.email);
+        
+        if (mounted) {
+          if (session?.user) {
+            setAuthState(prev => ({ 
+              ...prev, 
+              session, 
+              user: session.user, 
+              loading: false // Always set loading false when we get auth state change
+            }));
+            // Try to fetch profile, but don't block on it
+            fetchProfile(session.user.id);
+          } else {
+            setAuthState(prev => ({ ...prev, session, user: null, profile: null, loading: false }));
+          }
+        }
+      }
+    );
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const fetchProfile = async (userId: string) => {
+    if (!userId) {
+      console.error('❌ No userId provided to fetchProfile');
+      return;
+    }
+    
+    try {
+      console.log('🔄 Fetching profile for user:', userId);
+      
+      // Fetch profile with timeout protection, but don't block auth loading on it
+      const profilePromise = supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 15000);
+      });
+      
+      const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
+
+      if (error) {
+        if (error.message === 'Profile fetch timeout') {
+          console.warn('⚠️ Profile fetch timed out, continuing without profile');
+        } else if (error.code === 'PGRST116') {
+          console.log('ℹ️ No profile found, this is normal for new users');
+        } else {
+          console.error('❌ Error fetching profile:', error);
+        }
+      } else {
+        console.log('✅ Profile fetched successfully:', profile);
+      }
+
+      // Update only the profile, don't touch loading state
+      setAuthState(prev => ({ ...prev, profile }));
+    } catch (error) {
+      console.error('❌ Error in fetchProfile:', error);
+      // Don't set loading to false here - it should already be false
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-elevated rounded-2xl shadow-premium max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-scale-in">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border-subtle">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl">
-              <FileText className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-text-primary">Task Details</h2>
-              <div className="flex items-center space-x-2 mt-1">
-                {getStatusBadge(task.status)}
-                {getPriorityBadge(task.priority)}
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-xl"
-            aria-label="Close dialog"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+  const signUp = async (email: string, password: string, userData: {
+    firstName: string;
+    lastName: string;
+    company: string;
+  }) => {
+    console.log('🔄 Signing up user:', email);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+            company: userData.company,
+          },
+        },
+      });
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Task Title */}
-          <div>
-            <h3 className="text-2xl font-bold text-text-primary mb-2">{task.title}</h3>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="neutral" size="sm" className="capitalize">
-                {task.task_type.replace('_', ' ')}
-              </Badge>
-              {new Date().getTime() - new Date(task.created_at).getTime() < 24 * 60 * 60 * 1000 && (
-                <Badge variant="warning" size="sm">NEW</Badge>
-              )}
-            </div>
-          </div>
+      console.log('✅ Sign up response:', { userId: data?.user?.id, error });
+      return { data, error };
+    } catch (err) {
+      console.error('❌ Sign up error:', err);
+      return { data: null, error: err as any };
+    }
+  };
 
-          {/* Task Description */}
-          {task.description && (
-            <div className="space-y-2">
-              <h4 className="font-semibold text-text-primary">Description</h4>
-              <div className="bg-surface rounded-xl p-4 border border-border-subtle">
-                <div className="text-text-secondary whitespace-pre-line">
-                  {task.description}
-                </div>
-              </div>
-            </div>
-          )}
+  const signIn = async (email: string, password: string) => {
+    console.log('🔄 Attempting sign in for:', email);
+    
+    // Set loading state
+    setAuthState(prev => ({ ...prev, loading: true }));
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-          {/* Task Metadata */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-semibold text-text-primary mb-2">Client</h4>
-                <div className="flex items-center space-x-2">
-                  <User className="w-5 h-5 text-text-tertiary" />
-                  <span className="text-text-secondary">{getClientName(task.client_id)}</span>
-                </div>
-              </div>
+      if (error) {
+        console.error('❌ Sign in error:', error);
+        setAuthState(prev => ({ ...prev, loading: false }));
+        sessionStorage.removeItem('justLoggedIn'); 
+        return { data, error };
+      }
 
-              <div>
-                <h4 className="font-semibold text-text-primary mb-2">Due Date</h4>
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-5 h-5 text-text-tertiary" />
-                  <span className={task.due_date && new Date(task.due_date) < new Date() ? 'text-red-600 font-medium' : 'text-text-secondary'}>
-                    {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date'} 
-                    {task.due_date && ` (${formatDate(task.due_date)})`}
-                  </span>
-                </div>
-              </div>
-            </div>
+      if (data?.user) {
+        console.log('✅ Sign in successful for user:', data.user.id);
+        // Set flag for just logged in to trigger preloader
+        sessionStorage.setItem('justLoggedIn', 'true');
+        
+        // Store auth in localStorage for persistence across tabs/browsers
+        try {
+          localStorage.setItem('supabase.auth.token', JSON.stringify({
+            currentSession: data.session,
+            expiresAt: Math.floor(Date.now() / 1000) + (data.session?.expires_in || 3600)
+          }));
+        } catch (storageError) {
+          console.warn('⚠️ Could not store auth in localStorage:', storageError);
+        }
+        
+        // Auth state change will handle the rest
+        return { data, error: null };
+      } else {
+        console.error('❌ Sign in returned no user data');
+        setAuthState(prev => ({ ...prev, loading: false }));
+        return { data, error: { message: 'No user data returned' } as any };
+      }
+    } catch (err) {
+      console.error('❌ Sign in catch block:', err);
+      setAuthState(prev => ({ ...prev, loading: false }));
+      return { data: null, error: err as any };
+    }
+  };
 
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-semibold text-text-primary mb-2">Priority</h4>
-                <div className="flex items-center space-x-2">
-                  <Flag className="w-5 h-5 text-text-tertiary" />
-                  <span className="text-text-secondary capitalize">{task.priority} priority</span>
-                </div>
-              </div>
+  const signOut = async () => {
+    console.log('🔄 Signing out...');
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('❌ Sign out error:', error);
+      } else {
+        console.log('✅ Signed out successfully');
+      }
+      return { error };
+    } catch (err) {
+      console.error('❌ Sign out catch block:', err);
+      return { error: err as any };
+    }
+  };
 
-              <div>
-                <h4 className="font-semibold text-text-primary mb-2">Created</h4>
-                <div className="flex items-center space-x-2">
-                  <Clock className="w-5 h-5 text-text-tertiary" />
-                  <span className="text-text-secondary">{new Date(task.created_at).toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+  const updateProfile = async (updates: Partial<Profile>) => {
+    if (!authState.user) {
+      console.error('❌ No user logged in for profile update');
+      return { error: new Error('No user logged in') };
+    }
 
-          {/* Completion Info */}
-          {task.status === 'completed' && task.completed_at && (
-            <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-5 h-5 text-emerald-600" />
-                <div>
-                  <h4 className="font-semibold text-emerald-800">Completed</h4>
-                  <p className="text-sm text-emerald-700">
-                    {new Date(task.completed_at).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+    console.log('🔄 Updating profile for user:', authState.user.id);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', authState.user.id)
+        .select()
+        .single();
 
-        {/* Footer */}
-        <div className="p-6 border-t border-border-subtle bg-surface">
-          <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center space-x-3 w-full sm:w-auto">
-              <Button
-                variant="secondary"
-                icon={Trash2}
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-200 w-full sm:w-auto"
-              >
-                {isDeleting ? 'Deleting...' : 'Delete Task'}
-              </Button>
-              
-              {onEdit && (
-                <Button
-                  variant="secondary"
-                  icon={Pencil}
-                  onClick={() => {
-                    onEdit(task);
-                    onClose();
-                  }}
-                  className="w-full sm:w-auto"
-                >
-                  Edit Task
-                </Button>
-              )}
-            </div>
-            
-            <div className="flex items-center space-x-3 w-full sm:w-auto">
-              {task.status === 'completed' ? (
-                <Button
-                  variant="secondary"
-                  icon={RotateCcw}
-                  onClick={handleMarkPending}
-                  disabled={isUpdatingStatus}
-                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-200 w-full sm:w-auto"
-                >
-                  {isUpdatingStatus ? 'Updating...' : 'Mark as Pending'}
-                </Button>
-              ) : task.status === 'pending' ? (
-                <>
-                  <Button
-                    variant="secondary"
-                    icon={Clock}
-                    onClick={handleMarkInProgress}
-                    disabled={isUpdatingStatus}
-                    className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 hover:border-amber-200 w-full sm:w-auto"
-                  >
-                    {isUpdatingStatus ? 'Updating...' : 'Mark In Progress'}
-                  </Button>
-                  <Button
-                    variant="primary"
-                    icon={CheckCircle}
-                    onClick={handleMarkComplete}
-                    disabled={isUpdatingStatus}
-                    className="bg-primary text-gray-900 hover:bg-primary-hover w-full sm:w-auto"
-                  >
-                    {isUpdatingStatus ? 'Updating...' : 'Mark Complete'}
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  variant="primary"
-                  icon={CheckCircle}
-                  onClick={handleMarkComplete}
-                  disabled={isUpdatingStatus}
-                  className="bg-primary text-gray-900 hover:bg-primary-hover w-full sm:w-auto"
-                >
-                  {isUpdatingStatus ? 'Updating...' : 'Mark Complete'}
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+      if (!error && data) {
+        console.log('✅ Profile updated successfully');
+        setAuthState(prev => ({ ...prev, profile: data }));
+      } else if (error) {
+        console.error('❌ Profile update error:', error);
+      }
+
+      return { data, error };
+    } catch (err) {
+      console.error('❌ Profile update catch block:', err);
+      return { data: null, error: err as any };
+    }
+  };
+
+  return {
+    ...authState,
+    signUp,
+    signIn,
+    signOut,
+    updateProfile,
+  };
 }
