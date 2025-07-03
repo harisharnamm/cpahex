@@ -6,14 +6,11 @@ import { useSearch } from '../contexts/SearchContext';
 import { Input } from '../components/atoms/Input';
 import { Button } from '../components/atoms/Button';
 import { 
-  User, 
-  Mail, 
-  Key, 
-  Bell, 
-  Save, 
-  Shield, 
-  CreditCard, 
-  Globe, 
+  User,
+  Mail,
+  Bell,
+  Save,
+  Globe,
   CheckCircle, 
   Smartphone, 
   Lock, 
@@ -262,99 +259,6 @@ Best regards,
               
               <Button icon={Save} className="bg-primary text-gray-900 hover:bg-primary-hover shadow-medium">
                 Save Templates
-              </Button>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      id: 'api',
-      title: 'API Configuration',
-      icon: Key,
-      description: 'Manage API keys and integrations',
-      content: (
-        <div className="space-y-8">
-          <div className="bg-gradient-to-br from-surface-elevated to-surface p-6 rounded-2xl border border-border-subtle shadow-soft">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-3 bg-purple-100 rounded-xl">
-                <Key className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-text-primary">API Keys</h3>
-                <p className="text-text-tertiary text-sm">Manage your integration keys</p>
-              </div>
-            </div>
-            
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 mb-6">
-              <div className="flex items-start space-x-3">
-                <Shield className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-amber-800 text-sm font-medium mb-1">Security Note</p>
-                  <p className="text-amber-700 text-sm">
-                    API keys are encrypted and stored securely. Never share your keys with unauthorized users or include them in client-side code.
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-text-primary">OpenAI API Key</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                  <Input
-                    type="password"
-                    placeholder="sk-..."
-                    defaultValue="sk-1234567890abcdef"
-                    className="pl-10"
-                  />
-                </div>
-                <div className="flex items-center mt-1">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></div>
-                  <span className="text-xs text-emerald-600">Connected and working</span>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-text-primary">Document OCR Service</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                  <Input
-                    type="password"
-                    placeholder="API key for OCR service"
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-text-primary">Stripe API Key</label>
-                <div className="relative">
-                  <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-                  <Input
-                    type="password"
-                    placeholder="sk_test_..."
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              
-              <div className="bg-surface rounded-xl p-4 border border-border-subtle">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-semibold text-text-primary">API Status</h4>
-                    <p className="text-sm text-text-tertiary">All services connected</p>
-                  </div>
-                  <div className="inline-flex items-center px-2 py-1 rounded-md bg-emerald-100 text-emerald-700 text-xs font-medium">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Active
-                  </div>
-                </div>
-              </div>
-              
-              <Button icon={Save} className="bg-primary text-gray-900 hover:bg-primary-hover shadow-medium">
-                Save API Keys
               </Button>
             </div>
           </div>
