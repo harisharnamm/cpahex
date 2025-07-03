@@ -1,42 +1,296 @@
-import React from 'react';
-import { DivideIcon as LucideIcon } from 'lucide-react';
-import { Button } from '../atoms/Button';
+import { useState, useEffect } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase, Profile } from '../lib/supabase';
 
-interface EmptyStateProps {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  action?: {
-    label: string;
-    onClick: () => void;
-    icon?: LucideIcon;
-  };
+interface AuthState {
+  user: User | null;
+  profile: Profile | null;
+  session: Session | null;
+  loading: boolean;
 }
 
-export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
-      <div className="p-4 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl w-16 h-16 mb-6 flex items-center justify-center">
-        <Icon className="w-8 h-8 text-gray-600 dark:text-gray-400" />
-      </div>
+export function useAuth() {
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    profile: null,
+    session: null,
+    loading: true,
+  });
+
+  useEffect(() => {
+    let mounted = true;
+    
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in useAuth');
+      if (mounted) {
+        setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
+      }
+      return;
+    }
+    
+    // Get initial session
+    const initializeAuth = async () => {
+      try {
+        console.log('🔄 Initializing auth...');
+        
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('❌ Error getting session:', error);
+          if (mounted) {
+            setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
+          }
+          return;
+        }
+        
+        console.log('✅ Initial session:', session?.user?.email || 'No session');
+        
+        if (mounted) {
+          if (session?.user) {
+            setAuthState(prev => ({ 
+              ...prev, 
+              session, 
+              user: session.user, 
+              loading: false // Set loading false immediately if we have a user
+            }));
+            // Try to fetch profile, but don't block on it
+            fetchProfile(session.user.id);
+          } else {
+            setAuthState(prev => ({ ...prev, session, user: null, loading: false }));
+          }
+        }
+      } catch (error) {
+        console.error('❌ Auth initialization error:', error);
+        if (mounted) {
+          setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
+        }
+      }
+    };
+    
+    initializeAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('🔄 Auth state changed:', event, session?.user?.email);
+        
+        if (mounted) {
+          if (session?.user) {
+            setAuthState(prev => ({ 
+              ...prev, 
+              session, 
+              user: session.user, 
+              loading: false // Always set loading false when we get auth state change
+            }));
+            // Try to fetch profile, but don't block on it
+            fetchProfile(session.user.id);
+          } else {
+            setAuthState(prev => ({ ...prev, session, user: null, profile: null, loading: false }));
+          }
+        }
+      }
+    );
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const fetchProfile = async (userId: string) => {
+    if (!userId) {
+      console.error('❌ No userId provided to fetchProfile');
+      return;
+    }
+    
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in fetchProfile');
+      return;
+    }
+    
+    try {
+      console.log('🔄 Fetching profile for user:', userId);
       
-      <h3 className="text-xl font-semibold text-text-primary mb-3">
-        {title}
-      </h3>
+      // Fetch profile with timeout protection, but don't block auth loading on it
+      const profilePromise = supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
       
-      <p className="text-text-secondary max-w-md mb-8 leading-relaxed">
-        {description}
-      </p>
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 15000);
+      });
       
-      {action && (
-        <Button
-          onClick={action.onClick}
-          icon={action.icon}
-          className="bg-primary text-gray-900 hover:bg-primary-hover"
-        >
-          {action.label}
-        </Button>
-      )}
-    </div>
-  );
+      const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
+
+      if (error) {
+        if (error.message === 'Profile fetch timeout') {
+          console.warn('⚠️ Profile fetch timed out, continuing without profile');
+        } else if (error.code === 'PGRST116') {
+          console.log('ℹ️ No profile found, this is normal for new users');
+        } else {
+          console.error('❌ Error fetching profile:', error);
+        }
+      } else {
+        console.log('✅ Profile fetched successfully:', profile);
+      }
+
+      // Update only the profile, don't touch loading state
+      setAuthState(prev => ({ ...prev, profile }));
+    } catch (error) {
+      console.error('❌ Error in fetchProfile:', error);
+      // Don't set loading to false here - it should already be false
+    }
+  };
+
+  const signUp = async (email: string, password: string, userData: {
+    firstName: string;
+    lastName: string;
+    company: string;
+  }) => {
+    console.log('🔄 Signing up user:', email);
+    
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in signUp');
+      return { data: null, error: new Error('Authentication service not available') };
+    }
+    
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+            company: userData.company,
+          },
+        },
+      });
+
+      console.log('✅ Sign up response:', { userId: data?.user?.id, error });
+      return { data, error };
+    } catch (err) {
+      console.error('❌ Sign up error:', err);
+      return { data: null, error: err as any };
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    console.log('🔄 Attempting sign in for:', email);
+
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in signIn');
+      return { data: null, error: new Error('Authentication service not available') };
+    }
+    
+    // Set loading state
+    setAuthState(prev => ({ ...prev, loading: true }));
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('❌ Sign in error:', error);
+        setAuthState(prev => ({ ...prev, loading: false }));
+        sessionStorage.removeItem('justLoggedIn'); 
+        return { data, error };
+      }
+
+      if (data?.user) {
+        console.log('✅ Sign in successful for user:', data.user.id);
+        // Set flag for just logged in to trigger preloader
+        sessionStorage.setItem('justLoggedIn', 'true');
+        
+        // Store auth in localStorage for persistence across tabs/browsers
+        try {
+          localStorage.setItem('supabase.auth.token', JSON.stringify({
+            currentSession: data.session,
+            expiresAt: Math.floor(Date.now() / 1000) + (data.session?.expires_in || 3600)
+          }));
+        } catch (storageError) {
+          console.warn('⚠️ Could not store auth in localStorage:', storageError);
+        }
+        
+        // Auth state change will handle the rest
+        return { data, error: null };
+      } else {
+        console.error('❌ Sign in returned no user data');
+        setAuthState(prev => ({ ...prev, loading: false }));
+        return { data, error: { message: 'No user data returned' } as any };
+      }
+    } catch (err) {
+      console.error('❌ Sign in catch block:', err);
+      setAuthState(prev => ({ ...prev, loading: false }));
+      return { data: null, error: err as any };
+    }
+  };
+
+  const signOut = async () => {
+    console.log('🔄 Signing out...');
+    
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in signOut');
+      return { error: new Error('Authentication service not available') };
+    }
+    
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('❌ Sign out error:', error);
+      } else {
+        console.log('✅ Signed out successfully');
+      }
+      return { error };
+    } catch (err) {
+      console.error('❌ Sign out catch block:', err);
+      return { error: err as any };
+    }
+  };
+
+  const updateProfile = async (updates: Partial<Profile>) => {
+    if (!authState.user) {
+      console.error('❌ No user logged in for profile update');
+      return { error: new Error('No user logged in') };
+    }
+
+    console.log('🔄 Updating profile for user:', authState.user.id);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', authState.user.id)
+        .select()
+        .single();
+
+      if (!error && data) {
+        console.log('✅ Profile updated successfully');
+        setAuthState(prev => ({ ...prev, profile: data }));
+      } else if (error) {
+        console.error('❌ Profile update error:', error);
+      }
+
+      return { data, error };
+    } catch (err) {
+      console.error('❌ Profile update catch block:', err);
+      return { data: null, error: err as any };
+    }
+  };
+
+  return {
+    ...authState,
+    signUp,
+    signIn,
+    signOut,
+    updateProfile,
+  };
 }

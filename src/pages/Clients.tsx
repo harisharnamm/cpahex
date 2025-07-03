@@ -1,361 +1,272 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Users, Building2, Mail, Phone, MapPin, Calendar, FileText, AlertCircle } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
-import { useClients } from '../hooks/useClients';
-import { Button } from '../components/atoms/Button';
-import { Input } from '../components/atoms/Input';
-import { Badge } from '../components/atoms/Badge';
-import { Modal } from '../components/molecules/Modal';
-import { EnhancedClientDialog } from '../components/ui/enhanced-client-dialog';
-import { EmptyState } from '../components/ui/empty-state';
-import { Skeleton } from '../components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
-
-interface Client {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  address?: string;
-  tax_year: number;
-  tax_id?: string;
-  entity_type: 'individual' | 'llc' | 'corporation' | 's_corp' | 'partnership';
-  status: 'active' | 'inactive' | 'archived';
-  notes?: string;
-  required_documents: string[];
-  created_at: string;
-  updated_at: string;
-}
+import { useClients } from '../hooks/useClients';
+import { TopBar } from '../components/organisms/TopBar';
+import { GlobalSearch } from '../components/molecules/GlobalSearch';
+import { useSearch } from '../contexts/SearchContext';
+import { ClientTable } from '../components/organisms/ClientTable';
+import { ClientDialog } from '../components/ui/client-dialog';
+import { ConfirmDialog } from '../components/ui/confirm-dialog';
+import { EmptyState } from '../components/ui/empty-state';
+import { useToast } from '../contexts/ToastContext';
+import { Skeleton, SkeletonText, SkeletonTable } from '../components/ui/skeleton';
+import { Input } from '../components/atoms/Input';
+import { Button } from '../components/atoms/Button';
+import { Search, Filter, Users as UsersIcon, Plus, Mail } from 'lucide-react';
+import { ClientWithDocuments } from '../hooks/useClients';
 
 export function Clients() {
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const { clients, loading, error, createClient, updateClient, deleteClient } = useClients();
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [entityFilter, setEntityFilter] = useState<string>('all');
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-  // Filter clients based on search and filters
-  const filteredClients = clients.filter(client => {
-    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (client.tax_id && client.tax_id.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesStatus = statusFilter === 'all' || client.status === statusFilter;
-    const matchesEntity = entityFilter === 'all' || client.entity_type === entityFilter;
-    
-    return matchesSearch && matchesStatus && matchesEntity;
+  const { clients, loading, error, addClient, deleteClient } = useClients();
+  const toast = useToast();
+  const { isSearchOpen, closeSearch, openSearch } = useSearch();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showClientDialog, setShowClientDialog] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    client: ClientWithDocuments | null;
+  }>({
+    isOpen: false,
+    client: null
   });
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleCreateClient = async (clientData: Partial<Client>) => {
-    try {
-      await createClient(clientData);
-      setIsCreateModalOpen(false);
-    } catch (error) {
-      console.error('Error creating client:', error);
-    }
-  };
+  // Listen for dashboard quick action events
+  useEffect(() => {
+    const handleDashboardAddClient = () => {
+      setShowClientDialog(true);
+    };
 
-  const handleEditClient = async (clientData: Partial<Client>) => {
-    if (!selectedClient) return;
+    window.addEventListener('dashboard:add-client', handleDashboardAddClient);
     
-    try {
-      await updateClient(selectedClient.id, clientData);
-      setIsEditModalOpen(false);
-      setSelectedClient(null);
-    } catch (error) {
-      console.error('Error updating client:', error);
-    }
-  };
+    return () => {
+      window.removeEventListener('dashboard:add-client', handleDashboardAddClient);
+    };
+  }, []);
 
-  const handleClientClick = (client: Client) => {
+  const handleClientClick = (client: ClientWithDocuments) => {
     navigate(`/clients/${client.id}`);
   };
 
-  const getEntityTypeLabel = (entityType: string) => {
-    const labels = {
-      individual: 'Individual',
-      llc: 'LLC',
-      corporation: 'Corporation',
-      s_corp: 'S-Corp',
-      partnership: 'Partnership'
-    };
-    return labels[entityType as keyof typeof labels] || entityType;
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
-      case 'inactive': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
-      case 'archived': return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+  const handleCreateClient = async (clientData: {
+    name: string;
+    email: string;
+    phone?: string;
+    address?: string;
+    address?: string;
+    taxYear: number;
+    entityType: string;
+    requiredDocuments: string[];
+    entityType: string;
+    requiredDocuments: string[];
+  }) => {
+    setIsCreating(true);
+    try {
+      await addClient({
+        name: clientData.name,
+        email: clientData.email,
+        phone: clientData.phone,
+        address: clientData.address,
+        taxYear: clientData.taxYear,
+        entityType: clientData.entityType,
+        requiredDocuments: clientData.requiredDocuments
+      });
+    } catch (error) {
+      console.error('Failed to create client:', error);
+      toast.error('Failed to create client', error instanceof Error ? error.message : 'An unexpected error occurred');
+      throw error; // Re-throw to let the dialog handle the error
+    } finally {
+      setIsCreating(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-10 w-32" />
-        </div>
-        <div className="grid gap-4">
-          {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full" />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const handleEditClient = (client: ClientWithDocuments) => {
+    // TODO: Implement edit functionality
+    console.log('Edit client:', client.name);
+    // For now, just navigate to client detail page
+    navigate(`/clients/${client.id}`);
+  };
 
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Error Loading Clients
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              {error.message || 'Failed to load clients. Please try again.'}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleDeleteClient = (client: ClientWithDocuments) => {
+    setDeleteConfirm({
+      isOpen: true,
+      client
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm.client) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteClient(deleteConfirm.client.id);
+      setDeleteConfirm({ isOpen: false, client: null });
+      toast.success('Client Deleted', `${deleteConfirm.client.name} has been deleted successfully`);
+    } catch (error) {
+      console.error('Failed to delete client:', error);
+      toast.error('Delete Failed', error instanceof Error ? error.message : 'Failed to delete client');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirm({ isOpen: false, client: null });
+  };
+
+  const handleSendEmail = (client: ClientWithDocuments) => {
+    // Create mailto link with pre-filled subject
+    const subject = encodeURIComponent(`Tax Documents Request - ${new Date().getFullYear()}`);
+    const body = encodeURIComponent(`Dear ${client.name},\n\nI hope this email finds you well. As we prepare for the upcoming tax season, I wanted to reach out regarding the documents we'll need to complete your ${new Date().getFullYear()} tax return.\n\nPlease let me know if you have any questions or if you'd like to schedule a meeting to discuss your tax situation.\n\nBest regards,\n[Your Name]`);
+    
+    toast.info('Email Client', `Opening email to ${client.name}`);
+    window.open(`mailto:${client.email}?subject=${subject}&body=${body}`, '_blank');
+  };
+
+  const handleViewDocuments = (client: ClientWithDocuments) => {
+    navigate(`/clients/${client.id}`);
+  };
+  const filteredClients = clients.filter(client =>
+    client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Clients</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage your client relationships and tax information
-          </p>
-        </div>
-        <Button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Add Client
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800">
+      <TopBar title="Clients" />
 
-      {/* Filters and Search */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search clients by name, email, or tax ID..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="flex gap-2">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      {/* Global Search */}
+      <GlobalSearch isOpen={isSearchOpen} onClose={closeSearch} />
+      
+      <div className="max-w-content mx-auto px-8 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-text-primary">Client Management</h1>
+            <p className="text-text-secondary mt-1">Manage your client database and tax information</p>
+          </div>
+          <Button 
+            icon={Plus}
+            onClick={() => setShowClientDialog(true)}
+            className="bg-primary text-gray-900 hover:bg-primary-hover shadow-medium"
           >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="archived">Archived</option>
-          </select>
-          <select
-            value={entityFilter}
-            onChange={(e) => setEntityFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">All Types</option>
-            <option value="individual">Individual</option>
-            <option value="llc">LLC</option>
-            <option value="corporation">Corporation</option>
-            <option value="s_corp">S-Corp</option>
-            <option value="partnership">Partnership</option>
-          </select>
+            Add New Client
+          </Button>
         </div>
-      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center">
-            <Users className="h-8 w-8 text-blue-500" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Clients</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{clients.length}</p>
-            </div>
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6">
+            <p className="text-red-700 dark:text-red-400">Error: {error}</p>
           </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center">
-            <Building2 className="h-8 w-8 text-green-500" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {clients.filter(c => c.status === 'active').length}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center">
-            <FileText className="h-8 w-8 text-orange-500" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Current Tax Year</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {clients.filter(c => c.tax_year === new Date().getFullYear()).length}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center">
-            <Calendar className="h-8 w-8 text-purple-500" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">This Month</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {clients.filter(c => {
-                  const created = new Date(c.created_at);
-                  const now = new Date();
-                  return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
-                }).length}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+        )}
 
-      {/* Client List */}
-      {filteredClients.length === 0 ? (
-        <EmptyState
-          icon={Users}
-          title="No clients found"
-          description={searchTerm || statusFilter !== 'all' || entityFilter !== 'all' 
-            ? "No clients match your current filters. Try adjusting your search criteria."
-            : "Get started by adding your first client to begin managing their tax information."
-          }
-          action={
-            <Button onClick={() => setIsCreateModalOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Your First Client
-            </Button>
-          }
-        />
-      ) : (
-        <div className="grid gap-4">
-          {filteredClients.map((client) => (
-            <div
-              key={client.id}
-              onClick={() => handleClientClick(client)}
-              className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer"
+        <div className="bg-surface-elevated dark:bg-gray-900 rounded-2xl border border-border-subtle dark:border-gray-800 p-6 mb-8 shadow-soft">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button 
+              variant="secondary" 
+              icon={Search} 
+              onClick={openSearch}
+              className="flex-1"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {client.name}
-                    </h3>
-                    <Badge className={getStatusColor(client.status)}>
-                      {client.status}
-                    </Badge>
-                    <Badge variant="outline">
-                      {getEntityTypeLabel(client.entity_type)}
-                    </Badge>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      <span>{client.email}</span>
-                    </div>
-                    {client.phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4" />
-                        <span>{client.phone}</span>
-                      </div>
-                    )}
-                    {client.address && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        <span className="truncate">{client.address}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>Tax Year: {client.tax_year}</span>
-                    </div>
-                  </div>
+              Search clients...
+            </Button>
+            <Button variant="secondary" icon={Filter} className="shrink-0">
+              Filter
+            </Button>
+          </div>
+        </div>
 
-                  {client.required_documents.length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Required Documents:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {client.required_documents.slice(0, 3).map((doc, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {doc.replace('_', ' ').toUpperCase()}
-                          </Badge>
-                        ))}
-                        {client.required_documents.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{client.required_documents.length - 3} more
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex items-center gap-2 ml-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedClient(client);
-                      setIsEditModalOpen(true);
-                    }}
-                  >
-                    Edit
-                  </Button>
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-surface-elevated dark:bg-gray-900 rounded-xl border border-border-subtle dark:border-gray-800 p-6 shadow-soft">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-xl">
+                <UsersIcon className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-text-tertiary">Total Clients</p>
+                <p className="text-2xl font-semibold text-text-primary">{loading ? '...' : clients.length}</p>
               </div>
             </div>
-          ))}
+          </div>
+          <div className="bg-surface-elevated dark:bg-gray-900 rounded-xl border border-border-subtle dark:border-gray-800 p-6 shadow-soft">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl">
+                <UsersIcon className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-text-tertiary">Active This Year</p>
+                <p className="text-2xl font-semibold text-text-primary">
+                  {loading ? '...' : clients.filter(c => c.tax_year === 2025).length}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-surface-elevated dark:bg-gray-900 rounded-xl border border-border-subtle dark:border-gray-800 p-6 shadow-soft">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-amber-100 to-amber-50 rounded-xl">
+                <UsersIcon className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-text-tertiary">Avg Documents</p>
+                <p className="text-2xl font-semibold text-text-primary">
+                  {loading ? '...' : Math.round(clients.reduce((acc, c) => acc + c.documentsCount, 0) / clients.length) || 0}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
 
-      {/* Create Client Modal */}
-      <EnhancedClientDialog
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateClient}
-        title="Add New Client"
-      />
+        {loading ? (
+          <div className="space-y-6">
+            <Skeleton className="h-12" />
+            <SkeletonTable rows={5} columns={5} />
+          </div>
+        ) : (
+          filteredClients.length > 0 ? (
+            <ClientTable 
+              clients={filteredClients} 
+              onClientClick={handleClientClick}
+              onEditClient={handleEditClient}
+              onDeleteClient={handleDeleteClient}
+              onSendEmail={handleSendEmail}
+              onViewDocuments={handleViewDocuments}
+            />
+          ) : (
+            <EmptyState 
+              icon={Users}
+              title={searchQuery ? "No clients match your search" : "No clients yet"}
+              description={searchQuery 
+                ? "Try adjusting your search term or clear filters to see all clients" 
+                : "Add your first client to get started with managing their tax information"}
+              action={{
+                label: "Add New Client",
+                onClick: () => setShowClientDialog(true),
+                icon: Plus
+              }}
+            />
+          )
+        )}
 
-      {/* Edit Client Modal */}
-      {selectedClient && (
-        <EnhancedClientDialog
-          isOpen={isEditModalOpen}
-          onClose={() => {
-            setIsEditModalOpen(false);
-            setSelectedClient(null);
-          }}
-          onSubmit={handleEditClient}
-          title="Edit Client"
-          initialData={selectedClient}
+        {/* Client Creation Dialog */}
+        <ClientDialog
+          isOpen={showClientDialog}
+          onClose={() => setShowClientDialog(false)}
+          onSubmit={handleCreateClient}
+          loading={isCreating}
         />
-      )}
+
+        {/* Delete Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={deleteConfirm.isOpen}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+          title="Delete Client"
+          message={`Are you sure you want to delete "${deleteConfirm.client?.name}"? This action will permanently remove the client and all associated data. This cannot be undone.`}
+          confirmText="Delete"
+          confirmVariant="secondary"
+          loading={isDeleting}
+        />
+      </div>
     </div>
   );
 }
