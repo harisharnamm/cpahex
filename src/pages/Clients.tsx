@@ -1,272 +1,296 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useClients } from '../hooks/useClients';
-import { TopBar } from '../components/organisms/TopBar';
-import { GlobalSearch } from '../components/molecules/GlobalSearch';
-import { useSearch } from '../contexts/SearchContext';
-import { ClientTable } from '../components/organisms/ClientTable';
-import { ClientDialog } from '../components/ui/client-dialog';
-import { ConfirmDialog } from '../components/ui/confirm-dialog';
-import { EmptyState } from '../components/ui/empty-state';
-import { useToast } from '../contexts/ToastContext';
-import { Skeleton, SkeletonText, SkeletonTable } from '../components/ui/skeleton';
-import { Input } from '../components/atoms/Input';
-import { Button } from '../components/atoms/Button';
-import { Search, Filter, Users as UsersIcon, Plus, Mail } from 'lucide-react';
-import { ClientWithDocuments } from '../hooks/useClients';
+import { useState, useEffect } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase, Profile } from '../lib/supabase';
 
-export function Clients() {
-  const navigate = useNavigate();
-  const { clients, loading, error, addClient, deleteClient } = useClients();
-  const toast = useToast();
-  const { isSearchOpen, closeSearch, openSearch } = useSearch();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showClientDialog, setShowClientDialog] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<{
-    isOpen: boolean;
-    client: ClientWithDocuments | null;
-  }>({
-    isOpen: false,
-    client: null
+interface AuthState {
+  user: User | null;
+  profile: Profile | null;
+  session: Session | null;
+  loading: boolean;
+}
+
+export function useAuth() {
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    profile: null,
+    session: null,
+    loading: true,
   });
-  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Listen for dashboard quick action events
   useEffect(() => {
-    const handleDashboardAddClient = () => {
-      setShowClientDialog(true);
-    };
-
-    window.addEventListener('dashboard:add-client', handleDashboardAddClient);
+    let mounted = true;
     
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in useAuth');
+      if (mounted) {
+        setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
+      }
+      return;
+    }
+    
+    // Get initial session
+    const initializeAuth = async () => {
+      try {
+        console.log('🔄 Initializing auth...');
+        
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('❌ Error getting session:', error);
+          if (mounted) {
+            setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
+          }
+          return;
+        }
+        
+        console.log('✅ Initial session:', session?.user?.email || 'No session');
+        
+        if (mounted) {
+          if (session?.user) {
+            setAuthState(prev => ({ 
+              ...prev, 
+              session, 
+              user: session.user, 
+              loading: false // Set loading false immediately if we have a user
+            }));
+            // Try to fetch profile, but don't block on it
+            fetchProfile(session.user.id);
+          } else {
+            setAuthState(prev => ({ ...prev, session, user: null, loading: false }));
+          }
+        }
+      } catch (error) {
+        console.error('❌ Auth initialization error:', error);
+        if (mounted) {
+          setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
+        }
+      }
+    };
+    
+    initializeAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('🔄 Auth state changed:', event, session?.user?.email);
+        
+        if (mounted) {
+          if (session?.user) {
+            setAuthState(prev => ({ 
+              ...prev, 
+              session, 
+              user: session.user, 
+              loading: false // Always set loading false when we get auth state change
+            }));
+            // Try to fetch profile, but don't block on it
+            fetchProfile(session.user.id);
+          } else {
+            setAuthState(prev => ({ ...prev, session, user: null, profile: null, loading: false }));
+          }
+        }
+      }
+    );
+
     return () => {
-      window.removeEventListener('dashboard:add-client', handleDashboardAddClient);
+      mounted = false;
+      subscription.unsubscribe();
     };
   }, []);
 
-  const handleClientClick = (client: ClientWithDocuments) => {
-    navigate(`/clients/${client.id}`);
-  };
-
-  const handleCreateClient = async (clientData: {
-    name: string;
-    email: string;
-    phone?: string;
-    address?: string;
-    address?: string;
-    taxYear: number;
-    entityType: string;
-    requiredDocuments: string[];
-    entityType: string;
-    requiredDocuments: string[];
-  }) => {
-    setIsCreating(true);
-    try {
-      await addClient({
-        name: clientData.name,
-        email: clientData.email,
-        phone: clientData.phone,
-        address: clientData.address,
-        taxYear: clientData.taxYear,
-        entityType: clientData.entityType,
-        requiredDocuments: clientData.requiredDocuments
-      });
-    } catch (error) {
-      console.error('Failed to create client:', error);
-      toast.error('Failed to create client', error instanceof Error ? error.message : 'An unexpected error occurred');
-      throw error; // Re-throw to let the dialog handle the error
-    } finally {
-      setIsCreating(false);
+  const fetchProfile = async (userId: string) => {
+    if (!userId) {
+      console.error('❌ No userId provided to fetchProfile');
+      return;
     }
-  };
-
-  const handleEditClient = (client: ClientWithDocuments) => {
-    // TODO: Implement edit functionality
-    console.log('Edit client:', client.name);
-    // For now, just navigate to client detail page
-    navigate(`/clients/${client.id}`);
-  };
-
-  const handleDeleteClient = (client: ClientWithDocuments) => {
-    setDeleteConfirm({
-      isOpen: true,
-      client
-    });
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!deleteConfirm.client) return;
-
-    setIsDeleting(true);
-    try {
-      await deleteClient(deleteConfirm.client.id);
-      setDeleteConfirm({ isOpen: false, client: null });
-      toast.success('Client Deleted', `${deleteConfirm.client.name} has been deleted successfully`);
-    } catch (error) {
-      console.error('Failed to delete client:', error);
-      toast.error('Delete Failed', error instanceof Error ? error.message : 'Failed to delete client');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleDeleteCancel = () => {
-    setDeleteConfirm({ isOpen: false, client: null });
-  };
-
-  const handleSendEmail = (client: ClientWithDocuments) => {
-    // Create mailto link with pre-filled subject
-    const subject = encodeURIComponent(`Tax Documents Request - ${new Date().getFullYear()}`);
-    const body = encodeURIComponent(`Dear ${client.name},\n\nI hope this email finds you well. As we prepare for the upcoming tax season, I wanted to reach out regarding the documents we'll need to complete your ${new Date().getFullYear()} tax return.\n\nPlease let me know if you have any questions or if you'd like to schedule a meeting to discuss your tax situation.\n\nBest regards,\n[Your Name]`);
     
-    toast.info('Email Client', `Opening email to ${client.name}`);
-    window.open(`mailto:${client.email}?subject=${subject}&body=${body}`, '_blank');
-  };
-
-  const handleViewDocuments = (client: ClientWithDocuments) => {
-    navigate(`/clients/${client.id}`);
-  };
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800">
-      <TopBar title="Clients" />
-
-      {/* Global Search */}
-      <GlobalSearch isOpen={isSearchOpen} onClose={closeSearch} />
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in fetchProfile');
+      return;
+    }
+    
+    try {
+      console.log('🔄 Fetching profile for user:', userId);
       
-      <div className="max-w-content mx-auto px-8 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-text-primary">Client Management</h1>
-            <p className="text-text-secondary mt-1">Manage your client database and tax information</p>
-          </div>
-          <Button 
-            icon={Plus}
-            onClick={() => setShowClientDialog(true)}
-            className="bg-primary text-gray-900 hover:bg-primary-hover shadow-medium"
-          >
-            Add New Client
-          </Button>
-        </div>
+      // Fetch profile with timeout protection, but don't block auth loading on it
+      const profilePromise = supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 15000);
+      });
+      
+      const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
 
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6">
-            <p className="text-red-700 dark:text-red-400">Error: {error}</p>
-          </div>
-        )}
+      if (error) {
+        if (error.message === 'Profile fetch timeout') {
+          console.warn('⚠️ Profile fetch timed out, continuing without profile');
+        } else if (error.code === 'PGRST116') {
+          console.log('ℹ️ No profile found, this is normal for new users');
+        } else {
+          console.error('❌ Error fetching profile:', error);
+        }
+      } else {
+        console.log('✅ Profile fetched successfully:', profile);
+      }
 
-        <div className="bg-surface-elevated dark:bg-gray-900 rounded-2xl border border-border-subtle dark:border-gray-800 p-6 mb-8 shadow-soft">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Button 
-              variant="secondary" 
-              icon={Search} 
-              onClick={openSearch}
-              className="flex-1"
-            >
-              Search clients...
-            </Button>
-            <Button variant="secondary" icon={Filter} className="shrink-0">
-              Filter
-            </Button>
-          </div>
-        </div>
+      // Update only the profile, don't touch loading state
+      setAuthState(prev => ({ ...prev, profile }));
+    } catch (error) {
+      console.error('❌ Error in fetchProfile:', error);
+      // Don't set loading to false here - it should already be false
+    }
+  };
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-surface-elevated dark:bg-gray-900 rounded-xl border border-border-subtle dark:border-gray-800 p-6 shadow-soft">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-xl">
-                <UsersIcon className="w-5 h-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-text-tertiary">Total Clients</p>
-                <p className="text-2xl font-semibold text-text-primary">{loading ? '...' : clients.length}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-surface-elevated dark:bg-gray-900 rounded-xl border border-border-subtle dark:border-gray-800 p-6 shadow-soft">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl">
-                <UsersIcon className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-text-tertiary">Active This Year</p>
-                <p className="text-2xl font-semibold text-text-primary">
-                  {loading ? '...' : clients.filter(c => c.tax_year === 2025).length}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-surface-elevated dark:bg-gray-900 rounded-xl border border-border-subtle dark:border-gray-800 p-6 shadow-soft">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-br from-amber-100 to-amber-50 rounded-xl">
-                <UsersIcon className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-text-tertiary">Avg Documents</p>
-                <p className="text-2xl font-semibold text-text-primary">
-                  {loading ? '...' : Math.round(clients.reduce((acc, c) => acc + c.documentsCount, 0) / clients.length) || 0}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+  const signUp = async (email: string, password: string, userData: {
+    firstName: string;
+    lastName: string;
+    company: string;
+  }) => {
+    console.log('🔄 Signing up user:', email);
+    
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in signUp');
+      return { data: null, error: new Error('Authentication service not available') };
+    }
+    
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+            company: userData.company,
+          },
+        },
+      });
 
-        {loading ? (
-          <div className="space-y-6">
-            <Skeleton className="h-12" />
-            <SkeletonTable rows={5} columns={5} />
-          </div>
-        ) : (
-          filteredClients.length > 0 ? (
-            <ClientTable 
-              clients={filteredClients} 
-              onClientClick={handleClientClick}
-              onEditClient={handleEditClient}
-              onDeleteClient={handleDeleteClient}
-              onSendEmail={handleSendEmail}
-              onViewDocuments={handleViewDocuments}
-            />
-          ) : (
-            <EmptyState 
-              icon={Users}
-              title={searchQuery ? "No clients match your search" : "No clients yet"}
-              description={searchQuery 
-                ? "Try adjusting your search term or clear filters to see all clients" 
-                : "Add your first client to get started with managing their tax information"}
-              action={{
-                label: "Add New Client",
-                onClick: () => setShowClientDialog(true),
-                icon: Plus
-              }}
-            />
-          )
-        )}
+      console.log('✅ Sign up response:', { userId: data?.user?.id, error });
+      return { data, error };
+    } catch (err) {
+      console.error('❌ Sign up error:', err);
+      return { data: null, error: err as any };
+    }
+  };
 
-        {/* Client Creation Dialog */}
-        <ClientDialog
-          isOpen={showClientDialog}
-          onClose={() => setShowClientDialog(false)}
-          onSubmit={handleCreateClient}
-          loading={isCreating}
-        />
+  const signIn = async (email: string, password: string) => {
+    console.log('🔄 Attempting sign in for:', email);
 
-        {/* Delete Confirmation Dialog */}
-        <ConfirmDialog
-          isOpen={deleteConfirm.isOpen}
-          onClose={handleDeleteCancel}
-          onConfirm={handleDeleteConfirm}
-          title="Delete Client"
-          message={`Are you sure you want to delete "${deleteConfirm.client?.name}"? This action will permanently remove the client and all associated data. This cannot be undone.`}
-          confirmText="Delete"
-          confirmVariant="secondary"
-          loading={isDeleting}
-        />
-      </div>
-    </div>
-  );
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in signIn');
+      return { data: null, error: new Error('Authentication service not available') };
+    }
+    
+    // Set loading state
+    setAuthState(prev => ({ ...prev, loading: true }));
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('❌ Sign in error:', error);
+        setAuthState(prev => ({ ...prev, loading: false }));
+        sessionStorage.removeItem('justLoggedIn'); 
+        return { data, error };
+      }
+
+      if (data?.user) {
+        console.log('✅ Sign in successful for user:', data.user.id);
+        // Set flag for just logged in to trigger preloader
+        sessionStorage.setItem('justLoggedIn', 'true');
+        
+        // Store auth in localStorage for persistence across tabs/browsers
+        try {
+          localStorage.setItem('supabase.auth.token', JSON.stringify({
+            currentSession: data.session,
+            expiresAt: Math.floor(Date.now() / 1000) + (data.session?.expires_in || 3600)
+          }));
+        } catch (storageError) {
+          console.warn('⚠️ Could not store auth in localStorage:', storageError);
+        }
+        
+        // Auth state change will handle the rest
+        return { data, error: null };
+      } else {
+        console.error('❌ Sign in returned no user data');
+        setAuthState(prev => ({ ...prev, loading: false }));
+        return { data, error: { message: 'No user data returned' } as any };
+      }
+    } catch (err) {
+      console.error('❌ Sign in catch block:', err);
+      setAuthState(prev => ({ ...prev, loading: false }));
+      return { data: null, error: err as any };
+    }
+  };
+
+  const signOut = async () => {
+    console.log('🔄 Signing out...');
+    
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in signOut');
+      return { error: new Error('Authentication service not available') };
+    }
+    
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('❌ Sign out error:', error);
+      } else {
+        console.log('✅ Signed out successfully');
+      }
+      return { error };
+    } catch (err) {
+      console.error('❌ Sign out catch block:', err);
+      return { error: err as any };
+    }
+  };
+
+  const updateProfile = async (updates: Partial<Profile>) => {
+    if (!authState.user) {
+      console.error('❌ No user logged in for profile update');
+      return { error: new Error('No user logged in') };
+    }
+
+    console.log('🔄 Updating profile for user:', authState.user.id);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', authState.user.id)
+        .select()
+        .single();
+
+      if (!error && data) {
+        console.log('✅ Profile updated successfully');
+        setAuthState(prev => ({ ...prev, profile: data }));
+      } else if (error) {
+        console.error('❌ Profile update error:', error);
+      }
+
+      return { data, error };
+    } catch (err) {
+      console.error('❌ Profile update catch block:', err);
+      return { data: null, error: err as any };
+    }
+  };
+
+  return {
+    ...authState,
+    signUp,
+    signIn,
+    signOut,
+    updateProfile,
+  };
 }
