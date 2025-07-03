@@ -15,7 +15,8 @@ import {
   Smartphone, 
   Lock, 
   Zap,
-  Clock
+  Clock,
+  Shield
 } from 'lucide-react';
 
 export function Settings(): ReactElement {
