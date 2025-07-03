@@ -121,6 +121,12 @@ export function ClientCommunications() {
     }
   ]);
 
+  // Get client name from client ID
+  const getClientName = (clientId: string) => {
+    const client = clients.find(c => c.id === clientId);
+    return client ? client.name : 'Unknown Client';
+  };
+
   // Filter document requests based on search and filters
   const filteredRequests = documentRequests.filter(request => {
     const matchesSearch = !searchQuery || 
@@ -131,12 +137,6 @@ export function ClientCommunications() {
     
     return matchesSearch && matchesStatus;
   });
-
-  // Get client name from client ID
-  const getClientName = (clientId: string) => {
-    const client = clients.find(c => c.id === clientId);
-    return client ? client.name : 'Unknown Client';
-  };
 
   // Get status badge based on status
   const getStatusBadge = (status: string) => {
