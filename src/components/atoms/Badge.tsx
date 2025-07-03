@@ -1,5 +1,4 @@
 import React from 'react';
-import { cn } from '../../lib/utils';
 
 interface BadgeProps {
   children: React.ReactNode;
@@ -9,10 +8,10 @@ interface BadgeProps {
 
 export function Badge({ children, variant = 'neutral', size = 'md' }: BadgeProps) {
   const variants = {
-    success: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800',
-    warning: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800',
-    error: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800',
-    neutral: 'bg-surface dark:bg-gray-800 text-text-secondary dark:text-gray-300 border border-border-subtle dark:border-gray-700',
+    success: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+    warning: 'bg-amber-50 text-amber-700 border border-amber-200',
+    error: 'bg-red-50 text-red-700 border border-red-200',
+    neutral: 'bg-surface text-text-secondary border border-border-subtle',
   };
 
   const sizes = {
@@ -21,7 +20,7 @@ export function Badge({ children, variant = 'neutral', size = 'md' }: BadgeProps
   };
 
   return (
-    <span className={cn("inline-flex items-center rounded-lg font-semibold", variants[variant], sizes[size])}>
+    <span className={`inline-flex items-center rounded-lg font-semibold ${variants[variant]} ${sizes[size]}`}>
       {children}
     </span>
   );

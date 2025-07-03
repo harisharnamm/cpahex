@@ -1,6 +1,5 @@
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useSidebar } from '../../contexts/SidebarContext';
-import { useTheme } from '../../contexts/ThemeContext';
 import { NavigationItem } from '../molecules/NavigationItem';
 import { 
   LayoutDashboard, 
@@ -26,7 +25,6 @@ interface SidebarProps {
 export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const { profile, signOut } = useAuthContext();
   const { closeSidebar } = useSidebar();
-  const { theme } = useTheme();
   
   const handleSignOut = async () => {
     await signOut();
@@ -42,7 +40,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
 
   // Base sidebar classes - handle mobile and desktop differently
   const sidebarClasses = `
-    fixed left-0 top-0 z-40 h-screen bg-surface-elevated dark:bg-gray-900 border-r border-border-subtle dark:border-gray-800 backdrop-blur-sm
+    fixed left-0 top-0 z-40 h-screen bg-surface-elevated border-r border-border-subtle backdrop-blur-sm
     w-72 transition-transform duration-300 ease-in-out
     ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
   `;
@@ -67,12 +65,12 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
         {/* Logo */}
         <div className="flex items-center px-6 sm:px-8 py-6 sm:py-8">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-primary dark:bg-primary-light-dark rounded-xl shadow-soft">
-              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 dark:text-gray-900" />
+            <div className="p-2 bg-primary rounded-xl shadow-soft">
+              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900" />
             </div>
             <div>
-              <span className="text-lg sm:text-xl font-semibold text-text-primary dark:text-white tracking-tight">CPA OS</span>
-              <p className="text-xs text-text-tertiary dark:text-gray-400 font-medium">by Nurahex</p>
+              <span className="text-lg sm:text-xl font-semibold text-text-primary tracking-tight">CPA OS</span>
+              <p className="text-xs text-text-tertiary font-medium">by Nurahex</p>
             </div>
           </div>
         </div>
@@ -112,18 +110,18 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
         {/* Search button removed to fix error */}
 
         {/* User Avatar */}
-        <div className="p-4 sm:p-6 border-t border-border-subtle dark:border-gray-800 bg-gradient-to-r from-surface to-surface-elevated dark:from-gray-900 dark:to-gray-800">
-          <div className="flex items-center space-x-3 p-3 rounded-xl bg-surface-elevated dark:bg-gray-800 border border-border-subtle dark:border-gray-700 hover:shadow-soft transition-all duration-200 group">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary dark:bg-primary-light-dark rounded-xl flex items-center justify-center shadow-soft">
+        <div className="p-4 sm:p-6 border-t border-border-subtle bg-gradient-to-r from-surface to-surface-elevated">
+          <div className="flex items-center space-x-3 p-3 rounded-xl bg-surface-elevated border border-border-subtle hover:shadow-soft transition-all duration-200 group">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-xl flex items-center justify-center shadow-soft">
               <span className="text-xs sm:text-sm font-semibold text-gray-900">{initials}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-text-primary dark:text-white truncate">{displayName}</p>
-              <p className="text-xs text-text-tertiary dark:text-gray-400 truncate">{profile?.company || 'CPA Firm'}</p>
+              <p className="text-sm font-semibold text-text-primary truncate">{displayName}</p>
+              <p className="text-xs text-text-tertiary truncate">{profile?.company || 'CPA Firm'}</p>
             </div>
             <button
               onClick={handleSignOut}
-              className="opacity-0 group-hover:opacity-100 text-text-tertiary dark:text-gray-400 hover:text-text-primary dark:hover:text-white transition-all duration-200 text-xs"
+              className="opacity-0 group-hover:opacity-100 text-text-tertiary hover:text-text-primary transition-all duration-200 text-xs"
               title="Sign out"
             >
               Sign out
