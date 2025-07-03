@@ -20,6 +20,15 @@ export function useAuth() {
   useEffect(() => {
     let mounted = true;
     
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in useAuth');
+      if (mounted) {
+        setAuthState(prev => ({ ...prev, loading: false, user: null, session: null }));
+      }
+      return;
+    }
+    
     // Get initial session
     const initializeAuth = async () => {
       try {
@@ -95,6 +104,12 @@ export function useAuth() {
       return;
     }
     
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in fetchProfile');
+      return;
+    }
+    
     try {
       console.log('🔄 Fetching profile for user:', userId);
       
@@ -137,6 +152,13 @@ export function useAuth() {
     company: string;
   }) => {
     console.log('🔄 Signing up user:', email);
+    
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in signUp');
+      return { data: null, error: new Error('Authentication service not available') };
+    }
+    
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -160,6 +182,12 @@ export function useAuth() {
 
   const signIn = async (email: string, password: string) => {
     console.log('🔄 Attempting sign in for:', email);
+
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in signIn');
+      return { data: null, error: new Error('Authentication service not available') };
+    }
     
     // Set loading state
     setAuthState(prev => ({ ...prev, loading: true }));
@@ -208,6 +236,13 @@ export function useAuth() {
 
   const signOut = async () => {
     console.log('🔄 Signing out...');
+    
+    // Check if supabase client exists
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized in signOut');
+      return { error: new Error('Authentication service not available') };
+    }
+    
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
