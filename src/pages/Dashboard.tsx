@@ -348,7 +348,7 @@ export function Dashboard() {
           {/* Main Content */}
           <div className="col-span-8 space-y-8">
             {/* Upcoming Tasks */}
-            <div className="bg-surface-elevated dark:bg-gray-900 rounded-2xl border border-border-subtle dark:border-gray-800 p-8 shadow-soft animate-fade-in">
+            <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-8 shadow-soft animate-fade-in">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl">
@@ -447,7 +447,7 @@ export function Dashboard() {
             </div>
 
             {/* Recent Activity Timeline */}
-            <div className="bg-surface-elevated dark:bg-gray-900 rounded-2xl border border-border-subtle dark:border-gray-800 p-8 shadow-soft animate-fade-in">
+            <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-8 shadow-soft animate-fade-in">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="p-2 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-xl">
                   <TrendingUp className="w-5 h-5 text-emerald-600" />
@@ -473,7 +473,7 @@ export function Dashboard() {
           {/* Sidebar */}
           <div className="col-span-4 space-y-6">
             {/* Quick Actions */}
-            <div className="bg-surface-elevated dark:bg-gray-900 rounded-2xl border border-border-subtle dark:border-gray-800 p-6 shadow-soft animate-fade-in">
+            <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-6 shadow-soft animate-fade-in">
               <h3 className="font-semibold text-text-primary mb-4">Quick Actions</h3>
               <div className="space-y-3">
                 <Button 
@@ -512,7 +512,7 @@ export function Dashboard() {
             </div>
 
             {/* AI Insights */}
-            <div className="bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary-light-dark/5 dark:to-primary-light-dark/10 rounded-2xl border border-primary/20 dark:border-primary-light-dark/20 p-6 shadow-soft animate-fade-in">
+            <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl border border-primary/20 p-6 shadow-soft animate-fade-in">
               <div className="flex items-center space-x-2 mb-4">
                 <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
                 <h3 className="font-semibold text-text-primary">AI Insights</h3>
@@ -520,13 +520,13 @@ export function Dashboard() {
               <div className="space-y-3">
                 {recentInsights.length > 0 ? (
                   recentInsights.map((insight) => (
-                    <div key={insight.id} className="p-3 bg-surface-elevated/80 dark:bg-gray-900/80 rounded-xl border border-border-subtle dark:border-gray-800">
+                    <div key={insight.id} className="p-3 bg-surface-elevated/80 rounded-xl border border-border-subtle">
                       <p className="text-sm text-text-primary font-medium">{insight.title}</p>
                       <p className="text-xs text-text-tertiary mt-1">{insight.description}</p>
                     </div>
                   ))
                 ) : (
-                  <div className="p-3 bg-surface-elevated/80 dark:bg-gray-900/80 rounded-xl border border-border-subtle dark:border-gray-800">
+                  <div className="p-3 bg-surface-elevated/80 rounded-xl border border-border-subtle">
                     <p className="text-sm text-text-secondary">No recent AI insights</p>
                     <p className="text-xs text-text-tertiary mt-1">Upload documents to generate insights</p>
                   </div>

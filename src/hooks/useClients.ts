@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { clientsApi, Client } from '../lib/database';
 import { useAuthContext } from '../contexts/AuthContext';
-import { testSupabaseConnection } from '../lib/supabase';
 
 export interface ClientWithDocuments extends Client {
   documentsCount: number;
@@ -21,12 +20,6 @@ export function useClients() {
       console.log('🔄 Clients: Starting data fetch...');
       console.log('🔄 Clients: User authenticated:', user?.email);
       
-      // Test connection first
-      const connectionTest = await testSupabaseConnection();
-      if (!connectionTest.success) {
-        throw new Error(connectionTest.error || 'Connection test failed');
-      }
-      
       const clientsData = await clientsApi.getAll();
       
       console.log('✅ Clients: Found', clientsData?.length, 'clients', clientsData);
@@ -34,19 +27,11 @@ export function useClients() {
       // Get document counts for each client
       const clientsWithCounts = await Promise.all(
         clientsData.map(async (client) => {
-          try {
-            const documentsCount = await clientsApi.getDocumentCount(client.id);
-            return {
-              ...client,
-              documentsCount
-            };
-          } catch (err) {
-            console.warn('Failed to get document count for client', client.id, err);
-            return {
-              ...client,
-              documentsCount: 0
-            };
-          }
+          const documentsCount = await clientsApi.getDocumentCount(client.id);
+          return {
+            ...client,
+            documentsCount
+          };
         })
       );
       
@@ -54,19 +39,7 @@ export function useClients() {
       setClients(clientsWithCounts);
     } catch (err) {
       console.error('❌ Clients: Error fetching data:', err);
-      
-      let errorMessage = 'Failed to fetch clients';
-      if (err instanceof Error) {
-        if (err.message.includes('Network error')) {
-          errorMessage = 'Cannot connect to the server. Please check your internet connection and try again.';
-        } else if (err.message.includes('User not authenticated')) {
-          errorMessage = 'Please sign in to view your clients.';
-        } else {
-          errorMessage = err.message;
-        }
-      }
-      
-      setError(errorMessage);
+      setError(err instanceof Error ? err.message : 'Failed to fetch clients');
     } finally {
       setLoading(false);
     }

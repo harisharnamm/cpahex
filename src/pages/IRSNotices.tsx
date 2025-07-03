@@ -458,7 +458,7 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated">
       <TopBar title="IRS Notices" />
 
       {/* Global Search */}
@@ -469,7 +469,7 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
           <div>
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <div className="bg-surface-elevated dark:bg-gray-900 rounded-xl border border-border-subtle dark:border-gray-800 p-6 shadow-soft">
+              <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-gradient-to-br from-red-100 to-red-50 rounded-xl">
                     <AlertTriangle className="w-5 h-5 text-red-600" />
@@ -480,7 +480,7 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
                   </div>
                 </div>
               </div>
-              <div className="bg-surface-elevated dark:bg-gray-900 rounded-xl border border-border-subtle dark:border-gray-800 p-6 shadow-soft">
+              <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-gradient-to-br from-amber-100 to-amber-50 rounded-xl">
                     <Clock className="w-5 h-5 text-amber-600" />
@@ -493,7 +493,7 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
                   </div>
                 </div>
               </div>
-              <div className="bg-surface-elevated dark:bg-gray-900 rounded-xl border border-border-subtle dark:border-gray-800 p-6 shadow-soft">
+              <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-xl">
                     <CheckCircle className="w-5 h-5 text-emerald-600" />
@@ -506,7 +506,7 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
                   </div>
                 </div>
               </div>
-              <div className="bg-surface-elevated dark:bg-gray-900 rounded-xl border border-border-subtle dark:border-gray-800 p-6 shadow-soft">
+              <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl">
                     <FileText className="w-5 h-5 text-blue-600" />
@@ -522,7 +522,7 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
             </div>
 
             {/* Upload Zone */}
-            <div id="upload-section" className="bg-surface-elevated dark:bg-gray-900 rounded-2xl border border-border-subtle dark:border-gray-800 overflow-hidden mb-8 shadow-soft">
+            <div id="upload-section" className="bg-surface-elevated rounded-2xl border border-border-subtle overflow-hidden mb-8 shadow-soft">
               <div className="p-8">
                 <div className="text-center mb-6">
                   <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl w-16 h-16 mx-auto mb-4 flex items-center justify-center">
@@ -557,11 +557,11 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
 
             {/* Recent Notices */}
             {enrichedNotices.length > 0 ? (
-              <div className="bg-surface-elevated dark:bg-gray-900 rounded-2xl border border-border-subtle dark:border-gray-800 shadow-soft overflow-hidden">
+              <div className="bg-surface-elevated rounded-2xl border border-border-subtle shadow-soft overflow-hidden">
                 <div className="p-6 border-b border-border-subtle">
                   <h2 className="text-xl font-semibold text-text-primary">Recent Notices</h2>
                 </div>
-                <div className="divide-y divide-border-subtle dark:divide-gray-800">
+                <div className="divide-y divide-border-subtle">
                   {enrichedNotices.map((notice) => {
                     const deadline = formatDeadline(notice.deadline_date);
                     const displayName = getNoticeDisplayName(notice);
@@ -569,7 +569,7 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
                     return (
                       <div 
                         key={notice.id}
-                        className="p-6 hover:bg-surface-hover dark:hover:bg-gray-800 cursor-pointer transition-all duration-200 group"
+                        className="p-6 hover:bg-surface-hover cursor-pointer transition-all duration-200 group"
                         onClick={() => handleNoticeSelect(notice.id)}
                       >
                         <div className="flex items-center justify-between">
@@ -665,8 +665,8 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Document Preview */}
-              <div className="bg-surface-elevated dark:bg-gray-900 rounded-2xl border border-border-subtle dark:border-gray-800 shadow-soft overflow-hidden">
-                <div className="p-6 border-b border-border-subtle dark:border-gray-800 flex items-center justify-between">
+              <div className="bg-surface-elevated rounded-2xl border border-border-subtle shadow-soft overflow-hidden">
+                <div className="p-6 border-b border-border-subtle flex items-center justify-between">
                   <h3 className="font-semibold text-text-primary">Document Preview</h3>
                   {selectedNotice.documents && (
                     <Tooltip content="View the full document in a larger preview window">
@@ -681,7 +681,7 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
                     </Tooltip>
                   )}
                 </div>
-                <div className="aspect-[4/3] bg-surface dark:bg-gray-800">
+                <div className="aspect-[4/3] bg-surface">
                   {selectedNotice.documents ? (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
@@ -706,12 +706,12 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
               </div>
 
               {/* AI Analysis */}
-              <div className="bg-surface-elevated dark:bg-gray-900 rounded-2xl border border-border-subtle dark:border-gray-800 shadow-soft overflow-hidden">
-                <div className="p-6 border-b border-border-subtle dark:border-gray-800 flex items-center justify-between">
+              <div className="bg-surface-elevated rounded-2xl border border-border-subtle shadow-soft overflow-hidden">
+                <div className="p-6 border-b border-border-subtle flex items-center justify-between">
                   <h3 className="font-semibold text-text-primary">AI Analysis</h3>
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                    <span className="text-xs text-text-tertiary dark:text-gray-400 bg-surface dark:bg-gray-800 px-2 py-1 rounded-lg font-medium">
+                    <span className="text-xs text-text-tertiary bg-surface px-2 py-1 rounded-lg font-medium">
                       Powered by AI
                     </span>
                   </div>
@@ -733,9 +733,9 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
                         {selectedNotice.ai_summary}
                       </div>
                       {selectedNotice.ai_recommendations && (
-                        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
-                          <h4 className="font-semibold text-blue-900 dark:text-blue-400 mb-2">Recommendations</h4>
-                          <div className="whitespace-pre-wrap text-blue-800 dark:text-blue-300">
+                        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                          <h4 className="font-semibold text-blue-900 mb-2">Recommendations</h4>
+                          <div className="whitespace-pre-wrap text-blue-800">
                             {selectedNotice.ai_recommendations}
                           </div>
                         </div>
@@ -763,7 +763,7 @@ ${selectedNotice.ai_recommendations || 'Review the AI analysis for detailed reco
                   )}
                 </div>
                 {selectedNotice.ai_summary && (
-                  <div className="p-6 border-t border-border-subtle dark:border-gray-800 bg-surface dark:bg-gray-800">
+                  <div className="p-6 border-t border-border-subtle bg-surface">
                     <div className="flex flex-col sm:flex-row gap-3">
                       <Button 
                         variant="secondary" 

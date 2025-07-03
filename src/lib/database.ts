@@ -1,24 +1,5 @@
 import { supabase } from './supabase';
 
-// Enhanced error handling for database operations
-function handleDatabaseError(error: any, operation: string): never {
-  console.error(`❌ Database ${operation} failed:`, error);
-  
-  if (error?.message?.includes('Failed to fetch')) {
-    throw new Error(`Network error: Cannot connect to database. Please check your internet connection and try again.`);
-  }
-  
-  if (error?.code === 'PGRST116') {
-    throw new Error(`Authentication error: Please sign in again.`);
-  }
-  
-  if (error?.code === 'PGRST301') {
-    throw new Error(`Permission error: You don't have access to this resource.`);
-  }
-  
-  throw new Error(`Database error: ${error?.message || 'Unknown error occurred'}`);
-}
-
 // Database types based on the schema
 export interface Client {
   id: string;
@@ -157,118 +138,88 @@ export interface PaymentTransaction {
 // Client operations
 export const clientsApi = {
   async getAll(): Promise<Client[]> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-      
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      
-      if (error) handleDatabaseError(error, 'getAll clients');
-      return data || [];
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('User not authenticated')) {
-        throw error;
-      }
-      handleDatabaseError(error, 'getAll clients');
-    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+    
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
   },
 
   async getById(id: string): Promise<Client | null> {
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (error) handleDatabaseError(error, 'getById client');
-      return data;
-    } catch (error) {
-      handleDatabaseError(error, 'getById client');
-    }
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) throw error;
+    return data;
   },
 
   async create(client: Omit<Client, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Client> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-      
-      const clientWithUser = {
-        ...client,
-        user_id: user.id,
-        // Ensure all fields are explicitly set to avoid null values
-        address: client.address || null,
-        entity_type: client.entity_type || 'individual',
-        required_documents: client.required_documents || [],
-        tax_id: client.tax_id || null,
-        notes: client.notes || null
-      };
-      
-      console.log('🔄 Creating client with data:', clientWithUser);
-      
-      const { data, error } = await supabase
-        .from('clients')
-        .insert([clientWithUser])
-        .select()
-        .single();
-      
-      console.log('✅ Client creation result:', { data, error });
-      
-      if (error) handleDatabaseError(error, 'create client');
-      return data;
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('User not authenticated')) {
-        throw error;
-      }
-      handleDatabaseError(error, 'create client');
-    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+    
+    const clientWithUser = {
+      ...client,
+      user_id: user.id,
+      // Ensure all fields are explicitly set to avoid null values
+      address: client.address || null,
+      entity_type: client.entity_type || 'individual',
+      required_documents: client.required_documents || [],
+      tax_id: client.tax_id || null,
+      notes: client.notes || null
+    };
+    
+    console.log('🔄 Creating client with data:', clientWithUser);
+    
+    const { data, error } = await supabase
+      .from('clients')
+      .insert([clientWithUser])
+      .select()
+      .single();
+    
+    console.log('✅ Client creation result:', { data, error });
+    
+    if (error) throw error;
+    return data;
   },
 
   async update(id: string, updates: Partial<Client>): Promise<Client> {
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) handleDatabaseError(error, 'update client');
-      return data;
-    } catch (error) {
-      handleDatabaseError(error, 'update client');
-    }
+    const { data, error } = await supabase
+      .from('clients')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
   },
 
   async delete(id: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', id);
-      
-      if (error) handleDatabaseError(error, 'delete client');
-    } catch (error) {
-      handleDatabaseError(error, 'delete client');
-    }
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
   },
 
   async getDocumentCount(clientId: string): Promise<number> {
-    try {
-      const { count, error } = await supabase
-        .from('documents')
-        .select('*', { count: 'exact', head: true })
-        .eq('client_id', clientId);
-      
-      if (error) handleDatabaseError(error, 'getDocumentCount');
-      return count || 0;
-    } catch (error) {
-      handleDatabaseError(error, 'getDocumentCount');
-    }
+    const { count, error } = await supabase
+      .from('documents')
+      .select('*', { count: 'exact', head: true })
+      .eq('client_id', clientId);
+    
+    if (error) throw error;
+    return count || 0;
   }
 };
 

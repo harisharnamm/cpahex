@@ -133,7 +133,7 @@ export function Clients() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated">
       <TopBar title="Clients" />
 
       {/* Global Search */}
@@ -155,12 +155,12 @@ export function Clients() {
         </div>
 
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6">
-            <p className="text-red-700 dark:text-red-400">Error: {error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+            <p className="text-red-700">Error: {error}</p>
           </div>
         )}
 
-        <div className="bg-surface-elevated dark:bg-gray-900 rounded-2xl border border-border-subtle dark:border-gray-800 p-6 mb-8 shadow-soft">
+        <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-6 mb-8 shadow-soft">
           <div className="flex flex-col sm:flex-row gap-4">
             <Button 
               variant="secondary" 
@@ -177,7 +177,7 @@ export function Clients() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-surface-elevated dark:bg-gray-900 rounded-xl border border-border-subtle dark:border-gray-800 p-6 shadow-soft">
+          <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-xl">
                 <UsersIcon className="w-5 h-5 text-emerald-600" />
@@ -188,7 +188,7 @@ export function Clients() {
               </div>
             </div>
           </div>
-          <div className="bg-surface-elevated dark:bg-gray-900 rounded-xl border border-border-subtle dark:border-gray-800 p-6 shadow-soft">
+          <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl">
                 <UsersIcon className="w-5 h-5 text-blue-600" />
@@ -201,7 +201,7 @@ export function Clients() {
               </div>
             </div>
           </div>
-          <div className="bg-surface-elevated dark:bg-gray-900 rounded-xl border border-border-subtle dark:border-gray-800 p-6 shadow-soft">
+          <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-br from-amber-100 to-amber-50 rounded-xl">
                 <UsersIcon className="w-5 h-5 text-amber-600" />
@@ -232,7 +232,7 @@ export function Clients() {
               onViewDocuments={handleViewDocuments}
             />
           ) : (
-            <EmptyState 
+            <EmptyState
               icon={Users}
               title={searchQuery ? "No clients match your search" : "No clients yet"}
               description={searchQuery 

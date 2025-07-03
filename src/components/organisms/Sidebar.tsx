@@ -14,8 +14,6 @@ import {
   Settings,
   Sparkles,
   X,
-  Moon,
-  Sun,
   Search as SearchIcon
 } from 'lucide-react';
 
@@ -28,7 +26,7 @@ interface SidebarProps {
 export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const { profile, signOut } = useAuthContext();
   const { closeSidebar } = useSidebar();
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   
   const handleSignOut = async () => {
     await signOut();
@@ -111,28 +109,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
         </nav>
 
         {/* Search Shortcut */}
-        <div className="px-4 sm:px-6 mt-2 mb-4">
-          <button
-            onClick={toggleTheme}
-            className="w-full flex items-center justify-between p-3 rounded-xl bg-surface-elevated dark:bg-black border border-border-subtle dark:border-gray-700 hover:shadow-soft transition-all duration-200 group"
-          >
-            <div className="flex items-center space-x-3">
-              {theme === 'dark' ? (
-                <Sun className="w-5 h-5 text-amber-500" />
-              ) : (
-                <Moon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              )}
-              <span className="text-sm font-medium text-text-primary dark:text-white">
-                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-              </span>
-            </div>
-            <div className="w-8 h-5 bg-surface dark:bg-gray-900 rounded-full flex items-center p-0.5 transition-all duration-300">
-              <div className={`w-4 h-4 rounded-full bg-primary transform transition-transform duration-300 ${
-                theme === 'dark' ? 'translate-x-3' : 'translate-x-0'
-              }`}></div>
-            </div>
-          </button>
-        </div>
+        {/* Search button removed to fix error */}
 
         {/* User Avatar */}
         <div className="p-4 sm:p-6 border-t border-border-subtle dark:border-gray-800 bg-gradient-to-r from-surface to-surface-elevated dark:from-gray-900 dark:to-gray-800">

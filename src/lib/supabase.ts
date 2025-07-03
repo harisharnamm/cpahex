@@ -22,14 +22,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Please check your .env file.');
 }
 
-// Validate URL format
-try {
-  new URL(supabaseUrl);
-} catch (error) {
-  console.error('Invalid Supabase URL format:', supabaseUrl);
-  throw new Error('Invalid Supabase URL format. Please check your VITE_SUPABASE_URL in .env file.');
-}
-
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
@@ -43,56 +35,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     headers: {
       'apikey': supabaseAnonKey
     }
-  },
-  // Add retry configuration for better reliability
-  db: {
-    schema: 'public'
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10
-    }
   }
 });
-
-// Enhanced connection testing function
-export async function testSupabaseConnection(): Promise<{ success: boolean; error?: string }> {
-  try {
-    console.log('🔍 Testing Supabase connection...');
-    
-    // Test basic connectivity with a simple query
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('count')
-      .limit(1);
-    
-    if (error) {
-      console.error('❌ Supabase connection test failed:', error);
-      return { 
-        success: false, 
-        error: `Database error: ${error.message}` 
-      };
-    }
-    
-    console.log('✅ Supabase connection test successful');
-    return { success: true };
-    
-  } catch (error) {
-    console.error('❌ Supabase connection test failed with exception:', error);
-    
-    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      return { 
-        success: false, 
-        error: 'Network error: Cannot reach Supabase. Please check your internet connection and Supabase URL.' 
-      };
-    }
-    
-    return { 
-      success: false, 
-      error: `Connection error: ${error instanceof Error ? error.message : 'Unknown error'}` 
-    };
-  }
-}
 
 // Test connection and log environment
 console.log('🔗 Supabase client initialized', {
@@ -102,14 +46,54 @@ console.log('🔗 Supabase client initialized', {
   siteUrl
 });
 
-// Run connection test on initialization
-testSupabaseConnection().then(result => {
-  if (result.success) {
-    window.dispatchEvent(new CustomEvent('supabase:connection:success'));
-  } else {
-    window.dispatchEvent(new CustomEvent('supabase:connection:error', { 
-      detail: { message: result.error } 
-    }));
+// Enhanced connection testing with better recovery options
+let connectionTestRunning = true;
+
+// First try with a short timeout for quick feedback
+Promise.race([
+  supabase.auth.getSession(),
+  new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout (initial)')), 5000))
+]).then((result: any) => {
+  const { data, error } = result;
+  connectionTestRunning = false;
+  
+  console.log('🔍 Initial session check (fast):', { 
+    hasSession: !!data?.session, 
+    userId: data?.session?.user?.id,
+    error: error?.message 
+  });
+  
+  // Return success flag to any listeners
+  window.dispatchEvent(new CustomEvent('supabase:connection:success'));
+}).catch((error: Error) => {
+  console.warn('⚠️ Fast connection test failed, trying with longer timeout:', error.message);
+  
+  // Try again with a longer timeout as backup
+  if (connectionTestRunning) {
+    Promise.race([
+      supabase.auth.getSession(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout (extended)')), 15000))
+    ]).then((result: any) => {
+      const { data, error } = result;
+      connectionTestRunning = false;
+      
+      console.log('🔍 Extended session check:', { 
+        hasSession: !!data?.session, 
+        userId: data?.session?.user?.id,
+        error: error?.message 
+      });
+      
+      // Return success flag to any listeners
+      window.dispatchEvent(new CustomEvent('supabase:connection:success'));
+    }).catch((finalError: Error) => {
+      connectionTestRunning = false;
+      console.error('❌ Session check failed after extended timeout:', finalError.message);
+      
+      // Signal connection issue to listeners
+      window.dispatchEvent(new CustomEvent('supabase:connection:error', { 
+        detail: { message: finalError.message } 
+      }));
+    });
   }
 });
 
