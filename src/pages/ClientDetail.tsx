@@ -11,7 +11,7 @@ import { EditNoteDialog } from '../components/ui/edit-note-dialog';
 import { useClientNotes, ClientNote } from '../hooks/useClientNotes';
 import { useToast } from '../contexts/ToastContext';
 import { TopBar } from '../components/organisms/TopBar';
-import { Search, Filter, FileText, Calendar, User, Upload, Download, Eye, Edit, DollarSign, CreditCard, ArrowUpRight, ArrowDownLeft, Banknote, Plus, Trash2, Tag, Clock } from 'lucide-react';
+import { Search, Filter, FileText, Calendar, User, Upload, Download, Eye, Edit, DollarSign, CreditCard, ArrowUpRight, ArrowDownLeft, Banknote, Plus, Trash2, Tag, Clock, AlertTriangle, MessageSquare } from 'lucide-react';
 import { Input } from '../components/atoms/Input';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
