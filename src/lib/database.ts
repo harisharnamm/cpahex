@@ -8,6 +8,7 @@ export interface Client {
   email: string;
   phone?: string;
   address?: string;
+  category?: string;
   tax_year: number;
   tax_id?: string;
   entity_type: 'individual' | 'llc' | 'corporation' | 's_corp' | 'partnership';
