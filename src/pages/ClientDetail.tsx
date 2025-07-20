@@ -257,6 +257,11 @@ export function ClientDetail() {
     }
   };
 
+  const handleExportReport = () => {
+    // TODO: Implement export functionality
+    console.log('Export report functionality to be implemented');
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
