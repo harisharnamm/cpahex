@@ -20,22 +20,27 @@ function Toast({ id, type, title, message, duration = 5000, onClose }: ToastProp
   const [isVisible, setIsVisible] = useState(true);
   
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(false);
-    }, duration);
-    
-    return () => clearTimeout(timer);
+    if (duration > 0) {
+      const timer = setTimeout(() => {
+        handleClose();
+      }, duration);
+      
+      return () => clearTimeout(timer);
+    }
   }, [duration]);
   
   const handleClose = () => {
     setIsVisible(false);
+    // Give time for exit animation, then call onClose
+    setTimeout(() => {
+      onClose(id);
+    }, 200); // Match the animation duration
   };
   
-  const handleAnimationComplete = () => {
-    if (!isVisible) {
-      onClose(id);
-    }
-  };
+  // Don't render if not visible
+  if (!isVisible) {
+    return null;
+  }
   
   const getIcon = () => {
     switch (type) {
@@ -69,7 +74,6 @@ function Toast({ id, type, title, message, duration = 5000, onClose }: ToastProp
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -20, scale: 0.95 }}
       transition={{ duration: 0.2 }}
-      onAnimationComplete={handleAnimationComplete}
       className={cn(
         "w-full max-w-md min-w-[320px] rounded-xl border shadow-medium p-4 pointer-events-auto",
         getStyles()
@@ -86,10 +90,10 @@ function Toast({ id, type, title, message, duration = 5000, onClose }: ToastProp
         <div className="ml-4 flex-shrink-0 flex">
           <button
             type="button"
-            className="bg-transparent rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="bg-transparent rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
             onClick={handleClose}
+            aria-label="Close notification"
           >
-            <span className="sr-only">Close</span>
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -148,7 +152,15 @@ class ToastManager {
   
   public show(type: ToastType, title: string, message?: string, duration?: number): string {
     const id = this.generateId();
-    this.toasts.push({ id, type, title, message, duration, onClose: this.removeToast.bind(this) });
+    const toast = { 
+      id, 
+      type, 
+      title, 
+      message, 
+      duration: duration || 5000, 
+      onClose: this.removeToast.bind(this) 
+    };
+    this.toasts.push(toast);
     this.render();
     return id;
   }
