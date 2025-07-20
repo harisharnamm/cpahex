@@ -71,7 +71,7 @@ function Toast({ id, type, title, message, duration = 5000, onClose }: ToastProp
       transition={{ duration: 0.2 }}
       onAnimationComplete={handleAnimationComplete}
       className={cn(
-        "w-full max-w-sm rounded-xl border shadow-medium p-4 pointer-events-auto",
+        "w-full max-w-md min-w-[320px] rounded-xl border shadow-medium p-4 pointer-events-auto",
         getStyles()
       )}
     >
@@ -85,6 +85,7 @@ function Toast({ id, type, title, message, duration = 5000, onClose }: ToastProp
         </div>
         <div className="ml-4 flex-shrink-0 flex">
           <button
+            type="button"
             className="bg-transparent rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20"
             onClick={handleClose}
           >
