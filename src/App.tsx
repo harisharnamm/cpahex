@@ -94,7 +94,7 @@ function AppContent() {
       <Route path="/deduction-chat" element={
         <ProtectedRoute>
           <AppLayout>
-            <DeductionChat />
+            <AITaxAssistant />
           </AppLayout>
         </ProtectedRoute>
       } />
