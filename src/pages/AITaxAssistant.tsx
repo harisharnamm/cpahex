@@ -742,7 +742,7 @@ export function AITaxAssistant() {
                 {selectedDocuments.map(docId => {
                   const doc = clientDocuments.find(d => d.id === docId);
                   return doc ? (
-                    <div key={docId} className="inline-flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-md text-xs font-medium">
+                    <div key={docId} className="inline-flex items-center space-x-1 bg-primary/10 text-gray-900 px-2 py-1 rounded-md text-xs font-medium">
                       <FileText className="w-3 h-3" />
                       <span className="truncate max-w-[120px]">{doc.original_filename}</span>
                     </div>
