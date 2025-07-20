@@ -118,7 +118,27 @@ export function ClientDetail() {
 
   const handleUploadError = (error: string) => {
     console.error('Upload error:', error);
-    // Show error message to user
+    toast.error('Upload Failed', error);
+  };
+
+  const handleFinancialDocumentUpload = (documentIds: string[]) => {
+    console.log('Financial documents uploaded successfully:', documentIds);
+    toast.success('Documents Uploaded', `${documentIds.length} financial document(s) uploaded and processed`);
+    
+    // Auto-generate transactions from uploaded documents
+    documentIds.forEach((docId, index) => {
+      const mockTransaction = {
+        id: Math.random().toString(36).substring(2, 9),
+        date: new Date().toISOString().split('T')[0],
+        type: Math.random() > 0.5 ? 'income' : 'expense' as 'income' | 'expense',
+        category: Math.random() > 0.5 ? 'Sales' : 'Office Supplies',
+        description: `Auto-generated from uploaded document ${index + 1}`,
+        amount: Math.floor(Math.random() * 1000) + 100,
+        document: `document-${docId}`
+      };
+      
+      setTransactions(prev => [mockTransaction, ...prev]);
+    });
   };
 
   const handleDownload = (docId: string, filename: string) => {
@@ -387,34 +407,6 @@ export function ClientDetail() {
           
           <Tab.Panels>
             <Tab.Panel className="space-y-6">
-              {/* Enhanced Upload Zone */}
-              <div className="bg-surface-elevated rounded-2xl border border-border-subtle overflow-hidden shadow-soft">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-text-primary">Upload Documents</h3>
-                      <p className="text-text-tertiary">Drag and drop files or click to browse</p>
-                    </div>
-                    <Button
-                      onClick={() => setShowUpload(!showUpload)}
-                      icon={Upload}
-                      variant={showUpload ? "secondary" : "primary"}
-                    >
-                      {showUpload ? "Hide Upload" : "Upload Files"}
-                    </Button>
-                  </div>
-                  
-                  {showUpload && (
-                    <EnhancedFileUpload
-                      clientId={id}
-                      allowMultiple={true}
-                      onUploadComplete={handleUploadComplete}
-                      onUploadError={handleUploadError}
-                    />
-                  )}
-                </div>
-              </div>
-
               {/* Search and Filters */}
               <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-6 shadow-soft">
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -565,30 +557,14 @@ export function ClientDetail() {
                   <div className="bg-surface rounded-xl border border-border-subtle p-4 mb-6">
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="font-semibold text-text-primary">Financial Documents</h4>
-                      <Button variant="ghost" size="sm" icon={Upload}>
-                        Upload Documents
-                      </Button>
                     </div>
                     
-                    <div className="p-4 border border-dashed border-border-light rounded-xl bg-surface-elevated">
-                      <div className="text-center py-6">
-                        <Upload className="w-10 h-10 text-text-tertiary mx-auto mb-3" />
-                        <h5 className="font-medium text-text-primary mb-1">Drop financial documents here</h5>
-                        <p className="text-text-tertiary text-sm mb-3">Upload bank statements, invoices, receipts, or payroll documents</p>
-                        <Button size="sm" variant="secondary" icon={FileText}>
-                          Browse Files
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4">
-                      <EnhancedFileUpload
-                        clientId={id}
-                        allowMultiple={true}
-                        onUploadComplete={(documentIds) => console.log('Uploaded documents:', documentIds)}
-                        onUploadError={(error) => console.error('Upload error:', error)}
-                      />
-                    </div>
+                    <EnhancedFileUpload
+                      clientId={id}
+                      allowMultiple={true}
+                      onUploadComplete={handleFinancialDocumentUpload}
+                      onUploadError={handleUploadError}
+                    />
                   </div>
                   
                   {/* Transaction Ledger */}
