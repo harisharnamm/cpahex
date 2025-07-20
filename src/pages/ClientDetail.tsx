@@ -39,8 +39,6 @@ export function ClientDetail() {
   const { documents, loading, downloadDocument, deleteDocument, getDocumentPreviewURL } = useDocuments(id);
   const { notes, loading: notesLoading, createNote, updateNote, deleteNote } = useClientNotes(id || '');
   
-  const tabs = ['Documents', 'Vendors', 'Bookkeeping', 'Notes'];
-  
   const tabs = ['Documents', 'Bookkeeping', 'Notes'];
   
   // Sample transactions for the bookkeeping ledger
