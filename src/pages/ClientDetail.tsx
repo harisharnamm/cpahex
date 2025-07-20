@@ -41,6 +41,8 @@ export function ClientDetail() {
   
   const tabs = ['Documents', 'Vendors', 'Bookkeeping', 'Notes'];
   
+  const tabs = ['Documents', 'Bookkeeping', 'Notes'];
+  
   // Sample transactions for the bookkeeping ledger
   const [transactions, setTransactions] = useState([
     {
@@ -109,11 +111,6 @@ export function ClientDetail() {
       </div>
     );
   }
-
-  const vendors = [
-    { id: '1', name: 'Office Depot', amount: 1250, w9Status: 'completed' },
-    { id: '2', name: 'Marketing Co', amount: 3500, w9Status: 'pending' },
-  ];
 
   const handleUploadComplete = (documentIds: string[]) => {
     console.log('Documents uploaded successfully:', documentIds);
@@ -496,32 +493,6 @@ export function ClientDetail() {
                     </Button>
                   </div>
                 )}
-              </div>
-            </Tab.Panel>
-            
-            <Tab.Panel>
-              <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-8 shadow-soft">
-                <div className="text-center py-12">
-                  <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                    <User className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-text-primary mb-2">Vendor Management</h3>
-                  <p className="text-text-tertiary">Track vendor payments and W-9 status</p>
-                  
-                  <div className="mt-8 space-y-4">
-                    {vendors.map((vendor) => (
-                      <div key={vendor.id} className="flex items-center justify-between p-4 bg-surface rounded-xl border border-border-subtle">
-                        <div>
-                          <p className="font-medium text-text-primary">{vendor.name}</p>
-                          <p className="text-sm text-text-tertiary">${vendor.amount.toLocaleString()}</p>
-                        </div>
-                        <Badge variant={vendor.w9Status === 'completed' ? 'success' : 'warning'} size="sm">
-                          {vendor.w9Status === 'completed' ? 'W-9 Complete' : 'W-9 Pending'}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
             </Tab.Panel>
             
