@@ -6,8 +6,12 @@ import { GlobalSearch } from '../components/molecules/GlobalSearch';
 import { useSearch } from '../contexts/SearchContext';
 import { AddTransactionDialog } from '../components/ui/add-transaction-dialog';
 import { EditClientDialog } from '../components/ui/edit-client-dialog';
+import { AddNoteDialog } from '../components/ui/add-note-dialog';
+import { EditNoteDialog } from '../components/ui/edit-note-dialog';
+import { useClientNotes, ClientNote } from '../hooks/useClientNotes';
+import { useToast } from '../contexts/ToastContext';
 import { TopBar } from '../components/organisms/TopBar';
-import { Search, Filter, FileText, Calendar, User, Upload, Download, Eye, Edit, DollarSign, CreditCard, ArrowUpRight, ArrowDownLeft, Banknote, Plus } from 'lucide-react';
+import { Search, Filter, FileText, Calendar, User, Upload, Download, Eye, Edit, DollarSign, CreditCard, ArrowUpRight, ArrowDownLeft, Banknote, Plus, Trash2, Tag, Clock } from 'lucide-react';
 import { Input } from '../components/atoms/Input';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
@@ -26,9 +30,14 @@ export function ClientDetail() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showAddTransactionDialog, setShowAddTransactionDialog] = useState(false);
   const [isAddingTransaction, setIsAddingTransaction] = useState(false);
+  const [showAddNoteDialog, setShowAddNoteDialog] = useState(false);
+  const [showEditNoteDialog, setShowEditNoteDialog] = useState(false);
+  const [selectedNote, setSelectedNote] = useState<ClientNote | null>(null);
+  const toast = useToast();
   
   // Use our document hooks
   const { documents, loading, downloadDocument, deleteDocument, getDocumentPreviewURL } = useDocuments(id);
+  const { notes, loading: notesLoading, createNote, updateNote, deleteNote } = useClientNotes(id || '');
   
   const tabs = ['Documents', 'Vendors', 'Bookkeeping', 'Notes'];
   
@@ -188,6 +197,121 @@ export function ClientDetail() {
       return Promise.reject(error);
     } finally {
       setIsAddingTransaction(false);
+    }
+  };
+
+  const handleAddNote = async (noteData: {
+    title: string;
+    content: string;
+    category: string;
+    priority: 'low' | 'medium' | 'high';
+    tags: string[];
+  }) => {
+    try {
+      const result = await createNote(noteData);
+      if (result.success) {
+        toast.success('Note Added', 'Client note has been created successfully');
+      } else {
+        toast.error('Failed to Add Note', result.error || 'An error occurred');
+      }
+    } catch (error) {
+      console.error('Failed to add note:', error);
+      toast.error('Failed to Add Note', 'An unexpected error occurred');
+      throw error;
+    }
+  };
+
+  const handleEditNote = async (noteData: {
+    title: string;
+    content: string;
+    category: string;
+    priority: 'low' | 'medium' | 'high';
+    tags: string[];
+  }) => {
+    if (!selectedNote) return;
+    
+    try {
+      const result = await updateNote(selectedNote.id, noteData);
+      if (result.success) {
+        toast.success('Note Updated', 'Client note has been updated successfully');
+        setShowEditNoteDialog(false);
+        setSelectedNote(null);
+      } else {
+        toast.error('Failed to Update Note', result.error || 'An error occurred');
+      }
+    } catch (error) {
+      console.error('Failed to update note:', error);
+      toast.error('Failed to Update Note', 'An unexpected error occurred');
+      throw error;
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string, noteTitle: string) => {
+    if (window.confirm(`Are you sure you want to delete "${noteTitle}"? This action cannot be undone.`)) {
+      try {
+        const result = await deleteNote(noteId);
+        if (result.success) {
+          toast.success('Note Deleted', 'Client note has been deleted successfully');
+        } else {
+          toast.error('Failed to Delete Note', result.error || 'An error occurred');
+        }
+      } catch (error) {
+        console.error('Failed to delete note:', error);
+        toast.error('Failed to Delete Note', 'An unexpected error occurred');
+      }
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString();
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'meeting':
+        return <Calendar className="w-4 h-4" />;
+      case 'tax_planning':
+        return <FileText className="w-4 h-4" />;
+      case 'compliance':
+        return <AlertTriangle className="w-4 h-4" />;
+      case 'communication':
+        return <MessageSquare className="w-4 h-4" />;
+      case 'document':
+        return <FileText className="w-4 h-4" />;
+      default:
+        return <FileText className="w-4 h-4" />;
+    }
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'meeting':
+        return 'text-amber-600 bg-amber-50 border-amber-200';
+      case 'tax_planning':
+        return 'text-green-600 bg-green-50 border-green-200';
+      case 'compliance':
+        return 'text-red-600 bg-red-50 border-red-200';
+      case 'communication':
+        return 'text-purple-600 bg-purple-50 border-purple-200';
+      case 'document':
+        return 'text-indigo-600 bg-indigo-50 border-indigo-200';
+      default:
+        return 'text-blue-600 bg-blue-50 border-blue-200';
+    }
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return <Badge variant="error" size="sm">High Priority</Badge>;
+      case 'medium':
+        return <Badge variant="warning" size="sm">Medium Priority</Badge>;
+      default:
+        return <Badge variant="neutral" size="sm">Low Priority</Badge>;
     }
   };
 
@@ -678,14 +802,178 @@ export function ClientDetail() {
             </Tab.Panel>
             
             <Tab.Panel>
-              <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-8 shadow-soft">
-                <div className="text-center py-12">
-                  <div className="p-4 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-2xl w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                    <FileText className="w-8 h-8 text-emerald-600" />
+              <div className="space-y-6">
+                {/* Notes Header */}
+                <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-6 shadow-soft">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-text-primary">Client Notes</h3>
+                      <p className="text-text-tertiary">Track important client information and communications</p>
+                    </div>
+                    <Button 
+                      variant="primary" 
+                      icon={Plus} 
+                      className="bg-primary text-gray-900 hover:bg-primary-hover"
+                      onClick={() => setShowAddNoteDialog(true)}
+                    >
+                      Add Note
+                    </Button>
                   </div>
-                  <h3 className="text-lg font-semibold text-text-primary mb-2">Client Notes</h3>
-                  <p className="text-text-tertiary">Add notes and track important client information</p>
-                  <Button className="mt-6">Add Note</Button>
+                  
+                  {/* Notes Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-surface rounded-xl border border-border-subtle p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <FileText className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-text-tertiary">Total Notes</p>
+                          <p className="text-xl font-semibold text-text-primary">{notes.length}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-surface rounded-xl border border-border-subtle p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-red-100 rounded-lg">
+                          <AlertTriangle className="w-4 h-4 text-red-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-text-tertiary">High Priority</p>
+                          <p className="text-xl font-semibold text-text-primary">
+                            {notes.filter(n => n.priority === 'high').length}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-surface rounded-xl border border-border-subtle p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-green-100 rounded-lg">
+                          <FileText className="w-4 h-4 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-text-tertiary">Tax Planning</p>
+                          <p className="text-xl font-semibold text-text-primary">
+                            {notes.filter(n => n.category === 'tax_planning').length}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-surface rounded-xl border border-border-subtle p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-amber-100 rounded-lg">
+                          <Calendar className="w-4 h-4 text-amber-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-text-tertiary">Recent</p>
+                          <p className="text-xl font-semibold text-text-primary">
+                            {notes.filter(n => 
+                              new Date().getTime() - new Date(n.created_at).getTime() < 7 * 24 * 60 * 60 * 1000
+                            ).length}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes List */}
+                <div className="bg-surface-elevated rounded-2xl border border-border-subtle shadow-soft overflow-hidden">
+                  {notesLoading ? (
+                    <div className="p-8 text-center">
+                      <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                      <p className="text-text-secondary">Loading notes...</p>
+                    </div>
+                  ) : notes.length > 0 ? (
+                    <div className="divide-y divide-border-subtle">
+                      {notes.map((note) => (
+                        <div key={note.id} className="p-6 hover:bg-surface-hover transition-all duration-200 group">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-3 mb-2">
+                                <h4 className="font-semibold text-text-primary text-lg">{note.title}</h4>
+                                <div className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium border ${getCategoryColor(note.category)}`}>
+                                  {getCategoryIcon(note.category)}
+                                  <span className="ml-1 capitalize">{note.category.replace('_', ' ')}</span>
+                                </div>
+                                {getPriorityBadge(note.priority)}
+                              </div>
+                              <p className="text-text-secondary leading-relaxed mb-3">{note.content}</p>
+                              
+                              {/* Tags */}
+                              {note.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                  {note.tags.map((tag, index) => (
+                                    <span
+                                      key={index}
+                                      className="inline-flex items-center px-2 py-1 rounded-md bg-surface text-text-tertiary text-xs font-medium border border-border-subtle"
+                                    >
+                                      <Tag className="w-3 h-3 mr-1" />
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              <div className="flex items-center space-x-4 text-sm text-text-tertiary">
+                                <div className="flex items-center space-x-1">
+                                  <Clock className="w-4 h-4" />
+                                  <span>Created: {formatDate(note.created_at)}</span>
+                                </div>
+                                {note.updated_at !== note.created_at && (
+                                  <div className="flex items-center space-x-1">
+                                    <Clock className="w-4 h-4" />
+                                    <span>Updated: {formatDate(note.updated_at)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Action buttons */}
+                            <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                icon={Edit}
+                                onClick={() => {
+                                  setSelectedNote(note);
+                                  setShowEditNoteDialog(true);
+                                }}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                title="Edit note"
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                icon={Trash2}
+                                onClick={() => handleDeleteNote(note.id, note.title)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                title="Delete note"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-12 text-center">
+                      <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                        <FileText className="w-8 h-8 text-blue-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-text-primary mb-2">No Notes Yet</h3>
+                      <p className="text-text-tertiary mb-6">Start tracking important client information by adding your first note</p>
+                      <Button 
+                        icon={Plus}
+                        onClick={() => setShowAddNoteDialog(true)}
+                        className="bg-primary text-gray-900 hover:bg-primary-hover"
+                      >
+                        Add First Note
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </Tab.Panel>
@@ -707,6 +995,26 @@ export function ClientDetail() {
           onClose={() => setShowAddTransactionDialog(false)}
           onSubmit={handleAddTransaction}
           loading={isAddingTransaction}
+        />
+        
+        {/* Add Note Dialog */}
+        <AddNoteDialog
+          isOpen={showAddNoteDialog}
+          onClose={() => setShowAddNoteDialog(false)}
+          onSubmit={handleAddNote}
+          loading={notesLoading}
+        />
+        
+        {/* Edit Note Dialog */}
+        <EditNoteDialog
+          isOpen={showEditNoteDialog}
+          onClose={() => {
+            setShowEditNoteDialog(false);
+            setSelectedNote(null);
+          }}
+          onSubmit={handleEditNote}
+          note={selectedNote}
+          loading={notesLoading}
         />
       </div>
     </div>
