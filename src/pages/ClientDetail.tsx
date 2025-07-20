@@ -504,7 +504,7 @@ export function ClientDetail() {
                       <p className="text-text-tertiary">Track income, expenses, and financial documents</p>
                     </div>
                     <div className="flex space-x-3">
-                      <Button variant="secondary" icon={FileText}>
+                      <Button variant="secondary" icon={FileText} onClick={handleExportReport}>
                         Export
                       </Button>
                       <Button 
