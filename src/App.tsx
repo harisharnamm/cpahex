@@ -15,7 +15,7 @@ import { Tasks } from './pages/Tasks';
 import { Hub1099 } from './pages/Hub1099';
 import { MyZone } from './pages/MyZone';
 import { IRSNotices } from './pages/IRSNotices';
-import { DeductionChat } from './pages/DeductionChat';
+import { AITaxAssistant } from './pages/AITaxAssistant';
 import { Settings } from './pages/SettingsPage';
 import { ClientCommunications } from './pages/ClientCommunications';
 import { SignIn } from './pages/SignIn';
