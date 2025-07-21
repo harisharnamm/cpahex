@@ -155,11 +155,11 @@ export function ClientDetail() {
     try {
       // Process selected financial documents and extract transaction data
       const selectedDocs = financialDocuments.filter(doc => selectedFinancialDocs.includes(doc.id));
-    const newTransactions: any[] = [];
-    const newPendingTransactions: any[] = [];
+      const newTransactions: any[] = [];
+      const newPendingTransactions: any[] = [];
       
       // Generate transactions from the selected documents
-      const newTransactions = selectedDocs.map((doc, index) => ({
+      selectedDocs.map((document, index) => {
         // Process financial document data using new structure
         try {
           // Extract financial data from document's processing response
@@ -219,6 +219,7 @@ export function ClientDetail() {
           
           newPendingTransactions.push(errorTransaction);
         }
+      });
       
       // Add new transactions to the beginning of the list
       setTransactions(prev => [...newTransactions, ...prev]);
