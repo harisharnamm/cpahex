@@ -5,7 +5,7 @@ import { useSearch } from '../contexts/SearchContext';
 import { useDocuments } from '../hooks/useDocuments';
 import { useDocumentProcessing, DocumentClassification } from '../hooks/useDocumentProcessing';
 import { DocumentClassificationDialog } from '../components/ui/document-classification-dialog';
-import { EnhancedFileUpload } from '../components/ui/enhanced-file-upload';
+import { EnhancedDocumentUpload } from '../components/ui/enhanced-document-upload';
 import { EmptyState } from '../components/ui/empty-state';
 import { useToast } from '../contexts/ToastContext';
 import { Skeleton } from '../components/ui/skeleton';
