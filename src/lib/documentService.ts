@@ -42,6 +42,12 @@ export class DocumentService {
         return { data: null, error };
       }
 
+      console.log('📤 Uploading document with options:', {
+        clientId: options.clientId,
+        documentType: options.documentType,
+        tags: options.tags
+      });
+
       // Update progress - starting
       onProgress?.({
         file,
@@ -118,6 +124,12 @@ export class DocumentService {
         return { data: null, error: dbError };
       }
 
+      console.log('✅ Document record created:', {
+        id: documentData?.id,
+        clientId: documentData?.client_id,
+        filename: documentData?.original_filename
+      });
+
       onProgress?.({
         file,
         progress: 80,
@@ -169,6 +181,12 @@ export class DocumentService {
       status: 'pending',
     }));
 
+    console.log('📤 Uploading multiple documents:', {
+      fileCount: files.length,
+      clientId: options.clientId,
+      documentType: options.documentType
+    });
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       
@@ -184,6 +202,9 @@ export class DocumentService {
 
       results.push(result);
     }
+
+    const successCount = results.filter(r => r.data && !r.error).length;
+    console.log(`✅ Upload batch complete: ${successCount}/${files.length} successful`);
 
     return { results };
   }

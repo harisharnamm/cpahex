@@ -9,10 +9,12 @@ import {
   CheckCircle, 
   X, 
   RotateCw,
-  Trash2
+  Trash2,
+  User
 } from 'lucide-react';
 import { Button } from '../atoms/Button';
 import { useDocumentUpload } from '../../hooks/useDocumentUpload';
+import { useClients } from '../../hooks/useClients';
 import { 
   DocumentType, 
   DocumentUploadOptions, 
@@ -161,12 +163,14 @@ export const EnhancedFileUpload: React.FC<EnhancedFileUploadProps> = ({
   const [selectedDocumentType, setSelectedDocumentType] = useState<DocumentType>(documentType);
   const [tags, setTags] = useState<string>('');
   const { uploads, isUploading, uploadMultipleDocuments, removeUpload } = useDocumentUpload();
+  const { clients } = useClients();
+  const [selectedClientId, setSelectedClientId] = useState<string>(clientId || '');
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
 
     const options: DocumentUploadOptions = {
-      clientId,
+      clientId: selectedClientId || undefined,
       documentType: selectedDocumentType,
       tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
       processingOptions: {
@@ -177,7 +181,7 @@ export const EnhancedFileUpload: React.FC<EnhancedFileUploadProps> = ({
     };
 
     try {
-      const { results } = await uploadMultipleDocuments(acceptedFiles, options);
+      const { results } = await uploadMultipleDocuments(acceptedFiles, selectedClientId, options);
       
       const successful = results.filter(r => r.data && !r.error);
       const failed = results.filter(r => r.error);
@@ -195,7 +199,7 @@ export const EnhancedFileUpload: React.FC<EnhancedFileUploadProps> = ({
       onUploadError?.(error.message);
     }
   }, [
-    clientId, 
+    selectedClientId, 
     selectedDocumentType, 
     tags, 
     uploadMultipleDocuments, 
@@ -222,6 +226,33 @@ export const EnhancedFileUpload: React.FC<EnhancedFileUploadProps> = ({
 
   return (
     <div className={cn('space-y-4', className)}>
+      {/* Client Selector - only show if not pre-selected */}
+      {!clientId && (
+        <div>
+          <label className="block text-sm font-medium text-text-secondary mb-2">
+            Client Association
+          </label>
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+            <select
+              value={selectedClientId}
+              onChange={(e) => setSelectedClientId(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-border-subtle rounded-xl bg-surface-elevated text-text-primary focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+              <option value="">Select a client (optional)</option>
+              {clients.map(client => (
+                <option key={client.id} value={client.id}>
+                  {client.name} ({client.email})
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="text-xs text-text-tertiary mt-1">
+            Documents can be associated with a specific client for better organization
+          </p>
+        </div>
+      )}
+
       {/* Document Type Selector */}
       <DocumentTypeSelector
         value={selectedDocumentType}
@@ -327,3 +358,6 @@ export const EnhancedFileUpload: React.FC<EnhancedFileUploadProps> = ({
     </div>
   );
 };
+
+// Keep the old component for backward compatibility
+export { EnhancedFileUpload };
