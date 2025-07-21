@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useClients } from '../hooks/useClients';
 import { useDocuments } from '../hooks/useDocuments';
 import { useClientNotes } from '../hooks/useClientNotes';
+import { generateTransactionId } from '../lib/utils';
 import { TopBar } from '../components/organisms/TopBar';
 import { GlobalSearch } from '../components/molecules/GlobalSearch';
 import { useSearch } from '../contexts/SearchContext';
@@ -42,6 +43,7 @@ import {
   TrendingUp,
   Link2,
   AlertCircle,
+  ChevronDown,
   Search,
   Filter,
   X
@@ -560,7 +562,6 @@ export function ClientDetail() {
   const [selectedDocument, setSelectedDocument] = useState<any>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
 
   // Transaction and reconciliation state
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -906,7 +907,7 @@ export function ClientDetail() {
             </div>
             <div className="space-y-6">
               <Skeleton className="h-48" />
-              <Skeleton className="h-264" />
+              <Skeleton className="h-64" />
             </div>
           </div>
         </div>
