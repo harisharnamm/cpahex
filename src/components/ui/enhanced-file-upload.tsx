@@ -360,4 +360,3 @@ export const EnhancedFileUpload: React.FC<EnhancedFileUploadProps> = ({
 };
 
 // Keep the old component for backward compatibility
-export { EnhancedFileUpload };
