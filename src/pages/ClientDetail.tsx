@@ -618,6 +618,9 @@ export function ClientDetail() {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Generate mock transactions from documents
+    // Add immediate user feedback
+    toast.info('Processing Started', 'Analyzing financial documents...');
+    
       const newTransactions = [];
       
       financialDocs.forEach((doc, index) => {
@@ -724,6 +727,8 @@ export function ClientDetail() {
       toast.warning('No Matches', 'No high-confidence matches to approve');
       return;
     }
+    
+    console.log('🔍 Processing documents:', financialDocuments.map(d => d.original_filename));
     
     highConfidenceItems.forEach(item => {
       approveReconciliation(item.id);
