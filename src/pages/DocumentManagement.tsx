@@ -10,7 +10,7 @@ import { EmptyState } from '../components/ui/empty-state';
 import { useToast } from '../contexts/ToastContext';
 import { Skeleton } from '../components/ui/skeleton';
 import { Button } from '../components/atoms/Button';
-import { Badge } from '../atoms/Badge';
+import { Badge } from '../components/atoms/Badge';
 import { Input } from '../components/atoms/Input';
 import { 
   Search, 
