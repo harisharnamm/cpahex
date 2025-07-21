@@ -335,7 +335,7 @@ export function DocumentManagement() {
               </Button>
             </div>
             
-            <EnhancedFileUpload
+            <EnhancedDocumentUpload
               allowMultiple={true}
               onUploadComplete={handleUploadComplete}
               onUploadError={handleUploadError}

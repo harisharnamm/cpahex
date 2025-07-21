@@ -559,7 +559,7 @@ export function ClientDetail() {
                       <h4 className="font-semibold text-text-primary">Financial Documents</h4>
                     </div>
                     
-                    <EnhancedFileUpload
+                    <EnhancedDocumentUpload
                       clientId={id}
                       allowMultiple={true}
                       onUploadComplete={handleFinancialDocumentUpload}
