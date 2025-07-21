@@ -226,84 +226,80 @@ if (!classificationResponse.ok) {
 const classificationResult = await classificationResponse.json()
 console.log('🔍 Full classification response:', JSON.stringify(classificationResult, null, 2))
 
-// Safely extract classification with multiple fallback paths
-// Extract primary_category from the structured response
+// Parse the classification response properly
 let classification = 'unknown'
+let reasoning = null
+let confidence = null
+let fullClassificationData = null
 
 try {
-  // Primary path: check for document_classification.primary_category
-  if (classificationResult?.document_classification?.primary_category) {
-    classification = classificationResult.document_classification.primary_category.trim()
-  }
-  // Fallback: check if the entire response is the classification object
-  else if (classificationResult?.primary_category) {
-    classification = classificationResult.primary_category.trim()
-  }
-  // Additional fallback: look for subcategory.type if primary_category is not found
-  else if (classificationResult?.subcategory?.type) {
-    classification = classificationResult.subcategory.type.trim()
-  }
-  // Legacy fallback paths for generated_text structure (keep for backward compatibility)
-  else if (classificationResult?.results?.eden_ai?.generated_text) {
-    classification = classificationResult.results.eden_ai.generated_text.trim()
-  } 
-  else if (classificationResult?.results?.generated_text) {
-    classification = classificationResult.results.generated_text.trim()
-  } 
-  else if (classificationResult?.generated_text) {
-    classification = classificationResult.generated_text.trim()
-  } 
-  else if (classificationResult?.results) {
-    // If results is a string directly
-    if (typeof classificationResult.results === 'string') {
-      classification = classificationResult.results.trim()
-    } else {
-      // Recursive search function for any classification-related field
-      const findClassificationText = (obj: any, depth = 0): string | null => {
-        if (depth > 5) return null // Prevent infinite recursion
-        if (typeof obj === 'string') return obj
-        if (typeof obj !== 'object' || obj === null) return null
-        
-        // Priority fields to check first
-        const priorityFields = ['primary_category', 'document_classification', 'generated_text']
-        for (const field of priorityFields) {
-          if (obj[field]) {
-            if (typeof obj[field] === 'string') {
-              return obj[field]
-            } else if (obj[field].primary_category) {
-              return obj[field].primary_category
-            }
-          }
-        }
-        
-        // Check all other fields
-        for (const key in obj) {
-          if (!priorityFields.includes(key)) {
-            const result = findClassificationText(obj[key], depth + 1)
-            if (result) return result
-          }
-        }
-        return null
-      }
-      
-      const foundText = findClassificationText(classificationResult.results)
-      if (foundText) {
-        classification = foundText.trim()
-      }
+  // The response appears to be a JSON string that needs parsing
+  let parsedResult = classificationResult
+  
+  // If the result is a string, try to parse it as JSON
+  if (typeof classificationResult === 'string') {
+    try {
+      parsedResult = JSON.parse(classificationResult)
+    } catch (parseError) {
+      console.error('❌ Failed to parse classification result as JSON:', parseError)
+      parsedResult = classificationResult
     }
   }
   
+  // Check if we have the expected structure
+  if (parsedResult?.document_classification) {
+    const docClass = parsedResult.document_classification
+    classification = docClass.primary_category || 'unknown'
+    reasoning = docClass.reasoning || null
+    confidence = docClass.confidence || null
+    fullClassificationData = parsedResult
+  }
+  // Fallback: check if the entire response is the classification object
+  else if (parsedResult?.primary_category) {
+    classification = parsedResult.primary_category
+    reasoning = parsedResult.reasoning || null
+    confidence = parsedResult.confidence || null
+    fullClassificationData = parsedResult
+  }
+  // Legacy fallback for generated_text responses
+  else if (parsedResult?.generated_text) {
+    // Try to parse generated_text as JSON if it looks like JSON
+    try {
+      const generatedData = JSON.parse(parsedResult.generated_text)
+      if (generatedData?.document_classification) {
+        const docClass = generatedData.document_classification
+        classification = docClass.primary_category || 'unknown'
+        reasoning = docClass.reasoning || null
+        confidence = docClass.confidence || null
+        fullClassificationData = generatedData
+      } else {
+        classification = parsedResult.generated_text.trim()
+      }
+    } catch {
+      classification = parsedResult.generated_text.trim()
+    }
+  }
+  else {
+    console.warn('⚠️ Unexpected classification response structure')
+    classification = 'parsing_failed'
+  }
+  
   console.log('✅ Document classified as:', classification)
+  console.log('📝 Classification reasoning:', reasoning)
+  console.log('📊 Classification confidence:', confidence)
 } catch (extractionError) {
   console.error('❌ Error extracting classification:', extractionError)
   console.log('📋 Full response structure:', JSON.stringify(classificationResult, null, 2))
   classification = 'extraction_failed'
 }
 
-// Update document with classification
+// Update document with classification and full data
 const { error: classificationUpdateError } = await supabaseClient
   .from('documents')
-  .update({ eden_ai_classification: classification })
+  .update({ 
+    eden_ai_classification: classification,
+    eden_ai_processed_data: fullClassificationData
+  })
   .eq('id', document_id)
 
 if (classificationUpdateError) {
