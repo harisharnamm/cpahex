@@ -155,29 +155,86 @@ export function ClientDetail() {
     try {
       // Process selected financial documents and extract transaction data
       const selectedDocs = financialDocuments.filter(doc => selectedFinancialDocs.includes(doc.id));
+    const newTransactions: any[] = [];
+    const newPendingTransactions: any[] = [];
       
       // Generate transactions from the selected documents
       const newTransactions = selectedDocs.map((doc, index) => ({
-        id: Math.random().toString(36).substring(2, 9),
-        date: new Date(doc.created_at).toISOString().split('T')[0],
-        type: Math.random() > 0.5 ? 'income' : 'expense' as 'income' | 'expense',
-        category: doc.document_type === 'invoice' ? 'Sales' : 
-                 doc.document_type === 'receipt' ? 'Office Supplies' : 
-                 doc.document_type === 'bank_statement' ? 'Banking' : 'Other',
-        description: `Processed from ${doc.original_filename}`,
-        amount: Math.floor(Math.random() * 2000) + 100,
-        document: doc.original_filename
-      }));
+        // Process financial document data using new structure
+        try {
+          // Extract financial data from document's processing response
+          const financialData = document.financial_processing_response;
+          
+          if (financialData && financialData.results) {
+            // Process the financial data into transaction objects
+            const transaction = processExtractedFinancialData(
+              financialData.results,
+              document.document_type,
+              document.id
+            );
+            
+            // Validate transaction before adding
+            if (validateTransaction(transaction)) {
+              if (transaction.confidence_level >= 80) {
+                newTransactions.push(transaction);
+              } else {
+                newPendingTransactions.push(transaction);
+              }
+            } else {
+              console.warn('Invalid transaction generated for document:', document.id);
+            }
+          } else {
+            // Fallback: create basic transaction if no financial processing data
+            const fallbackTransaction = createTransaction({
+              date: new Date().toISOString().split('T')[0],
+              type: 'expense',
+              category: 'Business Expense',
+              description: `Transaction from ${document.original_filename}`,
+              amount: 0, // Will need manual entry
+              source_document_type: document.document_type,
+              source_document_id: document.id,
+              confidence_level: 30,
+              status: 'pending',
+              merchant_name: 'Unknown'
+            });
+            
+            newPendingTransactions.push(fallbackTransaction);
+          }
+        } catch (error) {
+          console.error('Error processing document:', document.id, error);
+          
+          // Create error transaction for manual review
+          const errorTransaction = createTransaction({
+            date: new Date().toISOString().split('T')[0],
+            type: 'expense',
+            category: 'Needs Review',
+            description: `Error processing ${document.original_filename}`,
+            amount: 0,
+            source_document_type: document.document_type,
+            source_document_id: document.id,
+            confidence_level: 0,
+            status: 'error',
+            merchant_name: 'Error'
+          });
+          
+          newPendingTransactions.push(errorTransaction);
+        }
       
       // Add new transactions to the beginning of the list
       setTransactions(prev => [...newTransactions, ...prev]);
-      
-      // Clear selection
       setSelectedFinancialDocs([]);
       
+      // Update state with new transactions
+      setTransactions(prev => [...prev, ...newTransactions]);
+      setPendingTransactions(prev => [...prev, ...newPendingTransactions]);
+      
+      // Add high-confidence transactions to reconciliation queue
+      const highConfidenceTransactions = newTransactions.filter(t => t.confidence_level >= 90);
+      setReconciliationQueue(prev => [...prev, ...highConfidenceTransactions]);
+
       toast.success(
         'Documents Processed', 
-        `${selectedDocs.length} financial document(s) processed and ${newTransactions.length} transaction(s) added to bookkeeping`
+        `Generated ${newTransactions.length} confirmed and ${newPendingTransactions.length} pending transaction(s)`
       );
       
     } catch (error) {
