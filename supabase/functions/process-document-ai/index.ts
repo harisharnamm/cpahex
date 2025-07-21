@@ -129,8 +129,20 @@ serve(async (req) => {
       console.log(`🔄 OCR job status: ${ocr_status} (attempt ${pollAttempts})`)
 
       if (ocr_status === 'finished') {
-        extracted_text = pollResult.results.mistral.text
+        // Handle different response structures from Eden AI
+        if (pollResult.results && pollResult.results.mistral && pollResult.results.mistral.text) {
+          extracted_text = pollResult.results.mistral.text
+        } else if (pollResult.results && pollResult.results.mistral && pollResult.results.mistral.extracted_text) {
+          extracted_text = pollResult.results.mistral.extracted_text
+        } else if (pollResult.results && typeof pollResult.results === 'string') {
+          extracted_text = pollResult.results
+        } else {
+          console.error('❌ Unexpected OCR result structure:', JSON.stringify(pollResult, null, 2))
+          throw new Error('Could not extract text from OCR result')
+        }
         console.log('✅ OCR text extracted successfully.')
+        console.log('📝 Extracted text length:', extracted_text.length)
+        console.log('📝 First 200 chars:', extracted_text.substring(0, 200))
       } else if (ocr_status === 'failed') {
         throw new Error(`OCR job failed: ${JSON.stringify(pollResult.error)}`)
       }
@@ -141,6 +153,7 @@ serve(async (req) => {
     }
 
     // Save extracted raw_text to database ocr_text column
+    console.log('💾 Saving OCR text to database, length:', extracted_text.length)
     const { error: ocrUpdateError } = await supabaseClient
       .from('documents')
       .update({ ocr_text: extracted_text })
@@ -148,8 +161,22 @@ serve(async (req) => {
 
     if (ocrUpdateError) {
       console.error('❌ Error updating document with OCR text:', ocrUpdateError)
+      throw new Error(`Failed to save OCR text: ${ocrUpdateError.message}`)
     } else {
-      console.log('✅ Document updated with OCR text.')
+      console.log('✅ Document updated with OCR text successfully.')
+      
+      // Verify the update worked
+      const { data: verifyDoc, error: verifyError } = await supabaseClient
+        .from('documents')
+        .select('ocr_text')
+        .eq('id', document_id)
+        .single()
+      
+      if (verifyError) {
+        console.error('❌ Error verifying OCR text save:', verifyError)
+      } else {
+        console.log('✅ Verification: OCR text length in DB:', verifyDoc?.ocr_text?.length || 0)
+      }
     }
 
     // Step 2: Document Classification
