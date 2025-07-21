@@ -1,3 +1,4 @@
+```typescript
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -25,7 +26,7 @@ serve(async (req) => {
       )
     }
 
-    console.log('🔄 Processing document:', document_id, 'for user:', user_id)
+    console.log('🔄 Initiating document processing for:', document_id)
 
     // Initialize Supabase client
     const supabaseClient = createClient(
@@ -36,7 +37,7 @@ serve(async (req) => {
     // Get the document details
     const { data: document, error: docError } = await supabaseClient
       .from('documents')
-      .select('*')
+      .select('storage_path, document_type')
       .eq('id', document_id)
       .single()
 
@@ -51,128 +52,150 @@ serve(async (req) => {
       )
     }
 
-    console.log('📄 Document found:', document.original_filename)
+    console.log('📄 Document found:', document.storage_path)
 
-    // Generate AI analysis (mock for now - in production this would call OpenAI)
-    const mockAnalysis = {
-      summary: `AI Analysis of ${document.original_filename}:
+    // Get signed URL for the document
+    const bucketName = document.document_type === 'irs_notice' ? 'irs-notices' : 'client-documents'; // Assuming 'irs_notice' still uses a specific bucket
+    const { data: signedUrlData, error: signedUrlError } = await supabaseClient.storage
+      .from(bucketName)
+      .createSignedUrl(document.storage_path, 3600) // URL valid for 1 hour
 
-This IRS notice has been processed and analyzed. The document appears to be a ${getNoticeType()} notice regarding tax year 2023. 
-
-Key findings:
-• Notice type: ${getNoticeType()}
-• Estimated amount owed: $${Math.floor(Math.random() * 5000 + 500)}
-• Response deadline: ${getRandomFutureDate()}
-• Priority level: High
-
-The AI has identified potential discrepancies in reported income that require immediate attention. This notice indicates that the IRS has information that doesn't match what was reported on the tax return.`,
-
-      recommendations: `Recommended Actions:
-
-1. Review all 1099 forms and income documents for the tax year
-2. Gather supporting documentation for any disputed amounts  
-3. Consider filing an amended return if the proposed changes are correct
-4. Respond within 30 days to avoid automatic assessment
-5. Consult with a tax professional if you disagree with the proposed changes
-6. Prepare detailed documentation to support your position
-7. Consider setting up a payment plan if additional tax is owed`,
-
-      noticeType: getNoticeType(),
-      priority: 'high',
-      confidence: 0.85
+    if (signedUrlError || !signedUrlData?.signedUrl) {
+      console.error('❌ Error creating signed URL:', signedUrlError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to create signed URL for document' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
     }
 
-    console.log('🤖 Generated AI analysis')
+    const file_url = signedUrlData.signedUrl
+    console.log('🔗 Signed URL generated:', file_url)
 
-    // Update the document with AI summary
-    const { error: docUpdateError } = await supabaseClient
-      .from('documents')
-      .update({
-        ai_summary: mockAnalysis.summary,
-        is_processed: true
+    const EDEN_AI_API_KEY = Deno.env.get('EDEN_AI_API_KEY')
+    if (!EDEN_AI_API_KEY) {
+      throw new Error('EDEN_AI_API_KEY is not set in environment variables.')
+    }
+
+    // Step 1: OCR Text Extraction
+    console.log('🤖 Calling Eden AI OCR (ocr_async)...')
+    const ocrResponse = await fetch('https://api.edenai.run/v2/ocr/ocr_async', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${EDEN_AI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        providers: ['mistral'],
+        file_url: file_url,
+        show_original_response: false,
+        send_webhook_data: false // We will handle the callback manually if needed, or poll
+      }),
+    })
+
+    if (!ocrResponse.ok) {
+      const errorText = await ocrResponse.text()
+      console.error('❌ Eden AI OCR error:', errorText)
+      throw new Error(`Eden AI OCR failed: ${ocrResponse.statusText} - ${errorText}`)
+    }
+
+    const ocrResult = await ocrResponse.json()
+    const ocr_job_id = ocrResult.public_id
+    console.log('✅ Eden AI OCR job started, ID:', ocr_job_id)
+
+    // Poll for OCR result (simplified polling for demonstration)
+    let ocr_status = 'pending'
+    let extracted_text = ''
+    let pollAttempts = 0
+    const maxPollAttempts = 10 // Poll for up to 10 seconds
+
+    while (ocr_status !== 'finished' && ocr_status !== 'failed' && pollAttempts < maxPollAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second
+      pollAttempts++
+
+      const pollResponse = await fetch(`https://api.edenai.run/v2/ocr/ocr_async/${ocr_job_id}`, {
+        headers: { 'Authorization': `Bearer ${EDEN_AI_API_KEY}` },
       })
+
+      if (!pollResponse.ok) {
+        const errorText = await pollResponse.text()
+        console.error('❌ Eden AI OCR poll error:', errorText)
+        throw new Error(`Eden AI OCR polling failed: ${pollResponse.statusText} - ${errorText}`)
+      }
+
+      const pollResult = await pollResponse.json()
+      ocr_status = pollResult.status
+      console.log(`🔄 OCR job status: ${ocr_status} (attempt ${pollAttempts})`)
+
+      if (ocr_status === 'finished') {
+        extracted_text = pollResult.results.mistral.text
+        console.log('✅ OCR text extracted successfully.')
+      } else if (ocr_status === 'failed') {
+        throw new Error(`OCR job failed: ${JSON.stringify(pollResult.error)}`)
+      }
+    }
+
+    if (ocr_status !== 'finished') {
+      throw new Error('OCR job timed out or did not finish.')
+    }
+
+    // Save extracted raw_text to database ocr_text column
+    const { error: ocrUpdateError } = await supabaseClient
+      .from('documents')
+      .update({ ocr_text: extracted_text })
       .eq('id', document_id)
 
-    if (docUpdateError) {
-      console.error('❌ Error updating document:', docUpdateError)
+    if (ocrUpdateError) {
+      console.error('❌ Error updating document with OCR text:', ocrUpdateError)
     } else {
-      console.log('✅ Document updated with AI summary')
+      console.log('✅ Document updated with OCR text.')
     }
 
-    // Check if an IRS notice already exists for this document
-    const { data: existingNotice, error: noticeCheckError } = await supabaseClient
-      .from('irs_notices')
-      .select('*')
-      .eq('document_id', document_id)
-      .maybeSingle()
+    // Step 2: Document Classification
+    console.log('🤖 Calling Eden AI Classification API...')
+    const classificationResponse = await fetch('https://api.edenai.run/v2/prompts/ocr-classification-api', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${EDEN_AI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        promptContext: { ocr_text: extracted_text },
+        params: { temperature: 0.1 }, // Lower temperature for more deterministic classification
+      }),
+    })
 
-    if (noticeCheckError) {
-      console.error('❌ Error checking for existing notice:', noticeCheckError)
+    if (!classificationResponse.ok) {
+      const errorText = await classificationResponse.text()
+      console.error('❌ Eden AI Classification error:', errorText)
+      throw new Error(`Eden AI Classification failed: ${classificationResponse.statusText} - ${errorText}`)
     }
 
-    let noticeId = null
+    const classificationResult = await classificationResponse.json()
+    const classification = classificationResult.results.eden_ai.generated_text.trim()
+    console.log('✅ Document classified as:', classification)
 
-    if (existingNotice) {
-      console.log('📋 Updating existing IRS notice:', existingNotice.id)
-      
-      // Update existing notice with AI analysis
-      const { data: updatedNotice, error: updateError } = await supabaseClient
-        .from('irs_notices')
-        .update({
-          ai_summary: mockAnalysis.summary,
-          ai_recommendations: mockAnalysis.recommendations,
-          notice_type: mockAnalysis.noticeType,
-          priority: mockAnalysis.priority,
-          amount_owed: Math.floor(Math.random() * 5000 + 500),
-          deadline_date: getRandomFutureDate(),
-          tax_year: 2023
-        })
-        .eq('id', existingNotice.id)
-        .select()
-        .single()
+    // Update document with classification
+    const { error: classificationUpdateError } = await supabaseClient
+      .from('documents')
+      .update({ eden_ai_classification: classification })
+      .eq('id', document_id)
 
-      if (updateError) {
-        console.error('❌ Error updating IRS notice:', updateError)
-      } else {
-        console.log('✅ IRS notice updated successfully')
-        noticeId = updatedNotice.id
-      }
+    if (classificationUpdateError) {
+      console.error('❌ Error updating document with classification:', classificationUpdateError)
     } else {
-      console.log('📋 Creating new IRS notice for document')
-      
-      // Create new IRS notice
-      const { data: newNotice, error: createError } = await supabaseClient
-        .from('irs_notices')
-        .insert({
-          user_id: user_id,
-          client_id: client_id,
-          document_id: document_id,
-          notice_type: mockAnalysis.noticeType,
-          ai_summary: mockAnalysis.summary,
-          ai_recommendations: mockAnalysis.recommendations,
-          priority: mockAnalysis.priority,
-          status: 'pending',
-          amount_owed: Math.floor(Math.random() * 5000 + 500),
-          deadline_date: getRandomFutureDate(),
-          tax_year: 2023
-        })
-        .select()
-        .single()
-
-      if (createError) {
-        console.error('❌ Error creating IRS notice:', createError)
-      } else {
-        console.log('✅ IRS notice created successfully')
-        noticeId = newNotice.id
-      }
+      console.log('✅ Document updated with classification.')
     }
 
-    // Return the analysis
+    // Return classification result to frontend for approval/manual override
     return new Response(
       JSON.stringify({
         success: true,
-        analysis: mockAnalysis,
-        notice_id: noticeId
+        document_id: document_id,
+        ocr_text: extracted_text,
+        classification: classification,
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -190,14 +213,4 @@ The AI has identified potential discrepancies in reported income that require im
     )
   }
 })
-
-function getNoticeType(): string {
-  const types = ['CP2000', 'CP14', 'CP504', 'CP90', 'General Notice']
-  return types[Math.floor(Math.random() * types.length)]
-}
-
-function getRandomFutureDate(): string {
-  const now = new Date()
-  const futureDate = new Date(now.getTime() + (Math.random() * 60 + 30) * 24 * 60 * 60 * 1000) // 30-90 days from now
-  return futureDate.toISOString()
-}
+```
