@@ -204,87 +204,85 @@ serve(async (req) => {
     }
 
     // Step 2: Document Classification
-    console.log('🤖 Calling Eden AI Classification API...')
-    const classificationResponse = await fetch('https://api.edenai.run/v2/prompts/ocr-classification-api', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${EDEN_AI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        prompt_context: { ocr_text: extracted_text },
-        params: { temperature: 0.1 }, // Lower temperature for more deterministic classification
-      }),
-    })
+console.log('🤖 Calling Eden AI Classification API...')
+const classificationResponse = await fetch('https://api.edenai.run/v2/prompts/ocr-classification-api', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${EDEN_AI_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    prompt_context: { ocr_text: extracted_text },
+    params: { temperature: 0.1 }, // Lower temperature for more deterministic classification
+  }),
+})
 
-    if (!classificationResponse.ok) {
-      const errorText = await classificationResponse.text()
-      console.error('❌ Eden AI Classification error:', errorText)
-      throw new Error(`Eden AI Classification failed: ${classificationResponse.statusText} - ${errorText}`)
-    }
+if (!classificationResponse.ok) {
+  const errorText = await classificationResponse.text()
+  console.error('❌ Eden AI Classification error:', errorText)
+  throw new Error(`Eden AI Classification failed: ${classificationResponse.statusText} - ${errorText}`)
+}
 
-    const classificationResult = await classificationResponse.json()
-    console.log('🔍 Classification result structure:', JSON.stringify(classificationResult, null, 2))
-    
-    // Handle different possible response structures
-    let classification = 'Unknown'
-    
-    if (classificationResult.results && classificationResult.results.eden_ai && classificationResult.results.eden_ai.generated_text) {
-      classification = classificationResult.results.eden_ai.generated_text.trim()
-    } else if (classificationResult.results && typeof classificationResult.results === 'string') {
+const classificationResult = await classificationResponse.json()
+console.log('🔍 Full classification response:', JSON.stringify(classificationResult, null, 2))
+
+// Safely extract classification with multiple fallback paths
+let classification = 'unknown'
+
+try {
+  // Check the actual response structure and adapt accordingly
+  if (classificationResult?.results?.eden_ai?.generated_text) {
+    classification = classificationResult.results.eden_ai.generated_text.trim()
+  } else if (classificationResult?.results?.generated_text) {
+    classification = classificationResult.results.generated_text.trim()
+  } else if (classificationResult?.generated_text) {
+    classification = classificationResult.generated_text.trim()
+  } else if (classificationResult?.results) {
+    // If results is a string directly
+    if (typeof classificationResult.results === 'string') {
       classification = classificationResult.results.trim()
-    } else if (classificationResult.generated_text) {
-      classification = classificationResult.generated_text.trim()
-    } else if (typeof classificationResult === 'string') {
-      classification = classificationResult.trim()
     } else {
-      // Try to find any text field in the response
-      const findClassificationText = (obj: any): string | null => {
+      // Try to find generated_text anywhere in the results object
+      const findGeneratedText = (obj: any): string | null => {
         if (typeof obj === 'string') return obj
         if (typeof obj !== 'object' || obj === null) return null
         
-        // Look for common field names
         if (obj.generated_text && typeof obj.generated_text === 'string') {
           return obj.generated_text
         }
-        if (obj.text && typeof obj.text === 'string') {
-          return obj.text
-        }
-        if (obj.classification && typeof obj.classification === 'string') {
-          return obj.classification
-        }
         
-        // Recursively search
         for (const key in obj) {
-          const result = findClassificationText(obj[key])
+          const result = findGeneratedText(obj[key])
           if (result) return result
         }
         return null
       }
       
-      const foundText = findClassificationText(classificationResult)
+      const foundText = findGeneratedText(classificationResult.results)
       if (foundText) {
         classification = foundText.trim()
-        console.log('✅ Found classification text in response structure')
-      } else {
-        console.error('❌ Could not find classification text in response:', JSON.stringify(classificationResult, null, 2))
-        throw new Error('Could not extract classification from API response')
       }
     }
-    
-    console.log('✅ Document classified as:', classification)
+  }
+  
+  console.log('✅ Document classified as:', classification)
+} catch (extractionError) {
+  console.error('❌ Error extracting classification:', extractionError)
+  console.log('📋 Full response structure:', JSON.stringify(classificationResult, null, 2))
+  classification = 'extraction_failed'
+}
 
     // Update document with classification
-    const { error: classificationUpdateError } = await supabaseClient
-      .from('documents')
-      .update({ eden_ai_classification: classification })
-      .eq('id', document_id)
+const { error: classificationUpdateError } = await supabaseClient
+  .from('documents')
+  .update({ eden_ai_classification: classification })
+  .eq('id', document_id)
 
-    if (classificationUpdateError) {
-      console.error('❌ Error updating document with classification:', classificationUpdateError)
-    } else {
-      console.log('✅ Document updated with classification.')
-    }
+if (classificationUpdateError) {
+  console.error('❌ Error updating document with classification:', classificationUpdateError)
+} else {
+  console.log('✅ Document updated with classification.')
+}
 
     // Return classification result to frontend for approval/manual override
     return new Response(
