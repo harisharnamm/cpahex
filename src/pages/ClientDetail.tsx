@@ -1021,7 +1021,7 @@ export function ClientDetail() {
 
         {/* Navigation Tabs */}
         <div className="bg-surface-elevated rounded-2xl border border-border-subtle mb-8 shadow-soft">
-          <div className="flex space-x-1 p-2">
+          <div className="flex p-2">
             {[
               { id: 'overview', label: 'Overview', icon: User },
               { id: 'documents', label: 'Documents', icon: FileText },
@@ -1031,7 +1031,7 @@ export function ClientDetail() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 flex-1 ${
                   activeTab === tab.id
                     ? 'bg-primary text-gray-900 shadow-soft'
                     : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
