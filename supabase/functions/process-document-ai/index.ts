@@ -224,7 +224,54 @@ serve(async (req) => {
     }
 
     const classificationResult = await classificationResponse.json()
-    const classification = classificationResult.results.eden_ai.generated_text.trim()
+    console.log('🔍 Classification result structure:', JSON.stringify(classificationResult, null, 2))
+    
+    // Handle different possible response structures
+    let classification = 'Unknown'
+    
+    if (classificationResult.results && classificationResult.results.eden_ai && classificationResult.results.eden_ai.generated_text) {
+      classification = classificationResult.results.eden_ai.generated_text.trim()
+    } else if (classificationResult.results && typeof classificationResult.results === 'string') {
+      classification = classificationResult.results.trim()
+    } else if (classificationResult.generated_text) {
+      classification = classificationResult.generated_text.trim()
+    } else if (typeof classificationResult === 'string') {
+      classification = classificationResult.trim()
+    } else {
+      // Try to find any text field in the response
+      const findClassificationText = (obj: any): string | null => {
+        if (typeof obj === 'string') return obj
+        if (typeof obj !== 'object' || obj === null) return null
+        
+        // Look for common field names
+        if (obj.generated_text && typeof obj.generated_text === 'string') {
+          return obj.generated_text
+        }
+        if (obj.text && typeof obj.text === 'string') {
+          return obj.text
+        }
+        if (obj.classification && typeof obj.classification === 'string') {
+          return obj.classification
+        }
+        
+        // Recursively search
+        for (const key in obj) {
+          const result = findClassificationText(obj[key])
+          if (result) return result
+        }
+        return null
+      }
+      
+      const foundText = findClassificationText(classificationResult)
+      if (foundText) {
+        classification = foundText.trim()
+        console.log('✅ Found classification text in response structure')
+      } else {
+        console.error('❌ Could not find classification text in response:', JSON.stringify(classificationResult, null, 2))
+        throw new Error('Could not extract classification from API response')
+      }
+    }
+    
     console.log('✅ Document classified as:', classification)
 
     // Update document with classification
