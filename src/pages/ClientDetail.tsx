@@ -20,7 +20,6 @@ import { Skeleton, SkeletonText } from '../components/ui/skeleton';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
 import { Input } from '../components/atoms/Input';
-import { generateTransactionId } from '../lib/utils';
 import { 
   ArrowLeft, 
   Edit, 
