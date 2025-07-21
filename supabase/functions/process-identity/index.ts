@@ -80,11 +80,6 @@ serve(async (req) => {
           processing_completed_at: new Date().toISOString()
         }
       })
-        eden_ai_processed_data: {
-          classification: existingData?.classification || null,
-          identity_processing: identityResult
-        }
-      })
       .eq('id', document_id)
 
     if (updateError) {
