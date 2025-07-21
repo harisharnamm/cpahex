@@ -272,7 +272,7 @@ try {
   classification = 'extraction_failed'
 }
 
-    // Update document with classification
+// Update document with classification
 const { error: classificationUpdateError } = await supabaseClient
   .from('documents')
   .update({ eden_ai_classification: classification })
