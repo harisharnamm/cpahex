@@ -102,6 +102,8 @@ export function ClientDetail() {
       document: 'software-receipt.pdf'
     }
   ]);
+  const [pendingTransactions, setPendingTransactions] = useState([]);
+  const [reconciliationQueue, setReconciliationQueue] = useState([]);
   
   // Find the actual client based on the ID from the URL
   const client = clients.find(c => c.id === id);
