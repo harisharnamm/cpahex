@@ -231,7 +231,7 @@ console.log('🔍 Full classification response:', JSON.stringify(classificationR
 let classification = 'unknown'
 let reasoning = null
 let confidence = null
-let fullClassificationData = null
+let fullClassificationData = classificationResult // Initialize with the raw response
 
 try {
   // The response appears to be a JSON string that needs parsing
@@ -241,9 +241,11 @@ try {
   if (typeof classificationResult === 'string') {
     try {
       parsedResult = JSON.parse(classificationResult)
+      fullClassificationData = parsedResult // Update with parsed result
     } catch (parseError) {
       console.error('❌ Failed to parse classification result as JSON:', parseError)
       parsedResult = classificationResult
+      fullClassificationData = classificationResult // Keep original if parsing fails
     }
   }
   
@@ -275,14 +277,17 @@ try {
         fullClassificationData = generatedData
       } else {
         classification = parsedResult.generated_text.trim()
+        fullClassificationData = parsedResult
       }
     } catch {
       classification = parsedResult.generated_text.trim()
+      fullClassificationData = parsedResult
     }
   }
   else {
     console.warn('⚠️ Unexpected classification response structure')
     classification = 'parsing_failed'
+    fullClassificationData = parsedResult
   }
   
   console.log('✅ Document classified as:', classification)
@@ -292,6 +297,7 @@ try {
   console.error('❌ Error extracting classification:', extractionError)
   console.log('📋 Full response structure:', JSON.stringify(classificationResult, null, 2))
   classification = 'extraction_failed'
+  fullClassificationData = classificationResult // Ensure it's set even in catch block
 }
 
 // Update document with classification and full data
