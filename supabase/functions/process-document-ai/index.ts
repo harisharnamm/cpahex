@@ -299,7 +299,8 @@ const { error: classificationUpdateError } = await supabaseClient
   .from('documents')
   .update({ 
     eden_ai_classification: classification,
-    eden_ai_processed_data: fullClassificationData
+    classification_api_response: fullClassificationData,
+    processing_status: 'classified'
   })
   .eq('id', document_id)
 
