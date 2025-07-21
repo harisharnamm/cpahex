@@ -230,35 +230,63 @@ console.log('🔍 Full classification response:', JSON.stringify(classificationR
 let classification = 'unknown'
 
 try {
-  // Check the actual response structure and adapt accordingly
-  if (classificationResult?.results?.eden_ai?.generated_text) {
+  // Extract primary_category from the structured response
+  // Primary path: check for document_classification.primary_category
+  if (classificationResult?.document_classification?.primary_category) {
+    classification = classificationResult.document_classification.primary_category.trim()
+  }
+  // Fallback: check if the entire response is the classification object
+  else if (classificationResult?.primary_category) {
+    classification = classificationResult.primary_category.trim()
+  }
+  // Additional fallback: look for subcategory.type if primary_category is not found
+  else if (classificationResult?.subcategory?.type) {
+    classification = classificationResult.subcategory.type.trim()
+  }
+  // Legacy fallback paths for generated_text structure (keep for backward compatibility)
+  else if (classificationResult?.results?.eden_ai?.generated_text) {
     classification = classificationResult.results.eden_ai.generated_text.trim()
-  } else if (classificationResult?.results?.generated_text) {
+  } 
+  else if (classificationResult?.results?.generated_text) {
     classification = classificationResult.results.generated_text.trim()
-  } else if (classificationResult?.generated_text) {
+  } 
+  else if (classificationResult?.generated_text) {
     classification = classificationResult.generated_text.trim()
-  } else if (classificationResult?.results) {
+  } 
+  else if (classificationResult?.results) {
     // If results is a string directly
     if (typeof classificationResult.results === 'string') {
       classification = classificationResult.results.trim()
     } else {
-      // Try to find generated_text anywhere in the results object
-      const findGeneratedText = (obj: any): string | null => {
+      // Recursive search function for any classification-related field
+      const findClassificationText = (obj: any, depth = 0): string | null => {
+        if (depth > 5) return null // Prevent infinite recursion
         if (typeof obj === 'string') return obj
         if (typeof obj !== 'object' || obj === null) return null
         
-        if (obj.generated_text && typeof obj.generated_text === 'string') {
-          return obj.generated_text
+        // Priority fields to check first
+        const priorityFields = ['primary_category', 'document_classification', 'generated_text']
+        for (const field of priorityFields) {
+          if (obj[field]) {
+            if (typeof obj[field] === 'string') {
+              return obj[field]
+            } else if (obj[field].primary_category) {
+              return obj[field].primary_category
+            }
+          }
         }
         
+        // Check all other fields
         for (const key in obj) {
-          const result = findGeneratedText(obj[key])
-          if (result) return result
+          if (!priorityFields.includes(key)) {
+            const result = findClassificationText(obj[key], depth + 1)
+            if (result) return result
+          }
         }
         return null
       }
       
-      const foundText = findGeneratedText(classificationResult.results)
+      const foundText = findClassificationText(classificationResult.results)
       if (foundText) {
         classification = foundText.trim()
       }
