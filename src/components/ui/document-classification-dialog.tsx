@@ -202,11 +202,21 @@ export function DocumentClassificationDialog({
             ) : (
               <div className="bg-surface rounded-xl p-4 border border-border-subtle">
                 <div className="flex items-center space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  {(classification === 'unknown' || classification === 'parsing_failed' || classification === 'extraction_failed') ? (
+                    <AlertTriangle className="w-5 h-5 text-amber-600" />
+                  ) : (
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  )}
                   <div>
-                    <p className="font-medium text-text-primary">Classification looks correct</p>
+                    <p className="font-medium text-text-primary">
+                      {(classification === 'unknown' || classification === 'parsing_failed' || classification === 'extraction_failed') 
+                        ? 'Manual classification required'
+                        : 'Classification looks correct'}
+                    </p>
                     <p className="text-sm text-text-tertiary">
-                      Click "Approve & Process" to continue with {classification.toLowerCase()} document processing
+                      {(classification === 'unknown' || classification === 'parsing_failed' || classification === 'extraction_failed')
+                        ? 'Please select the correct document type above to continue processing'
+                        : `Click "Approve & Process" to continue with ${classification.toLowerCase()} document processing`}
                     </p>
                   </div>
                 </div>
