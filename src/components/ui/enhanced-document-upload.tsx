@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
+import { supabase } from '../../lib/supabase';
 import { useDocumentUpload } from '../../hooks/useDocumentUpload';
 import { useClients } from '../../hooks/useClients';
 import { 
@@ -319,6 +320,103 @@ export const EnhancedDocumentUpload: React.FC<EnhancedDocumentUploadProps> = ({
   const { clients } = useClients();
   const { uploadSingleDocument } = useDocumentUpload();
 
+  // Real-time polling for document processing status
+  const pollDocumentProcessing = useCallback(async (documentId: string, processingId: string) => {
+    const maxAttempts = 60; // Poll for up to 60 seconds
+    let attempts = 0;
+    
+    const poll = async () => {
+      try {
+        // Get document from database to check processing status
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        
+        const { data: document, error } = await supabase
+          .from('documents')
+          .select('processing_status, eden_ai_classification, ocr_text, is_processed')
+          .eq('id', documentId)
+          .single();
+        
+        if (error) {
+          console.error('Error polling document status:', error);
+          return;
+        }
+        
+        if (document) {
+          console.log(`📊 Document ${documentId} status:`, document.processing_status, document.eden_ai_classification);
+          
+          // Update processing state based on database status
+          setProcessingDocuments(prev => prev.map(doc => {
+            if (doc.id !== processingId) return doc;
+            
+            let newStatus = doc.status;
+            let newProgress = doc.progress;
+            let newClassification = doc.classification;
+            let newProcessingDetails = { ...doc.processingDetails };
+            
+            // Update based on processing_status
+            switch (document.processing_status) {
+              case 'ocr_complete':
+                newStatus = 'processing';
+                newProgress = 60;
+                newProcessingDetails.ocrComplete = true;
+                break;
+              case 'classified':
+                newStatus = 'classifying';
+                newProgress = 80;
+                newClassification = document.eden_ai_classification || 'Unknown';
+                newProcessingDetails.classificationComplete = true;
+                break;
+              case 'completed':
+                newStatus = 'completed';
+                newProgress = 100;
+                newProcessingDetails.specificProcessingComplete = true;
+                break;
+              case 'failed':
+                newStatus = 'error';
+                newProgress = 0;
+                break;
+            }
+            
+            return {
+              ...doc,
+              status: newStatus,
+              progress: newProgress,
+              classification: newClassification,
+              processingDetails: newProcessingDetails
+            };
+          }));
+          
+          // Stop polling if completed or failed
+          if (document.processing_status === 'completed' || document.processing_status === 'failed') {
+            console.log(`✅ Polling complete for document ${documentId}: ${document.processing_status}`);
+            return;
+          }
+        }
+        
+        // Continue polling if not complete and under max attempts
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 2000); // Poll every 2 seconds
+        } else {
+          console.log(`⏰ Polling timeout for document ${documentId}`);
+          setProcessingDocuments(prev => prev.map(doc => 
+            doc.id === processingId ? { 
+              ...doc, 
+              status: 'error',
+              error: 'Processing timeout'
+            } : doc
+          ));
+        }
+      } catch (error) {
+        console.error('Error in polling:', error);
+      }
+    };
+    
+    // Start polling after a short delay
+    setTimeout(poll, 1000);
+  }, []);
+
   // Simulate document processing with real-time updates
   const simulateProcessing = useCallback(async (file: File, documentId: string) => {
     const processingId = Math.random().toString(36).substring(2, 9);
@@ -442,7 +540,7 @@ export const EnhancedDocumentUpload: React.FC<EnhancedDocumentUploadProps> = ({
           if (result.data) {
             console.log(`✅ Upload successful for ${file.name}:`, result.data.id);
             
-            // Update processing document with real document ID
+            // Update processing document with real document ID and start real-time polling
             setProcessingDocuments(prev => prev.map(doc => 
               doc.id === processingId ? { 
                 ...doc, 
@@ -453,29 +551,8 @@ export const EnhancedDocumentUpload: React.FC<EnhancedDocumentUploadProps> = ({
               } : doc
             ));
             
-            // Simulate classification and completion
-            setTimeout(() => {
-              setProcessingDocuments(prev => prev.map(doc => 
-                doc.id === processingId ? { 
-                  ...doc, 
-                  status: 'classifying',
-                  progress: 80,
-                  classification: 'Financial Document',
-                  processingDetails: { ...doc.processingDetails, classificationComplete: true }
-                } : doc
-              ));
-            }, 2000);
-            
-            setTimeout(() => {
-              setProcessingDocuments(prev => prev.map(doc => 
-                doc.id === processingId ? { 
-                  ...doc, 
-                  status: 'completed',
-                  progress: 100,
-                  processingDetails: { ...doc.processingDetails, specificProcessingComplete: true }
-                } : doc
-              ));
-            }, 4000);
+            // Start real-time polling for processing status
+            pollDocumentProcessing(result.data.id, processingId);
             
             return result.data.id;
           } else {

@@ -47,8 +47,12 @@ export function DocumentManagement() {
     documents.forEach(doc => {
       const state = getProcessingState(doc.id);
       
-      // If document has classification but no approval state, mark as needing approval
-      if (doc.eden_ai_classification && !state.needsApproval && !doc.eden_ai_processed_data && state.processingStep === 'idle') {
+      // Only mark as needing approval if classification is unknown/failed and not already processed
+      if (doc.eden_ai_classification && 
+          (doc.eden_ai_classification === 'unknown' || doc.eden_ai_classification === 'parsing_failed' || doc.eden_ai_classification === 'extraction_failed') &&
+          !state.needsApproval && 
+          doc.processing_status !== 'completed' && 
+          state.processingStep === 'idle') {
         updateProcessingState(doc.id, {
           classification: doc.eden_ai_classification as DocumentClassification,
           needsApproval: true,
@@ -182,15 +186,15 @@ export function DocumentManagement() {
       return <Badge variant="neutral">Processing...</Badge>;
     }
     
-    if (document.eden_ai_processed_data) {
+    if (document.processing_status === 'completed') {
       return <Badge variant="success">Processed</Badge>;
     }
     
-    if (document.eden_ai_classification) {
+    if (document.processing_status === 'classified') {
       return <Badge variant="warning">Classified</Badge>;
     }
     
-    if (document.ocr_text) {
+    if (document.processing_status === 'ocr_complete') {
       return <Badge variant="neutral">OCR Complete</Badge>;
     }
     
@@ -237,9 +241,9 @@ export function DocumentManagement() {
       doc.ocr_text?.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'processed' && doc.eden_ai_processed_data) ||
-      (statusFilter === 'classified' && doc.eden_ai_classification && !doc.eden_ai_processed_data) ||
-      (statusFilter === 'pending' && !doc.eden_ai_classification);
+      (statusFilter === 'processed' && doc.processing_status === 'completed') ||
+      (statusFilter === 'classified' && doc.processing_status === 'classified') ||
+      (statusFilter === 'pending' && (doc.processing_status === 'pending' || !doc.processing_status));
     
     const matchesClassification = classificationFilter === 'all' || 
       doc.eden_ai_classification === classificationFilter;
@@ -250,9 +254,9 @@ export function DocumentManagement() {
   // Get stats
   const stats = {
     total: documents.length,
-    processed: documents.filter(d => d.eden_ai_processed_data).length,
-    classified: documents.filter(d => d.eden_ai_classification && !d.eden_ai_processed_data).length,
-    pending: documents.filter(d => !d.eden_ai_classification).length,
+    processed: documents.filter(d => d.processing_status === 'completed').length,
+    classified: documents.filter(d => d.processing_status === 'classified').length,
+    pending: documents.filter(d => d.processing_status === 'pending' || !d.processing_status).length,
     needsApproval: documents.filter(d => {
       const state = getProcessingState(d.id);
       return state.needsApproval;
