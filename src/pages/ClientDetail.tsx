@@ -16,6 +16,7 @@ import { Input } from '../components/atoms/Input';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
 import { EnhancedFileUpload } from '../components/ui/enhanced-file-upload';
+import { EnhancedDocumentUpload } from '../components/ui/enhanced-document-upload';
 import { useDocuments } from '../hooks/useDocuments';
 import { DOCUMENT_TYPE_LABELS } from '../types/documents';
 
