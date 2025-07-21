@@ -532,7 +532,7 @@ export const EnhancedDocumentUpload: React.FC<EnhancedDocumentUploadProps> = ({
             id: processingId,
             file,
             status: 'uploading',
-            progress: 0,
+            progress: 10,
             processingDetails: {
               ocrComplete: false,
               classificationComplete: false,
@@ -541,6 +541,13 @@ export const EnhancedDocumentUpload: React.FC<EnhancedDocumentUploadProps> = ({
           };
           
           setProcessingDocuments(prev => [...prev, newDoc]);
+          
+          // Show immediate progress feedback
+          setTimeout(() => {
+            setProcessingDocuments(prev => prev.map(doc => 
+              doc.id === processingId ? { ...doc, progress: 25 } : doc
+            ));
+          }, 500);
           
           // Actual upload using the hook
           const result = await uploadSingleDocument(file, selectedClientId, options);
