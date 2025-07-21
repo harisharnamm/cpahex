@@ -212,7 +212,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        promptContext: { ocr_text: extracted_text },
+        prompt_context: { ocr_text: extracted_text },
         params: { temperature: 0.1 }, // Lower temperature for more deterministic classification
       }),
     })
