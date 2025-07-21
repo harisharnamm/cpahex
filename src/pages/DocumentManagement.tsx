@@ -24,7 +24,8 @@ import {
   Clock, 
   AlertTriangle,
   RefreshCw,
-  Plus
+  Plus,
+  X
 } from 'lucide-react';
 import { Document } from '../types/documents';
 
