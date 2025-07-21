@@ -206,7 +206,7 @@ const ProcessingStatusIndicator: React.FC<{
           </div>
 
           {/* Progress bar */}
-          {(document.status === 'uploading' || document.status === 'processing' || document.status === 'classifying') && (
+          {(document.status === 'uploading' || document.status === 'processing' || document.status === 'classifying') && document.progress < 100 && (
             <div className="mb-3 bg-surface rounded-full h-2 overflow-hidden">
               <motion.div
                 className="bg-primary h-2 rounded-full"
@@ -214,6 +214,14 @@ const ProcessingStatusIndicator: React.FC<{
                 animate={{ width: `${document.progress}%` }}
                 transition={{ duration: 0.3 }}
               />
+            </div>
+          )}
+
+          {/* Always show progress percentage during active processing */}
+          {(document.status === 'uploading' || document.status === 'processing' || document.status === 'classifying') && (
+            <div className="mb-2 flex justify-between items-center">
+              <span className="text-xs text-text-tertiary">Progress</span>
+              <span className="text-xs font-medium text-text-primary">{document.progress}%</span>
             </div>
           )}
 
