@@ -103,6 +103,7 @@ export function ClientDetail() {
     }
   ]);
   const [pendingTransactions, setPendingTransactions] = useState([]);
+  const [transactionFilters, setTransactionFilters] = useState({});
   const [reconciliationQueue, setReconciliationQueue] = useState([]);
   
   // Find the actual client based on the ID from the URL
