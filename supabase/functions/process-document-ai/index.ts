@@ -15,6 +15,9 @@ serve(async (req) => {
   try {
     const { document_id, user_id, client_id } = await req.json()
 
+    // Initialize fullClassificationData at the beginning to avoid temporal dead zone
+    let fullClassificationData = null
+
     if (!document_id || !user_id) {
       return new Response(
         JSON.stringify({ error: 'Missing required parameters' }),
@@ -227,11 +230,13 @@ if (!classificationResponse.ok) {
 const classificationResult = await classificationResponse.json()
 console.log('🔍 Full classification response:', JSON.stringify(classificationResult, null, 2))
 
+// Assign the result immediately after getting it
+fullClassificationData = classificationResult
+
 // Parse the classification response properly
 let classification = 'unknown'
 let reasoning = null
 let confidence = null
-let fullClassificationData = classificationResult // Initialize with the raw response
 
 try {
   // The response appears to be a JSON string that needs parsing
