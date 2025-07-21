@@ -29,6 +29,13 @@ export class DocumentService {
     onProgress?: (progress: UploadProgress) => void
   ): Promise<{ data: Document | null; error: any }> {
     try {
+      console.log('📤 DocumentService.uploadDocument called with:', {
+        fileName: file.name,
+        userId,
+        clientId: options.clientId,
+        documentType: options.documentType
+      });
+      
       // Validate file
       const validation = validateFile(file);
       if (!validation.isValid) {
@@ -42,7 +49,8 @@ export class DocumentService {
         return { data: null, error };
       }
 
-      console.log('📤 Uploading document with options:', {
+      console.log('✅ File validation passed');
+      console.log('📤 Starting upload with options:', {
         clientId: options.clientId,
         documentType: options.documentType,
         tags: options.tags
@@ -115,6 +123,7 @@ export class DocumentService {
       if (dbError) {
         // Cleanup uploaded file if database insert fails
         await this.deleteFileFromStorage(bucketName, storagePath);
+        console.error('❌ Database insert failed:', dbError);
         onProgress?.({
           file,
           progress: 0,
@@ -139,7 +148,10 @@ export class DocumentService {
 
       // Start background processing if enabled
       if (options.processingOptions?.enableOCR || options.processingOptions?.enableAI) {
+        console.log('🤖 Starting background processing for document:', documentData!.id);
         this.initiateDocumentProcessing(documentData!.id, userId, options.processingOptions);
+      } else {
+        console.log('⏭️ Skipping background processing (not enabled)');
       }
 
       // Note: Document classification and specific processing is now handled

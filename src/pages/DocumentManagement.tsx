@@ -30,7 +30,7 @@ import {
 import { Document } from '../types/documents';
 
 export function DocumentManagement() {
-  const { documents, loading, refreshDocuments, downloadDocument, getDocumentPreviewURL } = useDocuments();
+  const { documents, loading, refreshDocuments, downloadDocument, getDocumentPreviewURL, deleteDocument } = useDocuments();
   const { getProcessingState, updateProcessingState, approveClassification, overrideClassification } = useDocumentProcessing();
   const { isSearchOpen, closeSearch, openSearch } = useSearch();
   const toast = useToast();
@@ -71,9 +71,7 @@ export function DocumentManagement() {
     });
     
     // Refresh documents to get the latest data
-    setTimeout(() => {
-      refreshDocuments();
-    }, 2000);
+    refreshDocuments();
   };
 
   const handleUploadError = (error: string) => {
@@ -123,6 +121,26 @@ export function DocumentManagement() {
     } catch (error) {
       console.error('Failed to override classification:', error);
       toast.error('Override Failed', 'An unexpected error occurred');
+    }
+  };
+
+  const handleDeleteDocument = async (documentId: string) => {
+    const document = documents.find(d => d.id === documentId);
+    if (!document) return;
+    
+    if (window.confirm(`Are you sure you want to delete "${document.original_filename}"? This action cannot be undone.`)) {
+      try {
+        const result = await deleteDocument(documentId);
+        if (result.success) {
+          toast.success('Document Deleted', 'Document has been deleted successfully');
+          refreshDocuments();
+        } else {
+          toast.error('Delete Failed', result.error || 'Failed to delete document');
+        }
+      } catch (error) {
+        console.error('Delete error:', error);
+        toast.error('Delete Failed', 'An unexpected error occurred');
+      }
     }
   };
 
@@ -449,6 +467,16 @@ export function DocumentManagement() {
                           className="text-green-600 hover:text-green-700 hover:bg-green-50"
                         >
                           Download
+                        </Button>
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          icon={Trash2}
+                          onClick={() => handleDeleteDocument(document.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          Delete
                         </Button>
                       </div>
                     </div>

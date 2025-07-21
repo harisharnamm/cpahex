@@ -20,7 +20,6 @@ import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
 import { useDocumentUpload } from '../../hooks/useDocumentUpload';
 import { useClients } from '../../hooks/useClients';
-import { useDocuments } from '../../hooks/useDocuments';
 import { 
   DocumentType, 
   DocumentUploadOptions, 
@@ -318,7 +317,7 @@ export const EnhancedDocumentUpload: React.FC<EnhancedDocumentUploadProps> = ({
   const [tags, setTags] = useState<string>('');
   const [processingDocuments, setProcessingDocuments] = useState<ProcessingDocument[]>([]);
   const { clients } = useClients();
-  const { downloadDocument, getDocumentPreviewURL } = useDocuments();
+  const { uploadSingleDocument } = useDocumentUpload();
 
   // Simulate document processing with real-time updates
   const simulateProcessing = useCallback(async (file: File, documentId: string) => {
@@ -417,17 +416,95 @@ export const EnhancedDocumentUpload: React.FC<EnhancedDocumentUploadProps> = ({
     };
 
     try {
-      const uploadPromises = acceptedFiles.map(async (file) => {
-        // For demo purposes, simulate upload and processing
-        const mockDocumentId = Math.random().toString(36).substring(2, 9);
-        simulateProcessing(file, mockDocumentId);
-        return mockDocumentId;
+      const uploadPromises = acceptedFiles.map(async (file, index) => {
+        try {
+          console.log(`🔄 Starting upload for file ${index + 1}:`, file.name);
+          
+          // Create processing document entry
+          const processingId = Math.random().toString(36).substring(2, 9);
+          const newDoc: ProcessingDocument = {
+            id: processingId,
+            file,
+            status: 'uploading',
+            progress: 0,
+            processingDetails: {
+              ocrComplete: false,
+              classificationComplete: false,
+              specificProcessingComplete: false
+            }
+          };
+          
+          setProcessingDocuments(prev => [...prev, newDoc]);
+          
+          // Actual upload using the hook
+          const result = await uploadSingleDocument(file, selectedClientId, options);
+          
+          if (result.data) {
+            console.log(`✅ Upload successful for ${file.name}:`, result.data.id);
+            
+            // Update processing document with real document ID
+            setProcessingDocuments(prev => prev.map(doc => 
+              doc.id === processingId ? { 
+                ...doc, 
+                documentId: result.data!.id,
+                status: 'processing',
+                progress: 50,
+                processingDetails: { ...doc.processingDetails, ocrComplete: true }
+              } : doc
+            ));
+            
+            // Simulate classification and completion
+            setTimeout(() => {
+              setProcessingDocuments(prev => prev.map(doc => 
+                doc.id === processingId ? { 
+                  ...doc, 
+                  status: 'classifying',
+                  progress: 80,
+                  classification: 'Financial Document',
+                  processingDetails: { ...doc.processingDetails, classificationComplete: true }
+                } : doc
+              ));
+            }, 2000);
+            
+            setTimeout(() => {
+              setProcessingDocuments(prev => prev.map(doc => 
+                doc.id === processingId ? { 
+                  ...doc, 
+                  status: 'completed',
+                  progress: 100,
+                  processingDetails: { ...doc.processingDetails, specificProcessingComplete: true }
+                } : doc
+              ));
+            }, 4000);
+            
+            return result.data.id;
+          } else {
+            console.error(`❌ Upload failed for ${file.name}:`, result.error);
+            
+            // Update processing document with error
+            setProcessingDocuments(prev => prev.map(doc => 
+              doc.id === processingId ? { 
+                ...doc, 
+                status: 'error',
+                progress: 0,
+                error: result.error?.message || 'Upload failed'
+              } : doc
+            ));
+            
+            throw new Error(result.error?.message || 'Upload failed');
+          }
+        } catch (error: any) {
+          console.error(`❌ Error uploading ${file.name}:`, error);
+          throw error;
+        }
       });
 
       const documentIds = await Promise.all(uploadPromises);
+      console.log('✅ All uploads completed:', documentIds);
       onUploadComplete?.(documentIds);
 
     } catch (error: any) {
+      console.error('❌ Upload batch failed:', error);
       onUploadError?.(error.message);
     }
   }, [
@@ -436,7 +513,7 @@ export const EnhancedDocumentUpload: React.FC<EnhancedDocumentUploadProps> = ({
     tags, 
     onUploadComplete, 
     onUploadError,
-    simulateProcessing
+    uploadSingleDocument
   ]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
