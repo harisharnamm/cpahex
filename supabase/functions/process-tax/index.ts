@@ -1,4 +1,3 @@
-```typescript
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -40,7 +39,7 @@ serve(async (req) => {
     const summarizeResponse = await fetch('https://api.edenai.run/v2/text/summarize', {
       method: 'POST',
       headers: {
-        'Authorization': \`Bearer ${EDEN_AI_API_KEY}`,
+        'Authorization': `Bearer ${EDEN_AI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -54,7 +53,7 @@ serve(async (req) => {
     if (!summarizeResponse.ok) {
       const errorText = await summarizeResponse.text()
       console.error('❌ Eden AI Summarization error:', errorText)
-      throw new Error(\`Eden AI Summarization failed: ${summarizeResponse.statusText} - ${errorText}`)
+      throw new Error(`Eden AI Summarization failed: ${summarizeResponse.statusText} - ${errorText}`)
     }
 
     const summarizeResult = await summarizeResponse.json()
@@ -94,4 +93,3 @@ serve(async (req) => {
     )
   }
 })
-```

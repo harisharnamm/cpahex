@@ -1,4 +1,3 @@
-```typescript
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -55,7 +54,7 @@ serve(async (req) => {
     console.log('📄 Document found:', document.storage_path)
 
     // Get signed URL for the document
-    const bucketName = document.document_type === 'irs_notice' ? 'irs-notices' : 'client-documents'; // Assuming 'irs_notice' still uses a specific bucket
+    const bucketName = document.document_type === 'irs_notice' ? 'irs-notices' : 'client-documents'
     const { data: signedUrlData, error: signedUrlError } = await supabaseClient.storage
       .from(bucketName)
       .createSignedUrl(document.storage_path, 3600) // URL valid for 1 hour
@@ -213,4 +212,3 @@ serve(async (req) => {
     )
   }
 })
-```
