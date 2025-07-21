@@ -134,11 +134,35 @@ serve(async (req) => {
           extracted_text = pollResult.results.mistral.text
         } else if (pollResult.results && pollResult.results.mistral && pollResult.results.mistral.extracted_text) {
           extracted_text = pollResult.results.mistral.extracted_text
+        } else if (pollResult.results && pollResult.results.mistral && pollResult.results.mistral.raw_text) {
+          extracted_text = pollResult.results.mistral.raw_text
         } else if (pollResult.results && typeof pollResult.results === 'string') {
           extracted_text = pollResult.results
         } else {
           console.error('❌ Unexpected OCR result structure:', JSON.stringify(pollResult, null, 2))
-          throw new Error('Could not extract text from OCR result')
+          // Try to find raw_text anywhere in the response
+          const findRawText = (obj: any): string | null => {
+            if (typeof obj === 'string') return obj
+            if (typeof obj !== 'object' || obj === null) return null
+            
+            if (obj.raw_text && typeof obj.raw_text === 'string') {
+              return obj.raw_text
+            }
+            
+            for (const key in obj) {
+              const result = findRawText(obj[key])
+              if (result) return result
+            }
+            return null
+          }
+          
+          const foundText = findRawText(pollResult)
+          if (foundText) {
+            extracted_text = foundText
+            console.log('✅ Found raw_text in response structure')
+          } else {
+            throw new Error('Could not extract text from OCR result')
+          }
         }
         console.log('✅ OCR text extracted successfully.')
         console.log('📝 Extracted text length:', extracted_text.length)
