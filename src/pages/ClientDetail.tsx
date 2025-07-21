@@ -592,79 +592,66 @@ export function ClientDetail() {
     setIsProcessingDocuments(true);
     
     try {
-      for (const file of files) {
-        // Simulate document processing
-        const extractedData = {
-          amount: Math.random() * 1000 + 50,
-          date: new Date().toISOString().split('T')[0],
-          description: `Transaction from ${file.name}`,
-          merchant_name: `Merchant ${Math.floor(Math.random() * 100)}`,
-          source_document_type: file.type.includes('pdf') ? 'bank_statement' : 'receipt'
-        };
-        
-        const newTransaction = createTransaction({
-          ...extractedData,
-          status: extractedData.source_document_type === 'bank_statement' ? 'confirmed' : 'high_confidence'
-        });
-        
-        // Attempt reconciliation
-        const reconciliationResult = attemptAutoReconciliation(newTransaction, transactions);
-        
-        switch (reconciliationResult.action) {
-          case 'auto_reconcile':
-            // Auto-reconcile with high confidence
-            const reconciledTransaction = {
-              ...newTransaction,
-              status: 'reconciled' as const,
-              reconciled_with: reconciliationResult.match.id
-            };
-            
-            // Update the matched transaction
-            setTransactions(prev => prev.map(t => 
-              t.id === reconciliationResult.match.id 
-                ? { ...t, status: 'reconciled' as const, reconciled_with: newTransaction.id }
-                : t
-            ));
-            
-            setTransactions(prev => [...prev, reconciledTransaction]);
-            break;
-            
-          case 'review_required':
-            // Add to reconciliation queue for manual review
-            setReconciliationQueue(prev => [...prev, {
-              id: generateTransactionId(),
-              newTransaction,
-              match: reconciliationResult.match,
-              confidence: reconciliationResult.confidence
-            }]);
-            
-            setPendingTransactions(prev => [...prev, newTransaction]);
-            break;
-            
-          case 'multiple_matches':
-            // Handle multiple potential matches
-            setReconciliationQueue(prev => [...prev, {
-              id: generateTransactionId(),
-              newTransaction,
-              matches: reconciliationResult.matches,
-              type: 'multiple_matches'
-            }]);
-            
-            setPendingTransactions(prev => [...prev, newTransaction]);
-            break;
-            
-          case 'no_match':
-            // Add as new transaction
-            setTransactions(prev => [...prev, newTransaction]);
-            break;
-        }
+      console.log('🔄 Starting financial document processing...');
+      
+      // Mock financial document processing
+      const financialDocs = documents.filter(doc => 
+        doc.document_type === 'bank_statement' || 
+        doc.document_type === 'receipt' || 
+        doc.document_type === 'invoice'
+      );
+      
+      console.log('📄 Found financial documents:', financialDocs.length);
+      
+      if (financialDocs.length === 0) {
+        console.log('⚠️ No financial documents found');
+        toast.info('No Financial Documents', 'No bank statements, receipts, or invoices found to process');
+        setIsProcessingDocuments(false);
+        return;
       }
       
-      setProcessingMessage('Documents processed and reconciliation completed successfully!');
-      toast.success('Documents Processed', 'Financial documents have been processed and reconciliation completed');
-    } catch (error: any) {
-      setProcessingMessage('Error processing documents: ' + error.message);
-      toast.error('Processing Failed', error.message);
+      console.log('🤖 Processing documents with AI...');
+      
+      // Simulate AI processing delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Generate mock transactions from documents
+      const newTransactions = [];
+      
+      financialDocs.forEach((doc, index) => {
+        // Generate 2-4 transactions per document
+        const transactionCount = Math.floor(Math.random() * 3) + 2;
+        
+        for (let i = 0; i < transactionCount; i++) {
+          const transaction = createTransaction(doc, i);
+          newTransactions.push(transaction);
+        }
+      });
+      
+      console.log('✅ Generated transactions:', newTransactions.length);
+      
+      // Add new transactions to state
+      setTransactions(prev => [...prev, ...newTransactions]);
+      
+      // Attempt auto-reconciliation
+      console.log('🔄 Starting auto-reconciliation...');
+      const reconciliationResults = attemptAutoReconciliation(newTransactions);
+      console.log('🔗 Auto-reconciliation results:', reconciliationResults);
+      
+      // Update reconciliation queue
+      setReconciliationQueue(prev => [...prev, ...reconciliationResults.needsReview]);
+      
+      // Show success message
+      toast.success(
+        'Documents Processed', 
+        `Generated ${newTransactions.length} transactions from ${financialDocs.length} documents. ${reconciliationResults.autoReconciled} auto-reconciled, ${reconciliationResults.needsReview.length} need review.`
+      );
+      
+      console.log('✅ Financial document processing complete');
+      
+    } catch (error) {
+      console.error('Failed to process financial documents:', error);
+      toast.error('Processing Failed', error.message || 'An unexpected error occurred');
     } finally {
       setIsProcessingDocuments(false);
     }
