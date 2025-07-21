@@ -36,7 +36,92 @@ export function ClientDetail() {
   const [selectedNote, setSelectedNote] = useState<ClientNote | null>(null);
   const [selectedFinancialDocs, setSelectedFinancialDocs] = useState<string[]>([]);
   const [isProcessingFinancialDocs, setIsProcessingFinancialDocs] = useState(false);
+  const [isProcessingDocuments, setIsProcessingDocuments] = useState(false);
+  const [processingMessage, setProcessingMessage] = useState('');
+  const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   const toast = useToast();
+  
+  // Reconciliation functions
+  const approveReconciliation = (queueItemId: string) => {
+    const queueItem = reconciliationQueue.find(item => item.id === queueItemId);
+    if (!queueItem) return;
+    
+    const { newTransaction, match } = queueItem;
+    
+    // Update both transactions to reconciled status
+    const reconciledNewTransaction = {
+      ...newTransaction,
+      status: 'reconciled',
+      reconciled_with: match.id,
+      updated_at: new Date().toISOString()
+    };
+    
+    // Add new transaction to main list
+    setTransactions(prev => [
+      ...prev.map(t => 
+        t.id === match.id 
+          ? { ...t, status: 'reconciled', reconciled_with: newTransaction.id, updated_at: new Date().toISOString() }
+          : t
+      ),
+      reconciledNewTransaction
+    ]);
+    
+    // Remove from pending transactions if it exists
+    setPendingTransactions(prev => prev.filter(t => t.id !== newTransaction.id));
+    
+    // Remove from reconciliation queue
+    setReconciliationQueue(prev => prev.filter(item => item.id !== queueItemId));
+    
+    // Show success message
+    toast.success('Transactions Reconciled', 'Transactions successfully reconciled!');
+  };
+
+  const rejectReconciliation = (queueItemId: string) => {
+    const queueItem = reconciliationQueue.find(item => item.id === queueItemId);
+    if (!queueItem) return;
+    
+    const { newTransaction } = queueItem;
+    
+    // Add new transaction as separate entry
+    setTransactions(prev => [...prev, {
+      ...newTransaction,
+      status: newTransaction.status === 'pending' ? 'needs_review' : newTransaction.status,
+      updated_at: new Date().toISOString()
+    }]);
+    
+    // Remove from pending transactions
+    setPendingTransactions(prev => prev.filter(t => t.id !== newTransaction.id));
+    
+    // Remove from reconciliation queue
+    setReconciliationQueue(prev => prev.filter(item => item.id !== queueItemId));
+    
+    toast.info('Transactions Separated', 'Transactions kept separate');
+  };
+
+  const approveAllReconciliations = () => {
+    const highConfidenceItems = reconciliationQueue.filter(item => item.confidence >= 0.85);
+    
+    if (highConfidenceItems.length === 0) {
+      toast.warning('No High-Confidence Matches', 'No high-confidence matches to approve');
+      return;
+    }
+    
+    highConfidenceItems.forEach(item => {
+      approveReconciliation(item.id);
+    });
+    
+    toast.success('Bulk Approval Complete', `Approved ${highConfidenceItems.length} high-confidence matches`);
+  };
+
+  const rejectAllReconciliations = () => {
+    const currentQueue = [...reconciliationQueue];
+    
+    currentQueue.forEach(item => {
+      rejectReconciliation(item.id);
+    });
+    
+    toast.info('Bulk Rejection Complete', `Rejected ${currentQueue.length} pending reconciliations`);
+  };
   
   // Use our document hooks
   const { documents, loading, downloadDocument, deleteDocument, getDocumentPreviewURL, refreshDocuments } = useDocuments(id);
