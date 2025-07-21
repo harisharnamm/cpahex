@@ -560,6 +560,7 @@ export function ClientDetail() {
   const [selectedDocument, setSelectedDocument] = useState<any>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Transaction and reconciliation state
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -905,7 +906,7 @@ export function ClientDetail() {
             </div>
             <div className="space-y-6">
               <Skeleton className="h-48" />
-              <Skeleton className="h-64" />
+              <Skeleton className="h-264" />
             </div>
           </div>
         </div>
