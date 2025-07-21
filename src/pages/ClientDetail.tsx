@@ -597,11 +597,19 @@ export function ClientDetail() {
       console.log('🔄 Starting financial document processing...');
       
       // Mock financial document processing
-      const financialDocs = documents.filter(doc => 
-        doc.document_type === 'bank_statement' || 
-        doc.document_type === 'receipt' || 
-        doc.document_type === 'invoice'
-      );
+      const financialDocs = documents.filter(doc => {
+        // Check if document type suggests financial content
+        const hasFinancialType = ['receipt', 'bank_statement', 'invoice', '1099', 'w2', 'other'].includes(doc.document_type);
+        
+        // Check if Eden AI classified it as Financial Document
+        const hasFinancialClassification = doc.eden_ai_classification === 'Financial' || 
+                                         doc.eden_ai_classification === 'Financial Document';
+        
+        // Must have OCR text to process
+        const hasOcrText = doc.ocr_text && doc.ocr_text.trim().length > 0;
+        
+        return (hasFinancialType || hasFinancialClassification) && hasOcrText;
+      });
       
       console.log('📄 Found financial documents:', financialDocs.length);
       
@@ -728,7 +736,10 @@ export function ClientDetail() {
       return;
     }
     
-    console.log('🔍 Processing documents:', financialDocuments.map(d => d.original_filename));
+    console.log('🔍 Found financial documents for processing:', financialDocs.length);
+      financialDocs.forEach(doc => {
+        console.log(`  - ${doc.original_filename} (${doc.document_type}) - Classification: ${doc.eden_ai_classification} - OCR length: ${doc.ocr_text?.length || 0}`);
+      });
     
     highConfidenceItems.forEach(item => {
       approveReconciliation(item.id);
