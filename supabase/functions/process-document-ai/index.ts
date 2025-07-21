@@ -227,10 +227,10 @@ const classificationResult = await classificationResponse.json()
 console.log('🔍 Full classification response:', JSON.stringify(classificationResult, null, 2))
 
 // Safely extract classification with multiple fallback paths
+// Extract primary_category from the structured response
 let classification = 'unknown'
 
 try {
-  // Extract primary_category from the structured response
   // Primary path: check for document_classification.primary_category
   if (classificationResult?.document_classification?.primary_category) {
     classification = classificationResult.document_classification.primary_category.trim()
