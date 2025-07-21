@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useClients } from '../hooks/useClients';
 import { useDocuments } from '../hooks/useDocuments';
 import { useClientNotes } from '../hooks/useClientNotes';
-import { generateTransactionId } from '../lib/utils';
 import { TopBar } from '../components/organisms/TopBar';
 import { GlobalSearch } from '../components/molecules/GlobalSearch';
 import { useSearch } from '../contexts/SearchContext';
@@ -20,6 +19,7 @@ import { Skeleton, SkeletonText } from '../components/ui/skeleton';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
 import { Input } from '../components/atoms/Input';
+import { generateTransactionId } from '../lib/utils';
 import { 
   ArrowLeft, 
   Edit, 
@@ -42,10 +42,10 @@ import {
   TrendingUp,
   Link2,
   AlertCircle,
-  ChevronDown,
   Search,
   Filter,
-  X
+  X,
+  ChevronDown
 } from 'lucide-react';
 
 // Transaction interface
@@ -561,6 +561,7 @@ export function ClientDetail() {
   const [selectedDocument, setSelectedDocument] = useState<any>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Transaction and reconciliation state
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -906,7 +907,7 @@ export function ClientDetail() {
             </div>
             <div className="space-y-6">
               <Skeleton className="h-48" />
-              <Skeleton className="h-64" />
+              <Skeleton className="h-264" />
             </div>
           </div>
         </div>
@@ -1190,7 +1191,7 @@ export function ClientDetail() {
                 </div>
                 
                 <EnhancedFileUpload
-                  clientId={client.id}
+                  clientId={id!}
                   onUploadComplete={handleUploadComplete}
                   onUploadError={handleUploadError}
                 />
@@ -1228,11 +1229,33 @@ export function ClientDetail() {
               </div>
             </div>
 
-            {/* Transaction Filters */}
-            <TransactionFilters
-              filters={filters}
-              onFiltersChange={setFilters}
-            />
+            {/* Collapsible Filters */}
+            <div className="bg-surface-elevated rounded-xl border border-border-subtle shadow-soft overflow-hidden">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="w-full flex items-center justify-between p-4 hover:bg-surface-hover transition-colors duration-200"
+              >
+                <div className="flex items-center space-x-3">
+                  <Filter className="w-5 h-5 text-text-tertiary" />
+                  <span className="font-medium text-text-primary">Filter Transactions</span>
+                  {Object.keys(filters).length > 0 && (
+                    <Badge variant="warning" size="sm">
+                      {Object.keys(filters).length} active
+                    </Badge>
+                  )}
+                </div>
+                <ChevronDown className={`w-5 h-5 text-text-tertiary transition-transform duration-200 ${showFilters ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showFilters && (
+                <div className="border-t border-border-subtle p-4">
+                  <TransactionFilters 
+                    filters={filters} 
+                    onFiltersChange={setFilters} 
+                  />
+                </div>
+              )}
+            </div>
 
             {/* Reconciliation Queue */}
             {reconciliationQueue.length > 0 && (
