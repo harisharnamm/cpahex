@@ -118,8 +118,9 @@ serve(async (req) => {
       pollAttempts++
 
       const pollResponse = await fetch(`https://api.edenai.run/v2/ocr/ocr_async/${ocr_job_id}`, {
-        classification_api_response: fullClassificationData,
-        processing_status: 'classified'
+        headers: {
+          'Authorization': `Bearer ${EDEN_AI_API_KEY}`,
+        }
       })
 
       if (!pollResponse.ok) {
