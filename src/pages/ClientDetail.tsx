@@ -18,7 +18,6 @@ import { Badge } from '../components/atoms/Badge';
 import { EnhancedFileUpload } from '../components/ui/enhanced-file-upload';
 import { EnhancedDocumentUpload } from '../components/ui/enhanced-document-upload';
 import { useDocuments } from '../hooks/useDocuments';
-import { refreshDocuments } from '../hooks/useDocuments';
 import { DOCUMENT_TYPE_LABELS } from '../types/documents';
 
 export function ClientDetail() {
@@ -40,7 +39,7 @@ export function ClientDetail() {
   const toast = useToast();
   
   // Use our document hooks
-  const { documents, loading, downloadDocument, deleteDocument, getDocumentPreviewURL } = useDocuments(id);
+  const { documents, loading, downloadDocument, deleteDocument, getDocumentPreviewURL, refreshDocuments } = useDocuments(id);
   
   // Filter documents to get only financial documents
   const financialDocuments = documents.filter(doc => 
