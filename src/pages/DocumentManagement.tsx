@@ -25,7 +25,8 @@ import {
   AlertTriangle,
   RefreshCw,
   Plus,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 import { Document } from '../types/documents';
 
