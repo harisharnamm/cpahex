@@ -106,6 +106,28 @@ export function ClientDetail() {
   const [reconciliationQueue, setReconciliationQueue] = useState([]);
   
   // Find the actual client based on the ID from the URL
+  // Transaction creation function
+  const createTransaction = (data) => {
+    return {
+      id: generateTransactionId(),
+      date: data.date || new Date().toISOString().split('T')[0],
+      type: data.type, // 'income' | 'expense'
+      category: data.category || 'Uncategorized',
+      description: data.description || '',
+      amount: Number(data.amount) || 0,
+      source_document_type: data.source_document_type,
+      source_document_id: data.source_document_id,
+      confidence_level: data.confidence_level || 60,
+      status: data.status || 'pending',
+      reconciled_with: null,
+      merchant_name: data.merchant_name || '',
+      reference_number: data.reference_number || '',
+      currency: data.currency || 'USD',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  };
+
   const client = clients.find(c => c.id === id);
   
   // Show loading if we're still fetching clients or if client not found
