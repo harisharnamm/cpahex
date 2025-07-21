@@ -115,7 +115,8 @@ serve(async (req) => {
       pollAttempts++
 
       const pollResponse = await fetch(`https://api.edenai.run/v2/ocr/ocr_async/${ocr_job_id}`, {
-        headers: { 'Authorization': `Bearer ${EDEN_AI_API_KEY}` },
+        classification_api_response: fullClassificationData,
+        processing_status: 'classified'
       })
 
       if (!pollResponse.ok) {
@@ -308,7 +309,112 @@ if (classificationUpdateError) {
   console.log('✅ Document updated with classification.')
 }
 
-    // Return classification result to frontend for approval/manual override
+    // Auto-process if classification is known, otherwise return for manual review
+    if (classification && classification !== 'unknown' && classification !== 'parsing_failed' && classification !== 'extraction_failed') {
+      console.log('🚀 Auto-processing document based on classification:', classification)
+      
+      // Update processing status
+      await supabaseClient
+        .from('documents')
+        .update({ processing_status: 'processing' })
+        .eq('id', document_id)
+      
+      // Determine which processing function to call based on classification
+      let processingFunction = ''
+      if (classification.toLowerCase().includes('financial')) {
+        processingFunction = 'process-financial'
+      } else if (classification.toLowerCase().includes('identity')) {
+        processingFunction = 'process-identity'
+      } else if (classification.toLowerCase().includes('tax')) {
+        processingFunction = 'process-tax'
+      } else {
+        // Default to financial processing for unknown specific types
+        processingFunction = 'process-financial'
+      }
+      
+      console.log(`🔄 Calling ${processingFunction} for document:`, document_id)
+      
+      // Call the appropriate processing function
+      try {
+        const processingResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/${processingFunction}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            document_id: document_id,
+            ocr_text: extracted_text
+          }),
+        })
+        
+        if (!processingResponse.ok) {
+          const errorText = await processingResponse.text()
+          console.error(`❌ ${processingFunction} failed:`, errorText)
+          
+          // Update status to failed
+          await supabaseClient
+            .from('documents')
+            .update({ processing_status: 'failed' })
+            .eq('id', document_id)
+        } else {
+          const processingResult = await processingResponse.json()
+          console.log(`✅ ${processingFunction} completed successfully:`, processingResult)
+          
+          // Update status to completed
+          await supabaseClient
+            .from('documents')
+            .update({ processing_status: 'completed' })
+            .eq('id', document_id)
+        }
+      } catch (processingError) {
+        console.error(`❌ Error calling ${processingFunction}:`, processingError)
+        
+        // Update status to failed
+        await supabaseClient
+          .from('documents')
+          .update({ processing_status: 'failed' })
+          .eq('id', document_id)
+      }
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          document_id: document_id,
+          ocr_text: extracted_text,
+          classification: classification,
+          auto_processed: true,
+          processing_function: processingFunction
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    } else {
+      // Classification is unknown - return for manual review
+      console.log('❓ Classification unknown, requiring manual review:', classification)
+      
+      // Update processing status to classified (waiting for manual review)
+      await supabaseClient
+        .from('documents')
+        .update({ processing_status: 'classified' })
+        .eq('id', document_id)
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          document_id: document_id,
+          ocr_text: extracted_text,
+          classification: classification,
+          requires_manual_review: true
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+  } catch (error) {
     return new Response(
       JSON.stringify({
         success: true,

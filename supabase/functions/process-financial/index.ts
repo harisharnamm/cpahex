@@ -93,28 +93,12 @@ serve(async (req) => {
     const financialResult = await financialResponse.json()
     console.log('✅ Financial processing result:', financialResult)
 
-    // Get existing processed data to preserve classification results
-    const { data: existingDoc, error: fetchError } = await supabaseClient
-      .from('documents')
-      .select('eden_ai_processed_data')
-      .eq('id', document_id)
-      .single()
-
-    if (fetchError) {
-      console.error('❌ Error fetching existing document data:', fetchError)
-    }
-
-    const existingData = existingDoc?.eden_ai_processed_data || {}
-
-    // Update document with processed data
+    // Update document with financial processing results in separate column
     const { error: updateError } = await supabaseClient
       .from('documents')
       .update({ 
-        eden_ai_processed_data: {
-          ...existingData,
-          financial_processing: financialResult,
-          processing_completed_at: new Date().toISOString()
-        }
+        financial_processing_response: financialResult,
+        processing_status: 'completed'
       })
       .eq('id', document_id)
 
