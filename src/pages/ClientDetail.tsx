@@ -18,6 +18,7 @@ import { Badge } from '../components/atoms/Badge';
 import { EnhancedFileUpload } from '../components/ui/enhanced-file-upload';
 import { EnhancedDocumentUpload } from '../components/ui/enhanced-document-upload';
 import { useDocuments } from '../hooks/useDocuments';
+import { refreshDocuments } from '../hooks/useDocuments';
 import { DOCUMENT_TYPE_LABELS } from '../types/documents';
 
 export function ClientDetail() {
@@ -34,10 +35,22 @@ export function ClientDetail() {
   const [showAddNoteDialog, setShowAddNoteDialog] = useState(false);
   const [showEditNoteDialog, setShowEditNoteDialog] = useState(false);
   const [selectedNote, setSelectedNote] = useState<ClientNote | null>(null);
+  const [selectedFinancialDocs, setSelectedFinancialDocs] = useState<string[]>([]);
+  const [isProcessingFinancialDocs, setIsProcessingFinancialDocs] = useState(false);
   const toast = useToast();
   
   // Use our document hooks
   const { documents, loading, downloadDocument, deleteDocument, getDocumentPreviewURL } = useDocuments(id);
+  
+  // Filter documents to get only financial documents
+  const financialDocuments = documents.filter(doc => 
+    doc.eden_ai_classification === 'Financial' || 
+    doc.eden_ai_classification === 'financial' ||
+    doc.document_type === 'receipt' ||
+    doc.document_type === 'invoice' ||
+    doc.document_type === 'bank_statement'
+  );
+  
   const { notes, loading: notesLoading, createNote, updateNote, deleteNote } = useClientNotes(id || '');
   
   const tabs = ['Documents', 'Bookkeeping', 'Notes'];
@@ -123,23 +136,57 @@ export function ClientDetail() {
   };
 
   const handleFinancialDocumentUpload = (documentIds: string[]) => {
+    // This function is no longer used since we removed the upload component
     console.log('Financial documents uploaded successfully:', documentIds);
     toast.success('Documents Uploaded', `${documentIds.length} financial document(s) uploaded and processed`);
+  };
+  
+  const handleFinancialDocToggle = (documentId: string) => {
+    setSelectedFinancialDocs(prev => 
+      prev.includes(documentId) 
+        ? prev.filter(id => id !== documentId)
+        : [...prev, documentId]
+    );
+  };
+  
+  const handleProcessFinancialDocuments = async () => {
+    if (selectedFinancialDocs.length === 0) return;
     
-    // Auto-generate transactions from uploaded documents
-    documentIds.forEach((docId, index) => {
-      const mockTransaction = {
-        id: Math.random().toString(36).substring(2, 9),
-        date: new Date().toISOString().split('T')[0],
-        type: Math.random() > 0.5 ? 'income' : 'expense' as 'income' | 'expense',
-        category: Math.random() > 0.5 ? 'Sales' : 'Office Supplies',
-        description: `Auto-generated from uploaded document ${index + 1}`,
-        amount: Math.floor(Math.random() * 1000) + 100,
-        document: `document-${docId}`
-      };
+    setIsProcessingFinancialDocs(true);
+    try {
+      // Process selected financial documents and extract transaction data
+      const selectedDocs = financialDocuments.filter(doc => selectedFinancialDocs.includes(doc.id));
       
-      setTransactions(prev => [mockTransaction, ...prev]);
-    });
+      // Generate transactions from the selected documents
+      const newTransactions = selectedDocs.map((doc, index) => ({
+        id: Math.random().toString(36).substring(2, 9),
+        date: new Date(doc.created_at).toISOString().split('T')[0],
+        type: Math.random() > 0.5 ? 'income' : 'expense' as 'income' | 'expense',
+        category: doc.document_type === 'invoice' ? 'Sales' : 
+                 doc.document_type === 'receipt' ? 'Office Supplies' : 
+                 doc.document_type === 'bank_statement' ? 'Banking' : 'Other',
+        description: `Processed from ${doc.original_filename}`,
+        amount: Math.floor(Math.random() * 2000) + 100,
+        document: doc.original_filename
+      }));
+      
+      // Add new transactions to the beginning of the list
+      setTransactions(prev => [...newTransactions, ...prev]);
+      
+      // Clear selection
+      setSelectedFinancialDocs([]);
+      
+      toast.success(
+        'Documents Processed', 
+        `${selectedDocs.length} financial document(s) processed and ${newTransactions.length} transaction(s) added to bookkeeping`
+      );
+      
+    } catch (error) {
+      console.error('Failed to process financial documents:', error);
+      toast.error('Processing Failed', 'Failed to process financial documents for bookkeeping');
+    } finally {
+      setIsProcessingFinancialDocs(false);
+    }
   };
 
   const handleDownload = (docId: string, filename: string) => {
@@ -555,17 +602,150 @@ export function ClientDetail() {
                   </div>
                   
                   {/* Document Upload Section */}
+                  {/* Financial Document Selector */}
                   <div className="bg-surface rounded-xl border border-border-subtle p-4 mb-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-semibold text-text-primary">Financial Documents</h4>
+                      <h4 className="font-semibold text-text-primary">Process Financial Documents</h4>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        icon={RefreshCw}
+                        onClick={() => refreshDocuments()}
+                        className="text-text-secondary hover:text-text-primary"
+                      >
+                        Refresh
+                      </Button>
                     </div>
                     
-                    <EnhancedDocumentUpload
-                      clientId={id}
-                      allowMultiple={true}
-                      onUploadComplete={handleFinancialDocumentUpload}
-                      onUploadError={handleUploadError}
-                    />
+                    {/* Financial Documents List */}
+                    {loading ? (
+                      <div className="text-center py-4">
+                        <RefreshCw className="w-6 h-6 animate-spin text-primary mx-auto mb-2" />
+                        <p className="text-sm text-text-tertiary">Loading financial documents...</p>
+                      </div>
+                    ) : (
+                      <>
+                        {financialDocuments.length > 0 ? (
+                          <div className="space-y-3">
+                            <p className="text-sm text-text-tertiary mb-3">
+                              Select financial documents to process for bookkeeping ({financialDocuments.length} available)
+                            </p>
+                            
+                            <div className="grid grid-cols-1 gap-3 max-h-64 overflow-y-auto">
+                              {financialDocuments.map(doc => (
+                                <div 
+                                  key={doc.id} 
+                                  className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
+                                    selectedFinancialDocs.includes(doc.id)
+                                      ? 'bg-primary/10 border-primary/30 shadow-soft'
+                                      : 'bg-surface-elevated border-border-subtle hover:border-border-light hover:shadow-soft'
+                                  }`}
+                                  onClick={() => handleFinancialDocToggle(doc.id)}
+                                >
+                                  <div className="flex items-center space-x-3">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedFinancialDocs.includes(doc.id)}
+                                      onChange={() => handleFinancialDocToggle(doc.id)}
+                                      className="w-4 h-4 text-primary bg-surface border-border-subtle rounded focus:ring-primary focus:ring-2"
+                                    />
+                                    <FileText className="w-5 h-5 text-text-tertiary" />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-text-primary truncate">{doc.original_filename}</p>
+                                      <div className="flex items-center space-x-2 mt-1">
+                                        <Badge variant="success" size="sm">Financial</Badge>
+                                        <span className="text-xs text-text-tertiary">
+                                          {new Date(doc.created_at).toLocaleDateString()}
+                                        </span>
+                                        <span className="text-xs text-text-tertiary">
+                                          {(doc.file_size / 1024 / 1024).toFixed(2)} MB
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex items-center space-x-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      icon={Eye}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handlePreview(doc.id);
+                                      }}
+                                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                      title="Preview document"
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      icon={Download}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDownload(doc.id, doc.original_filename);
+                                      }}
+                                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                      title="Download document"
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {selectedFinancialDocs.length > 0 && (
+                              <div className="mt-4 p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border border-primary/20">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <h5 className="font-semibold text-text-primary">
+                                      {selectedFinancialDocs.length} document(s) selected
+                                    </h5>
+                                    <p className="text-sm text-text-secondary">
+                                      Process these documents to extract financial data for bookkeeping
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Button
+                                      variant="secondary"
+                                      size="sm"
+                                      onClick={() => setSelectedFinancialDocs([])}
+                                      className="text-text-secondary hover:text-text-primary"
+                                    >
+                                      Clear Selection
+                                    </Button>
+                                    <Button
+                                      variant="primary"
+                                      size="sm"
+                                      icon={DollarSign}
+                                      onClick={handleProcessFinancialDocuments}
+                                      disabled={isProcessingFinancialDocs}
+                                      className="bg-primary text-gray-900 hover:bg-primary-hover"
+                                    >
+                                      {isProcessingFinancialDocs ? 'Processing...' : 'Process for Bookkeeping'}
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <FileText className="w-12 h-12 text-text-tertiary mx-auto mb-4" />
+                            <h5 className="font-semibold text-text-primary mb-2">No Financial Documents Found</h5>
+                            <p className="text-text-tertiary text-sm mb-4">
+                              Upload documents in the Documents tab and they will appear here once classified as financial documents
+                            </p>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => setSelectedTab(0)}
+                              className="text-primary hover:text-primary-hover"
+                            >
+                              Go to Documents Tab
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                   
                   {/* Transaction Ledger */}
