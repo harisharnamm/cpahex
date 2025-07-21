@@ -416,19 +416,6 @@ if (classificationUpdateError) {
     }
 
   } catch (error) {
-    return new Response(
-      JSON.stringify({
-        success: true,
-        document_id: document_id,
-        ocr_text: extracted_text,
-        classification: classification,
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    )
-
-  } catch (error) {
     console.error('❌ Error processing document:', error)
     return new Response(
       JSON.stringify({ error: 'Internal server error', details: error.message }),
