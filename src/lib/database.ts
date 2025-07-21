@@ -58,25 +58,6 @@ export interface Vendor {
   updated_at: string;
 }
 
-export interface IRSNotice {
-  id: string;
-  user_id: string;
-  client_id?: string;
-  document_id?: string;
-  notice_type: string;
-  notice_number?: string;
-  tax_year?: number;
-  amount_owed?: number;
-  deadline_date?: string;
-  status: 'pending' | 'in_progress' | 'resolved' | 'appealed';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  ai_summary?: string;
-  ai_recommendations?: string;
-  resolution_notes?: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface ChatMessage {
   id: string;
   user_id: string;
@@ -314,34 +295,6 @@ export const vendorsApi = {
   }
 };
 
-// IRS Notice operations
-export const irsNoticesApi = {
-  async getAll(): Promise<IRSNotice[]> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
-    
-    const { data, error } = await supabase
-      .from('irs_notices')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    return data || [];
-  },
-
-  async create(notice: Omit<IRSNotice, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<IRSNotice> {
-    const { data, error } = await supabase
-      .from('irs_notices')
-      .insert([notice])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  }
-};
-
 // Chat Message operations
 export const chatApi = {
   async getMessages(clientId?: string): Promise<ChatMessage[]> {
@@ -452,16 +405,15 @@ export const aiInsightsApi = {
 // Dashboard statistics
 export const dashboardApi = {
   async getStats() {
-    const [clients, vendors, notices, tasks] = await Promise.all([
+    const [clients, vendors, tasks] = await Promise.all([
       clientsApi.getAll(),
       vendorsApi.getAll(),
-      irsNoticesApi.getAll(),
       tasksApi.getAll()
     ]);
 
     const activeClients = clients.filter(c => c.status === 'active').length;
     const pendingW9s = vendors.filter(v => v.w9_status === 'pending' || v.w9_status === 'missing').length;
-    const unresolvedNotices = notices.filter(n => n.status === 'pending' || n.status === 'in_progress').length;
+    const unresolvedNotices = 0; // No longer tracking IRS notices separately
     const upcomingDeadlines = tasks.filter(t => 
       t.due_date && 
       new Date(t.due_date) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) &&
@@ -475,7 +427,7 @@ export const dashboardApi = {
       upcomingDeadlines,
       totalClients: clients.length,
       totalVendors: vendors.length,
-      totalNotices: notices.length,
+      totalNotices: 0, // No longer tracking IRS notices separately
       totalTasks: tasks.length
     };
   }
