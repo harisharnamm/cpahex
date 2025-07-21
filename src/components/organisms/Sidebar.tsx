@@ -92,8 +92,8 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
           <NavigationItem to="/1099-hub" icon={FileText}>
             1099 Hub
           </NavigationItem>
-          <NavigationItem to="/irs-notices" icon={AlertTriangle}>
-            IRS Notices
+          <NavigationItem to="/irs-notices" icon={FileText}>
+            Document Management
           </NavigationItem>
           <NavigationItem to="/client-communications" icon={MessageSquareIcon}>
             Client Communications

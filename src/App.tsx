@@ -14,7 +14,7 @@ import { ClientDetail } from './pages/ClientDetail';
 import { Tasks } from './pages/Tasks';
 import { Hub1099 } from './pages/Hub1099';
 import { MyZone } from './pages/MyZone';
-import { IRSNotices } from './pages/IRSNotices';
+import { DocumentManagement } from './pages/DocumentManagement';
 import { AITaxAssistant } from './pages/AITaxAssistant';
 import { Settings } from './pages/SettingsPage';
 import { ClientCommunications } from './pages/ClientCommunications';
@@ -87,7 +87,7 @@ function AppContent() {
       <Route path="/irs-notices" element={
         <ProtectedRoute>
           <AppLayout>
-            <IRSNotices />
+            <DocumentManagement />
           </AppLayout>
         </ProtectedRoute>
       } />

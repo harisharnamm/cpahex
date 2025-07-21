@@ -3,7 +3,6 @@ export type {
   Client,
   Document,
   Vendor,
-  IRSNotice as Notice,
   ChatMessage,
   Task,
   AIInsight,
