@@ -203,8 +203,10 @@ Focus on tax-related insights, compliance issues, potential deductions, and acti
             </div>
             <div>
               <h2 className="text-xl font-semibold text-text-primary">🤖 AI Document Analysis</h2>
-              <p className="text-text-tertiary text-sm">Intelligent analysis of {document.original_filename}</p>
+              <p className="text-text-tertiary text-sm">
                 {isFromCache ? 'Cached analysis of' : 'Intelligent analysis of'} {document.original_filename}
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
