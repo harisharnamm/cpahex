@@ -485,7 +485,7 @@ export function DocumentManagement() {
                           Preview
                         </Button>
                         
-                        {document.ocr_text && document.ocr_text.length > 50 && (
+                        {document.ocr_text && document.ocr_text.length > 50 && document.processing_status === 'completed' && (
                           <Button
                             variant="ghost"
                             size="sm"
