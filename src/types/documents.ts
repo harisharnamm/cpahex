@@ -16,6 +16,7 @@ export interface Document {
   is_processed: boolean;
   created_at: string;
   updated_at: string;
+  ai_analysis_response?: any;
 }
 
 export type DocumentType = 

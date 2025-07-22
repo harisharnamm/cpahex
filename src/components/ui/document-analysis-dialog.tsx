@@ -4,6 +4,7 @@ import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
 import { Document } from '../../types/documents';
 import { supabase } from '../../lib/supabase';
+import { updateDocumentAnalysisResponse } from '../../lib/documentQueries';
 
 interface DocumentAnalysisDialogProps {
   isOpen: boolean;
@@ -32,10 +33,22 @@ export function DocumentAnalysisDialog({ isOpen, onClose, document }: DocumentAn
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isFromCache, setIsFromCache] = useState(false);
 
   useEffect(() => {
-    if (isOpen && document && document.ocr_text) {
-      performAnalysis();
+    if (isOpen && document) {
+      // Check if we have cached analysis results
+      if (document.ai_analysis_response) {
+        console.log('📋 Loading cached AI analysis results');
+        setAnalysis(document.ai_analysis_response);
+        setLoading(false);
+        setError(null);
+        setIsFromCache(true);
+      } else if (document.ocr_text) {
+        console.log('🔄 No cached results found, performing new analysis');
+        setIsFromCache(false);
+        performAnalysis();
+      }
     }
   }, [isOpen, document]);
 
@@ -45,6 +58,7 @@ export function DocumentAnalysisDialog({ isOpen, onClose, document }: DocumentAn
     setLoading(true);
     setError(null);
     setAnalysis(null);
+    setIsFromCache(false);
 
     try {
       console.log('🧠 Starting AI analysis for document:', document.original_filename);
@@ -122,6 +136,20 @@ Focus on tax-related insights, compliance issues, potential deductions, and acti
       setAnalysis(analysisData);
       console.log('✅ Analysis completed:', analysisData);
 
+      // Save the analysis results to the database for future use
+      try {
+        console.log('💾 Saving AI analysis results to database...');
+        const { error: saveError } = await updateDocumentAnalysisResponse(document.id, analysisData);
+        if (saveError) {
+          console.error('❌ Failed to save analysis results:', saveError);
+          // Don't throw error here as the analysis was successful, just the caching failed
+        } else {
+          console.log('✅ AI analysis results saved successfully');
+        }
+      } catch (saveError) {
+        console.error('❌ Error saving analysis results:', saveError);
+        // Continue without throwing as the analysis itself was successful
+      }
     } catch (err: any) {
       console.error('❌ Analysis failed:', err);
       setError(err.message || 'Failed to analyze document');
@@ -176,7 +204,7 @@ Focus on tax-related insights, compliance issues, potential deductions, and acti
             <div>
               <h2 className="text-xl font-semibold text-text-primary">🤖 AI Document Analysis</h2>
               <p className="text-text-tertiary text-sm">Intelligent analysis of {document.original_filename}</p>
-            </div>
+                {isFromCache ? 'Cached analysis of' : 'Intelligent analysis of'} {document.original_filename}
           </div>
           <button
             onClick={onClose}
@@ -214,6 +242,21 @@ Focus on tax-related insights, compliance issues, potential deductions, and acti
             </div>
           ) : analysis ? (
             <div className="space-y-6">
+              {/* Cache Status Indicator */}
+              {isFromCache && (
+                <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <h4 className="font-semibold text-blue-900">📋 Cached Analysis Results</h4>
+                      <p className="text-blue-800 text-sm">
+                        These results were previously generated and saved. Click "Re-analyze" for fresh insights.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Analysis Header */}
               <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
                 <div className="flex items-center justify-between mb-4">
@@ -399,7 +442,7 @@ Focus on tax-related insights, compliance issues, potential deductions, and acti
         <div className="p-6 border-t border-border-subtle bg-surface">
           <div className="flex items-center justify-between">
             <div className="text-sm text-text-tertiary">
-              💡 AI analysis uses OCR text to provide tax-focused insights and recommendations
+              💡 {isFromCache ? 'Showing cached analysis results' : 'AI analysis uses OCR text to provide tax-focused insights and recommendations'}
             </div>
             
             <div className="flex space-x-3">
@@ -411,7 +454,7 @@ Focus on tax-related insights, compliance issues, potential deductions, and acti
                   className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
                 >
                   <Brain className="w-4 h-4 mr-2" />
-                  Re-analyze
+                  {isFromCache ? 'Re-analyze' : 'Analyze Again'}
                 </Button>
               )}
               

@@ -398,3 +398,20 @@ export async function deleteIRSNoticeWithDocument(noticeId: string): Promise<{ e
     return { error };
   }
 }
+
+/**
+ * Updates document with AI analysis response
+ */
+export async function updateDocumentAnalysisResponse(
+  documentId: string,
+  analysisResponse: any
+): Promise<{ data: Document | null; error: any }> {
+  const { data, error } = await supabase
+    .from('documents')
+    .update({ ai_analysis_response: analysisResponse })
+    .eq('id', documentId)
+    .select()
+    .single();
+
+  return { data, error };
+}
