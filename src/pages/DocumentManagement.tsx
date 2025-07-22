@@ -5,7 +5,9 @@ import { useSearch } from '../contexts/SearchContext';
 import { useDocuments } from '../hooks/useDocuments';
 import { useDocumentProcessing, DocumentClassification } from '../hooks/useDocumentProcessing';
 import { DocumentClassificationDialog } from '../components/ui/document-classification-dialog';
+import { DocumentAnalysisDialog } from '../components/ui/document-analysis-dialog';
 import { EnhancedDocumentUpload } from '../components/ui/enhanced-document-upload';
+import { EnhancedDocumentPreview } from '../components/ui/enhanced-document-preview';
 import { EmptyState } from '../components/ui/empty-state';
 import { useToast } from '../contexts/ToastContext';
 import { Skeleton } from '../components/ui/skeleton';
@@ -26,7 +28,8 @@ import {
   RefreshCw,
   Plus,
   X,
-  Trash2
+  Trash2,
+  Brain
 } from 'lucide-react';
 import { Document } from '../types/documents';
 
@@ -40,7 +43,12 @@ export function DocumentManagement() {
   const [classificationFilter, setClassificationFilter] = useState<string>('all');
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [showClassificationDialog, setShowClassificationDialog] = useState(false);
+  const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
+  const [analysisDocument, setAnalysisDocument] = useState<Document | null>(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Listen for documents that need classification approval
   useEffect(() => {
@@ -129,6 +137,11 @@ export function DocumentManagement() {
     }
   };
 
+  const handleAnalyzeDocument = (document: Document) => {
+    setAnalysisDocument(document);
+    setShowAnalysisDialog(true);
+  };
+
   const handleDeleteDocument = async (documentId: string) => {
     const document = documents.find(d => d.id === documentId);
     if (!document) return;
@@ -163,14 +176,22 @@ export function DocumentManagement() {
 
   const handlePreviewDocument = async (documentId: string) => {
     try {
+      const document = documents.find(d => d.id === documentId);
+      if (!document) return;
+      
+      setPreviewDocument(document);
+      setShowPreview(true);
+      
       const result = await getDocumentPreviewURL(documentId);
       if (result.url) {
-        window.open(result.url, '_blank');
+        setPreviewUrl(result.url);
       } else {
+        setShowPreview(false);
         toast.error('Preview Failed', result.error || 'Failed to generate preview URL');
       }
     } catch (error) {
       console.error('Preview error:', error);
+      setShowPreview(false);
       toast.error('Preview Failed', 'An unexpected error occurred');
     }
   };
@@ -464,6 +485,19 @@ export function DocumentManagement() {
                           Preview
                         </Button>
                         
+                        {document.ocr_text && document.ocr_text.length > 50 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon={Brain}
+                            onClick={() => handleAnalyzeDocument(document)}
+                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                            title="AI Analysis - Get insights and recommendations"
+                          >
+                            AI Analysis
+                          </Button>
+                        )}
+                        
                         <Button
                           variant="ghost"
                           size="sm"
@@ -523,6 +557,31 @@ export function DocumentManagement() {
         onOverride={handleOverrideClassification}
         loading={selectedDocument ? getProcessingState(selectedDocument.id).isProcessing : false}
       />
+
+      {/* AI Analysis Dialog */}
+      <DocumentAnalysisDialog
+        isOpen={showAnalysisDialog}
+        onClose={() => {
+          setShowAnalysisDialog(false);
+          setAnalysisDocument(null);
+        }}
+        document={analysisDocument}
+      />
+
+      {/* Document Preview */}
+      {showPreview && previewDocument && (
+        <EnhancedDocumentPreview
+          document={previewDocument}
+          previewUrl={previewUrl || undefined}
+          isOpen={showPreview}
+          onClose={() => {
+            setShowPreview(false);
+            setPreviewDocument(null);
+            setPreviewUrl(null);
+          }}
+          onDownload={() => handleDownloadDocument(previewDocument.id, previewDocument.original_filename)}
+        />
+      )}
     </div>
   );
 }
