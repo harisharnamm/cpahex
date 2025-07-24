@@ -228,9 +228,9 @@ export function ClientDetail() {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: User },
-    { id: 'documents', label: 'Documents', icon: FileText, count: documents.length },
-    { id: 'transactions', label: 'Transactions', icon: DollarSign, count: transactions.length },
-    { id: 'notes', label: 'Notes', icon: MessageSquare, count: notes.length },
+    { id: 'documents', label: 'Documents', icon: FileText },
+    { id: 'transactions', label: 'Transactions', icon: DollarSign },
+    { id: 'notes', label: 'Notes', icon: MessageSquare },
   ];
 
   return (
@@ -274,6 +274,11 @@ export function ClientDetail() {
                     <Badge variant={client.status === 'active' ? 'success' : 'neutral'}>
                       {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
                     </Badge>
+                    {client.category && (
+                      <Badge variant="neutral" className="capitalize">
+                        {client.category.replace('_', ' ')}
+                      </Badge>
+                    )}
                   </div>
                 </div>
                 
@@ -298,6 +303,12 @@ export function ClientDetail() {
                     <Calendar className="w-4 h-4 text-text-tertiary" />
                     <span className="text-text-secondary">Client since {formatDate(client.created_at)}</span>
                   </div>
+                  {client.tax_id && (
+                    <div className="flex items-center space-x-2">
+                      <FileText className="w-4 h-4 text-text-tertiary" />
+                      <span className="text-text-secondary">Tax ID: {client.tax_id}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -330,7 +341,7 @@ export function ClientDetail() {
 
         {/* Navigation Tabs */}
         <div className="bg-surface-elevated rounded-2xl border border-border-subtle mb-8 shadow-soft overflow-hidden">
-          <div className="flex overflow-x-auto">
+          <div className="grid grid-cols-4 w-full">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -339,7 +350,7 @@ export function ClientDetail() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as TabType)}
-                  className={`flex items-center space-x-3 px-6 py-4 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap ${
+                  className={`flex items-center justify-center space-x-3 px-6 py-4 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap ${
                     isActive
                       ? 'border-primary text-primary bg-primary/5'
                       : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-surface-hover'
@@ -347,11 +358,6 @@ export function ClientDetail() {
                 >
                   <Icon className="w-4 h-4" />
                   <span>{tab.label}</span>
-                  {tab.count !== undefined && (
-                    <Badge variant="neutral" size="sm">
-                      {tab.count}
-                    </Badge>
-                  )}
                 </button>
               );
             })}
@@ -361,57 +367,19 @@ export function ClientDetail() {
         {/* Tab Content */}
         <div className="space-y-8">
           {activeTab === 'overview' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="space-y-8">
               {/* Quick Stats */}
-              <div className="lg:col-span-2 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl">
-                        <FileText className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-text-tertiary">Documents</p>
-                        <p className="text-2xl font-semibold text-text-primary">{documents.length}</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-gradient-to-br from-green-100 to-green-50 rounded-xl">
-                        <DollarSign className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-text-tertiary">Transactions</p>
-                        <p className="text-2xl font-semibold text-text-primary">{transactions.length}</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-gradient-to-br from-purple-100 to-purple-50 rounded-xl">
-                        <MessageSquare className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-text-tertiary">Notes</p>
-                        <p className="text-2xl font-semibold text-text-primary">{notes.length}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Transaction Summary */}
-                {!transactionsLoading && transactions.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-text-primary mb-4">Financial Summary</h3>
-                    <TransactionSummary summary={transactionSummary} loading={transactionsLoading} />
-                  </div>
-                )}
-
-                {/* Recent Documents */}
+              {/* Financial Summary - Full Width */}
+              {!transactionsLoading && transactions.length > 0 && (
                 <div>
+                  <h3 className="text-lg font-semibold text-text-primary mb-4">Financial Summary</h3>
+                  <TransactionSummary summary={transactionSummary} loading={transactionsLoading} />
+                </div>
+              )}
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Recent Documents */}
+                <div className="lg:col-span-2">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-text-primary">Recent Documents</h3>
                     <Button
@@ -419,7 +387,7 @@ export function ClientDetail() {
                       size="sm"
                       onClick={() => setActiveTab('documents')}
                     >
-                      View All
+                      View All ({documents.length})
                     </Button>
                   </div>
                   
@@ -474,113 +442,95 @@ export function ClientDetail() {
                     />
                   )}
                 </div>
-              </div>
 
-              {/* Sidebar */}
-              <div className="space-y-6">
-                {/* Client Info */}
-                <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
-                  <h3 className="font-semibold text-text-primary mb-4">Client Information</h3>
-                  <div className="space-y-3 text-sm">
-                    <div>
-                      <span className="font-medium text-text-tertiary">Entity Type:</span>
-                      <p className="text-text-primary capitalize">{client.entity_type.replace('_', ' ')}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-text-tertiary">Tax Year:</span>
-                      <p className="text-text-primary">{client.tax_year}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-text-tertiary">Status:</span>
-                      <p className="text-text-primary capitalize">{client.status}</p>
-                    </div>
-                    {client.tax_id && (
-                      <div>
-                        <span className="font-medium text-text-tertiary">Tax ID:</span>
-                        <p className="text-text-primary">{client.tax_id}</p>
-                      </div>
-                    )}
-                    {client.category && (
-                      <div>
-                        <span className="font-medium text-text-tertiary">Category:</span>
-                        <p className="text-text-primary capitalize">{client.category.replace('_', ' ')}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
 
-                {/* Recent Notes */}
-                <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-text-primary">Recent Notes</h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      icon={Plus}
-                      onClick={() => setShowAddNote(true)}
-                    >
-                      Add Note
-                    </Button>
-                  </div>
-                  
-                  {notesLoading ? (
-                    <div className="space-y-3">
-                      {Array.from({ length: 2 }).map((_, i) => (
-                        <Skeleton key={i} className="h-20" />
-                      ))}
+
+
+                {/* Sidebar - Recent Notes and Quick Actions */}
+                <div className="space-y-6">
+                  {/* Recent Notes */}
+                  <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-text-primary">Recent Notes</h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={Plus}
+                        onClick={() => setShowAddNote(true)}
+                      >
+                        Add Note
+                      </Button>
                     </div>
-                  ) : notes.length > 0 ? (
-                    <div className="space-y-3">
-                      {notes.slice(0, 3).map((note) => (
-                        <div key={note.id} className="p-3 bg-surface rounded-lg border border-border-subtle">
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-medium text-text-primary text-sm">{note.title}</h4>
-                            <div className="flex items-center space-x-1">
-                              {getPriorityBadge(note.priority)}
-                              {getCategoryBadge(note.category)}
+                    
+                    {notesLoading ? (
+                      <div className="space-y-3">
+                        {Array.from({ length: 2 }).map((_, i) => (
+                          <Skeleton key={i} className="h-20" />
+                        ))}
+                      </div>
+                    ) : notes.length > 0 ? (
+                      <div className="space-y-3">
+                        {notes.slice(0, 3).map((note) => (
+                          <div key={note.id} className="p-3 bg-surface rounded-lg border border-border-subtle">
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-medium text-text-primary text-sm">{note.title}</h4>
+                              <div className="flex items-center space-x-1">
+                                {getPriorityBadge(note.priority)}
+                                {getCategoryBadge(note.category)}
+                              </div>
                             </div>
+                            <p className="text-xs text-text-secondary line-clamp-2">{note.content}</p>
+                            <p className="text-xs text-text-tertiary mt-2">{formatDate(note.created_at)}</p>
                           </div>
-                          <p className="text-xs text-text-secondary line-clamp-2">{note.content}</p>
-                          <p className="text-xs text-text-tertiary mt-2">{formatDate(note.created_at)}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-text-tertiary">No notes yet</p>
-                  )}
-                </div>
+                        ))}
+                        {notes.length > 3 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setActiveTab('notes')}
+                            className="w-full text-center"
+                          >
+                            View All Notes ({notes.length})
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-text-tertiary">No notes yet</p>
+                    )}
+                  </div>
 
-                {/* Quick Actions */}
-                <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
-                  <h3 className="font-semibold text-text-primary mb-4">Quick Actions</h3>
-                  <div className="space-y-3">
-                    <Button 
-                      className="w-full justify-start bg-primary text-gray-900 hover:bg-primary-hover" 
-                      icon={Upload}
-                      onClick={() => setShowUpload(true)}
-                    >
-                      Upload Documents
-                    </Button>
-                    <Button 
-                      variant="secondary" 
-                      className="w-full justify-start" 
-                      icon={Plus}
-                      onClick={() => setShowAddNote(true)}
-                    >
-                      Add Note
-                    </Button>
-                    <Button 
-                      variant="secondary" 
-                      className="w-full justify-start" 
-                      icon={Mail}
-                      onClick={() => {
-                        const subject = encodeURIComponent(`Tax Documents Request - ${new Date().getFullYear()}`);
-                        const body = encodeURIComponent(`Dear ${client.name},\n\nI hope this email finds you well.\n\nBest regards,\n[Your Name]`);
-                        window.open(`mailto:${client.email}?subject=${subject}&body=${body}`, '_blank');
-                      }}
-                    >
-                      Send Email
-                    </Button>
+                  {/* Quick Actions */}
+                  <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
+                    <h3 className="font-semibold text-text-primary mb-4">Quick Actions</h3>
+                    <div className="space-y-3">
+                      <Button 
+                        className="w-full justify-start bg-primary text-gray-900 hover:bg-primary-hover" 
+                        icon={Upload}
+                        onClick={() => setShowUpload(true)}
+                      >
+                        Upload Documents
+                      </Button>
+                      <Button 
+                        variant="secondary" 
+                        className="w-full justify-start" 
+                        icon={Plus}
+                        onClick={() => setShowAddNote(true)}
+                      >
+                        Add Note
+                      </Button>
+                      <Button 
+                        variant="secondary" 
+                        className="w-full justify-start" 
+                        icon={Mail}
+                        onClick={() => {
+                          const subject = encodeURIComponent(`Tax Documents Request - ${new Date().getFullYear()}`);
+                          const body = encodeURIComponent(`Dear ${client.name},\n\nI hope this email finds you well.\n\nBest regards,\n[Your Name]`);
+                          window.open(`mailto:${client.email}?subject=${subject}&body=${body}`, '_blank');
+                        }}
+                      >
+                        Send Email
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
