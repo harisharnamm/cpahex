@@ -117,6 +117,35 @@ export interface PaymentTransaction {
   updated_at: string;
 }
 
+// Unified Transaction interface matching the database schema
+export interface UnifiedTransaction {
+  id: number;
+  transaction_id: string;
+  document_id?: string;
+  client_id?: string;
+  document_source: 'bank_statement' | 'invoice' | 'receipt';
+  transaction_date?: string;
+  description?: string;
+  amount?: number;
+  currency: string;
+  transaction_type?: string;
+  debit_credit?: 'debit' | 'credit';
+  reference_number?: string;
+  counterparty?: string;
+  counterparty_address?: string;
+  invoice_number?: string;
+  due_date?: string;
+  payment_status?: 'pending' | 'paid' | 'cleared' | 'overdue';
+  payment_method?: string;
+  matching_candidate: boolean;
+  matched_transaction_ids?: string[];
+  tags?: any;
+  line_items?: any;
+  raw_data?: any;
+  created_at: string;
+  updated_at: string;
+}
+
 // Client operations
 export const clientsApi = {
   async getAll(): Promise<Client[]> {
@@ -402,6 +431,59 @@ export const aiInsightsApi = {
   }
 };
 
+// Unified Transactions operations
+export const unifiedTransactionsApi = {
+  async getAll(): Promise<UnifiedTransaction[]> {
+    const { data, error } = await supabase
+      .from('unified_transactions')
+      .select('*')
+      .order('transaction_date', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByClientId(clientId: string): Promise<UnifiedTransaction[]> {
+    const { data, error } = await supabase
+      .from('unified_transactions')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('transaction_date', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByDocumentId(documentId: string): Promise<UnifiedTransaction[]> {
+    const { data, error } = await supabase
+      .from('unified_transactions')
+      .select('*')
+      .eq('document_id', documentId)
+      .order('transaction_date', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByDateRange(startDate: string, endDate: string, clientId?: string): Promise<UnifiedTransaction[]> {
+    let query = supabase
+      .from('unified_transactions')
+      .select('*')
+      .gte('transaction_date', startDate)
+      .lte('transaction_date', endDate)
+      .order('transaction_date', { ascending: false });
+
+    if (clientId) {
+      query = query.eq('client_id', clientId);
+    }
+
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    return data || [];
+  }
+};
+
 // Dashboard statistics
 export const dashboardApi = {
   async getStats() {
@@ -413,7 +495,7 @@ export const dashboardApi = {
 
     const activeClients = clients.filter(c => c.status === 'active').length;
     const pendingW9s = vendors.filter(v => v.w9_status === 'pending' || v.w9_status === 'missing').length;
-    const unresolvedNotices = 0; // No longer tracking IRS notices separately
+    const unresolvedNotices = 0;
     const upcomingDeadlines = tasks.filter(t => 
       t.due_date && 
       new Date(t.due_date) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) &&
@@ -427,7 +509,7 @@ export const dashboardApi = {
       upcomingDeadlines,
       totalClients: clients.length,
       totalVendors: vendors.length,
-      totalNotices: 0, // No longer tracking IRS notices separately
+      totalNotices: 0,
       totalTasks: tasks.length
     };
   }
