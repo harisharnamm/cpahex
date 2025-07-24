@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useClients } from '../hooks/useClients';
 import { useDocuments } from '../hooks/useDocuments';
-import { useTransactions } from '../hooks/useTransactions';
 import { useClientNotes } from '../hooks/useClientNotes';
+import { useTransactions } from '../hooks/useTransactions';
 import { TopBar } from '../components/organisms/TopBar';
 import { GlobalSearch } from '../components/molecules/GlobalSearch';
 import { useSearch } from '../contexts/SearchContext';
@@ -49,7 +49,7 @@ export function ClientDetail() {
   const navigate = useNavigate();
   const { clients, loading: clientsLoading } = useClients();
   const { documents, loading: documentsLoading, refreshDocuments, downloadDocument, getDocumentPreviewURL } = useDocuments(id);
-  const { transactions, loading: transactionsLoading, summary: transactionSummary } = useTransactions(id);
+  const { transactions, loading: transactionsLoading, summary: transactionSummary, refreshTransactions } = useTransactions(id);
   const { notes, loading: notesLoading, createNote, updateNote, deleteNote } = useClientNotes(id || '');
   const { isSearchOpen, closeSearch } = useSearch();
   const toast = useToast();
@@ -72,6 +72,10 @@ export function ClientDetail() {
     toast.success('Upload Complete', `${documentIds.length} document(s) uploaded successfully`);
     setShowUpload(false);
     refreshDocuments();
+    // Refresh transactions as financial documents may have generated new transactions
+    setTimeout(() => {
+      refreshTransactions();
+    }, 2000); // Give time for edge function processing
   };
 
   const handleUploadError = (error: string) => {
@@ -622,11 +626,30 @@ export function ClientDetail() {
               )}
               
               {/* Transaction List */}
-              <TransactionList
-                transactions={transactions}
-                loading={transactionsLoading}
-                onViewDocument={handlePreviewDocument}
-              />
+              {transactionsLoading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-20" />
+                  ))}
+                </div>
+              ) : transactions.length > 0 ? (
+                <TransactionList
+                  transactions={transactions}
+                  loading={transactionsLoading}
+                  onViewDocument={handlePreviewDocument}
+                />
+              ) : (
+                <EmptyState
+                  icon={DollarSign}
+                  title="No transactions yet"
+                  description="Upload financial documents (bank statements, invoices, receipts) to automatically extract transactions"
+                  action={{
+                    label: "Upload Financial Documents",
+                    onClick: () => setShowUpload(true),
+                    icon: Upload
+                  }}
+                />
+              )}
             </div>
           )}
 
