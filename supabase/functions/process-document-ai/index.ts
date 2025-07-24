@@ -235,83 +235,89 @@ console.log('🔍 Full classification response:', JSON.stringify(classificationR
 fullClassificationData = classificationResult
 
 // Parse the classification response properly
-let classification = 'unknown'
+let primaryClassification = 'unknown'
+let secondaryClassification = null
 let reasoning = null
 let confidence = null
 
 try {
-  // The response appears to be a JSON string that needs parsing
   let parsedResult = classificationResult
-  
-  // If the result is a string, try to parse it as JSON
   if (typeof classificationResult === 'string') {
     try {
       parsedResult = JSON.parse(classificationResult)
-      fullClassificationData = parsedResult // Update with parsed result
+      fullClassificationData = parsedResult
     } catch (parseError) {
       console.error('❌ Failed to parse classification result as JSON:', parseError)
       parsedResult = classificationResult
-      fullClassificationData = classificationResult // Keep original if parsing fails
+      fullClassificationData = classificationResult
     }
   }
-  
-  // Check if we have the expected structure
-  if (parsedResult?.document_classification) {
-    const docClass = parsedResult.document_classification
-    classification = docClass.primary_category || 'unknown'
-    reasoning = docClass.reasoning || null
-    confidence = docClass.confidence || null
+
+  // New expected structure
+  if (parsedResult?.primary_classification) {
+    primaryClassification = parsedResult.primary_classification.category || 'unknown'
+    reasoning = parsedResult.primary_classification.reasoning || null
+    confidence = parsedResult.primary_classification.confidence || null
+    // Secondary classification
+    if (parsedResult.secondary_classification) {
+      secondaryClassification = parsedResult.secondary_classification.type || null
+    }
     fullClassificationData = parsedResult
-  }
-  // Fallback: check if the entire response is the classification object
-  else if (parsedResult?.primary_category) {
-    classification = parsedResult.primary_category
-    reasoning = parsedResult.reasoning || null
-    confidence = parsedResult.confidence || null
-    fullClassificationData = parsedResult
-  }
-  // Legacy fallback for generated_text responses
-  else if (parsedResult?.generated_text) {
-    // Try to parse generated_text as JSON if it looks like JSON
-    try {
-      const generatedData = JSON.parse(parsedResult.generated_text)
-      if (generatedData?.document_classification) {
-        const docClass = generatedData.document_classification
-        classification = docClass.primary_category || 'unknown'
-        reasoning = docClass.reasoning || null
-        confidence = docClass.confidence || null
-        fullClassificationData = generatedData
-      } else {
-        classification = parsedResult.generated_text.trim()
+  } else {
+    // Fallbacks for legacy/other formats
+    if (parsedResult?.document_classification) {
+      const docClass = parsedResult.document_classification
+      primaryClassification = docClass.primary_category || 'unknown'
+      reasoning = docClass.reasoning || null
+      confidence = docClass.confidence || null
+      fullClassificationData = parsedResult
+    } else if (parsedResult?.primary_category) {
+      primaryClassification = parsedResult.primary_category
+      reasoning = parsedResult.reasoning || null
+      confidence = parsedResult.confidence || null
+      fullClassificationData = parsedResult
+    } else if (parsedResult?.generated_text) {
+      try {
+        const generatedData = JSON.parse(parsedResult.generated_text)
+        if (generatedData?.document_classification) {
+          const docClass = generatedData.document_classification
+          primaryClassification = docClass.primary_category || 'unknown'
+          reasoning = docClass.reasoning || null
+          confidence = docClass.confidence || null
+          fullClassificationData = generatedData
+        } else {
+          primaryClassification = parsedResult.generated_text.trim()
+          fullClassificationData = parsedResult
+        }
+      } catch {
+        primaryClassification = parsedResult.generated_text.trim()
         fullClassificationData = parsedResult
       }
-    } catch {
-      classification = parsedResult.generated_text.trim()
+    } else {
+      console.warn('⚠️ Unexpected classification response structure')
+      primaryClassification = 'parsing_failed'
       fullClassificationData = parsedResult
     }
   }
-  else {
-    console.warn('⚠️ Unexpected classification response structure')
-    classification = 'parsing_failed'
-    fullClassificationData = parsedResult
-  }
-  
-  console.log('✅ Document classified as:', classification)
+
+  console.log('✅ Document classified as:', primaryClassification)
   console.log('📝 Classification reasoning:', reasoning)
   console.log('📊 Classification confidence:', confidence)
+  console.log('🏷️ Secondary classification:', secondaryClassification)
 } catch (extractionError) {
   console.error('❌ Error extracting classification:', extractionError)
   console.log('📋 Full response structure:', JSON.stringify(classificationResult, null, 2))
-  classification = 'extraction_failed'
-  fullClassificationData = classificationResult // Ensure it's set even in catch block
+  primaryClassification = 'extraction_failed'
+  fullClassificationData = classificationResult
 }
 
 // Update document with classification and full data
 const { error: classificationUpdateError } = await supabaseClient
   .from('documents')
   .update({ 
-    eden_ai_classification: classification,
+    eden_ai_classification: primaryClassification,
     classification_api_response: fullClassificationData,
+    secondary_classification: secondaryClassification,
     processing_status: 'classified'
   })
   .eq('id', document_id)
@@ -323,8 +329,8 @@ if (classificationUpdateError) {
 }
 
     // Auto-process if classification is known, otherwise return for manual review
-    if (classification && classification !== 'unknown' && classification !== 'parsing_failed' && classification !== 'extraction_failed') {
-      console.log('🚀 Auto-processing document based on classification:', classification)
+    if (primaryClassification && primaryClassification !== 'unknown' && primaryClassification !== 'parsing_failed' && primaryClassification !== 'extraction_failed') {
+      console.log('🚀 Auto-processing document based on classification:', primaryClassification)
       
       // Update processing status
       await supabaseClient
@@ -334,11 +340,11 @@ if (classificationUpdateError) {
       
       // Determine which processing function to call based on classification
       let processingFunction = ''
-      if (classification.toLowerCase().includes('financial')) {
+      if (primaryClassification.toLowerCase().includes('financial')) {
         processingFunction = 'process-financial'
-      } else if (classification.toLowerCase().includes('identity')) {
+      } else if (primaryClassification.toLowerCase().includes('identity')) {
         processingFunction = 'process-identity'
-      } else if (classification.toLowerCase().includes('tax')) {
+      } else if (primaryClassification.toLowerCase().includes('tax')) {
         processingFunction = 'process-tax'
       } else {
         // Default to financial processing for unknown specific types
@@ -395,7 +401,7 @@ if (classificationUpdateError) {
           success: true,
           document_id: document_id,
           ocr_text: extracted_text,
-          classification: classification,
+          classification: primaryClassification,
           auto_processed: true,
           processing_function: processingFunction
         }),
@@ -405,7 +411,7 @@ if (classificationUpdateError) {
       )
     } else {
       // Classification is unknown - return for manual review
-      console.log('❓ Classification unknown, requiring manual review:', classification)
+      console.log('❓ Classification unknown, requiring manual review:', primaryClassification)
       
       // Update processing status to classified (waiting for manual review)
       await supabaseClient
@@ -418,7 +424,7 @@ if (classificationUpdateError) {
           success: true,
           document_id: document_id,
           ocr_text: extracted_text,
-          classification: classification,
+          classification: primaryClassification,
           requires_manual_review: true
         }),
         { 

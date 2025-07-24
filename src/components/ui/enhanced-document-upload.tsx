@@ -39,7 +39,7 @@ interface EnhancedDocumentUploadProps {
   className?: string;
 }
 
-interface ProcessingDocument {
+export interface ProcessingDocument {
   id: string;
   file: File;
   status: 'uploading' | 'processing' | 'classifying' | 'completed' | 'error';
@@ -54,61 +54,7 @@ interface ProcessingDocument {
   };
 }
 
-const DocumentTypeSelector: React.FC<{
-  value: DocumentType;
-  onChange: (type: DocumentType) => void;
-}> = ({ value, onChange }) => (
-  <div className="mb-4">
-    <label className="block text-sm font-medium text-text-secondary mb-2">
-      Document Type
-    </label>
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value as DocumentType)}
-      className="w-full px-3 py-2 border border-border-subtle rounded-xl bg-surface-elevated text-text-primary focus:ring-2 focus:ring-primary focus:border-transparent"
-    >
-      {Object.entries(DOCUMENT_TYPE_LABELS).map(([key, label]) => (
-        <option key={key} value={key}>
-          {label}
-        </option>
-      ))}
-    </select>
-  </div>
-);
-
-const ClientSelector: React.FC<{
-  value: string;
-  onChange: (clientId: string) => void;
-  clients: Array<{ id: string; name: string; email: string }>;
-  required?: boolean;
-}> = ({ value, onChange, clients, required = false }) => (
-  <div className="mb-4">
-    <label className="block text-sm font-medium text-text-secondary mb-2">
-      Client Association {required && '*'}
-    </label>
-    <div className="relative">
-      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full pl-10 pr-4 py-3 border border-border-subtle rounded-xl bg-surface-elevated text-text-primary focus:ring-2 focus:ring-primary focus:border-transparent"
-        required={required}
-      >
-        <option value="">Select a client (optional)</option>
-        {clients.map(client => (
-          <option key={client.id} value={client.id}>
-            {client.name} ({client.email})
-          </option>
-        ))}
-      </select>
-    </div>
-    <p className="text-xs text-text-tertiary mt-1">
-      Documents can be associated with a specific client for better organization
-    </p>
-  </div>
-);
-
-const ProcessingStatusIndicator: React.FC<{
+export const ProcessingStatusIndicator: React.FC<{
   document: ProcessingDocument;
   onRetry?: () => void;
   onDelete?: () => void;
@@ -311,6 +257,60 @@ const ProcessingStatusIndicator: React.FC<{
     </motion.div>
   );
 };
+
+const DocumentTypeSelector: React.FC<{
+  value: DocumentType;
+  onChange: (type: DocumentType) => void;
+}> = ({ value, onChange }) => (
+  <div className="mb-4">
+    <label className="block text-sm font-medium text-text-secondary mb-2">
+      Document Type
+    </label>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value as DocumentType)}
+      className="w-full px-3 py-2 border border-border-subtle rounded-xl bg-surface-elevated text-text-primary focus:ring-2 focus:ring-primary focus:border-transparent"
+    >
+      {Object.entries(DOCUMENT_TYPE_LABELS).map(([key, label]) => (
+        <option key={key} value={key}>
+          {label}
+        </option>
+      ))}
+    </select>
+  </div>
+);
+
+const ClientSelector: React.FC<{
+  value: string;
+  onChange: (clientId: string) => void;
+  clients: Array<{ id: string; name: string; email: string }>;
+  required?: boolean;
+}> = ({ value, onChange, clients, required = false }) => (
+  <div className="mb-4">
+    <label className="block text-sm font-medium text-text-secondary mb-2">
+      Client Association {required && '*'}
+    </label>
+    <div className="relative">
+      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full pl-10 pr-4 py-3 border border-border-subtle rounded-xl bg-surface-elevated text-text-primary focus:ring-2 focus:ring-primary focus:border-transparent"
+        required={required}
+      >
+        <option value="">Select a client (optional)</option>
+        {clients.map(client => (
+          <option key={client.id} value={client.id}>
+            {client.name} ({client.email})
+          </option>
+        ))}
+      </select>
+    </div>
+    <p className="text-xs text-text-tertiary mt-1">
+      Documents can be associated with a specific client for better organization
+    </p>
+  </div>
+);
 
 export const EnhancedDocumentUpload: React.FC<EnhancedDocumentUploadProps> = ({
   clientId: initialClientId,

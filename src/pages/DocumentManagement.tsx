@@ -26,9 +26,12 @@ import {
   RefreshCw,
   Plus,
   X,
-  Trash2
+  Trash2,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { Document } from '../types/documents';
+import type { ProcessingDocument } from '../components/ui/enhanced-document-upload';
 
 export function DocumentManagement() {
   const { documents, loading, refreshDocuments, downloadDocument, getDocumentPreviewURL, deleteDocument } = useDocuments();
@@ -41,6 +44,18 @@ export function DocumentManagement() {
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [showClassificationDialog, setShowClassificationDialog] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
+  const [processingDocuments, setProcessingDocuments] = useState<ProcessingDocument[]>([]);
+  const [expandedProcessingDocId, setExpandedProcessingDocId] = useState<string | null>(null);
+
+  // Add a handler to receive processing document info from upload
+  const handleProcessingDocument = (processingDoc: ProcessingDocument) => {
+    setProcessingDocuments(prev => [...prev, processingDoc]);
+  };
+
+  // Remove from processingDocuments when done
+  const handleProcessingComplete = (documentId: string) => {
+    setProcessingDocuments(prev => prev.filter(doc => doc.documentId !== documentId));
+  };
 
   // Listen for documents that need classification approval
   useEffect(() => {
@@ -201,18 +216,25 @@ export function DocumentManagement() {
     return <Badge variant="neutral">Uploaded</Badge>;
   };
 
-  const getClassificationBadge = (classification?: string) => {
-    if (!classification) return null;
-    
-    switch (classification) {
-      case 'Financial':
+  const getClassificationBadge = (document: Document) => {
+    const type = document.secondary_classification || document.eden_ai_classification;
+    if (!type) return <Badge variant="error" size="sm">Unknown</Badge>;
+
+    switch (type.toLowerCase()) {
+      case 'invoice':
+        return <Badge variant="success" size="sm">Invoice</Badge>;
+      case 'bank statement':
+        return <Badge variant="neutral" size="sm">Bank Statement</Badge>;
+      case 'receipt':
+        return <Badge variant="warning" size="sm">Receipt</Badge>;
+      case 'financial document':
         return <Badge variant="success" size="sm">Financial</Badge>;
-      case 'Identity':
+      case 'identity document':
         return <Badge variant="neutral" size="sm">Identity</Badge>;
-      case 'Tax':
+      case 'tax document':
         return <Badge variant="warning" size="sm">Tax</Badge>;
       default:
-        return <Badge variant="error" size="sm">Unknown</Badge>;
+        return <Badge variant="neutral" size="sm">{type}</Badge>;
     }
   };
 
@@ -263,6 +285,12 @@ export function DocumentManagement() {
     }).length
   };
 
+  // Progress bar logic
+  const totalDocs = documents.length;
+  const completedDocs = documents.filter(doc => doc.processing_status === 'completed').length;
+  const inProgressDocs = documents.filter(doc => doc.processing_status !== 'completed' && doc.processing_status !== 'failed').length;
+  const progressPercentage = totalDocs > 0 ? Math.round((completedDocs / totalDocs) * 100) : 0;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface to-surface-elevated">
       <TopBar 
@@ -278,6 +306,27 @@ export function DocumentManagement() {
       <GlobalSearch isOpen={isSearchOpen} onClose={closeSearch} />
       
       <div className="max-w-content mx-auto px-8 py-8">
+        {/* Document Processing Progress Bar */}
+        <div className="bg-surface-elevated rounded-2xl border border-border-subtle p-6 mb-8 shadow-soft">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
+              <Zap className="w-5 h-5 text-primary" /> Document Processing Progress
+            </h2>
+            <span className="text-sm font-medium text-text-tertiary">{completedDocs} of {totalDocs} completed</span>
+          </div>
+          <div className="w-full bg-surface rounded-full h-3 overflow-hidden mb-2">
+            <div 
+              className="bg-primary h-3 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-xs text-text-tertiary mt-1">
+            <span><CheckCircle className="inline w-4 h-4 text-green-600 mr-1" />Completed: {completedDocs}</span>
+            <span><Clock className="inline w-4 h-4 text-amber-600 mr-1" />In Progress: {inProgressDocs}</span>
+            <span>Total: {totalDocs}</span>
+            <span>Progress: {progressPercentage}%</span>
+          </div>
+        </div>
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <div className="bg-surface-elevated rounded-xl border border-border-subtle p-6 shadow-soft">
@@ -362,6 +411,8 @@ export function DocumentManagement() {
               allowMultiple={true}
               onUploadComplete={handleUploadComplete}
               onUploadError={handleUploadError}
+              onProcessingDocument={handleProcessingDocument}
+              onProcessingComplete={handleProcessingComplete}
             />
           </div>
         )}
@@ -412,101 +463,116 @@ export function DocumentManagement() {
               <Skeleton key={i} className="h-24" />
             ))}
           </div>
-        ) : filteredDocuments.length > 0 ? (
+        ) : (
           <div className="bg-surface-elevated rounded-2xl border border-border-subtle shadow-soft overflow-hidden">
             <div className="divide-y divide-border-subtle">
+              {/* Show processing documents at the top */}
+              {processingDocuments.map((doc) => (
+                <div key={doc.id} className="p-6 bg-surface-hover">
+                  <ProcessingStatusIndicator
+                    document={doc}
+                    onDelete={() => handleProcessingComplete(doc.documentId)}
+                  />
+                </div>
+              ))}
+              {/* Then show the rest of the documents */}
               {filteredDocuments.map((document) => {
                 const state = getProcessingState(document.id);
-                
+                const isExpanded = expandedProcessingDocId === document.id;
+                // Find processing doc state if available
+                const processingDoc = processingDocuments.find(d => d.documentId === document.id);
                 return (
-                  <div key={document.id} className="p-6 hover:bg-surface-hover transition-all duration-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="font-semibold text-text-primary">{document.original_filename}</h3>
-                          {getStatusBadge(document)}
-                          {getClassificationBadge(document.eden_ai_classification)}
-                        </div>
-                        
-                        <div className="flex items-center space-x-4 text-sm text-text-tertiary">
-                          <span>Uploaded: {new Date(document.created_at).toLocaleDateString()}</span>
-                          <span>Size: {(document.file_size / 1024 / 1024).toFixed(2)} MB</span>
-                          <span>Type: {document.document_type}</span>
-                        </div>
-                        
-                        {document.ocr_text && (
-                          <div className="mt-2 text-xs text-text-tertiary">
-                            OCR: {document.ocr_text.substring(0, 100)}...
-                          </div>
+                  <React.Fragment key={document.id}>
+                    <div
+                      className="p-6 hover:bg-surface-hover transition-all duration-200 cursor-pointer flex items-center justify-between"
+                      onClick={() => setExpandedProcessingDocId(isExpanded ? null : document.id)}
+                    >
+                      <div className="flex items-center space-x-2">
+                        {isExpanded ? (
+                          <ChevronDown className="w-4 h-4 text-primary" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-primary" />
                         )}
+                        <h3 className="font-semibold text-text-primary">{document.original_filename}</h3>
+                        {getStatusBadge(document)}
+                        {getClassificationBadge(document)}
                       </div>
-                      
                       <div className="flex items-center space-x-2">
                         {getProcessingIcon(document)}
-                        
                         {state.needsApproval && (
                           <Button
                             size="sm"
-                            onClick={() => handleClassificationApproval(document)}
+                            onClick={e => { e.stopPropagation(); handleClassificationApproval(document); }}
                             className="bg-primary text-gray-900 hover:bg-primary-hover"
                           >
                             Review Classification
                           </Button>
                         )}
-                        
                         <Button
                           variant="ghost"
                           size="sm"
-                          icon={Eye}
-                          onClick={() => handlePreviewDocument(document.id)}
+                          onClick={e => { e.stopPropagation(); handlePreviewDocument(document.id); }}
                           className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                         >
                           Preview
                         </Button>
-                        
                         <Button
                           variant="ghost"
                           size="sm"
                           icon={Download}
-                          onClick={() => handleDownloadDocument(document.id, document.original_filename)}
+                          onClick={e => { e.stopPropagation(); handleDownloadDocument(document.id, document.original_filename); }}
                           className="text-green-600 hover:text-green-700 hover:bg-green-50"
                         >
                           Download
                         </Button>
-                        
                         <Button
                           variant="ghost"
                           size="sm"
                           icon={Trash2}
-                          onClick={() => handleDeleteDocument(document.id)}
+                          onClick={e => { e.stopPropagation(); handleDeleteDocument(document.id); }}
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
                           Delete
                         </Button>
                       </div>
                     </div>
-                  </div>
+                    {/* Expanded processing details */}
+                    {isExpanded && (
+                      <div className="bg-surface p-6 border-t border-border-subtle rounded-b-2xl mt-0 flex flex-col md:flex-row gap-8">
+                        {/* Left: Document Info */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-lg font-semibold text-text-primary mb-2">Document Details</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                            <div><span className="font-medium text-text-tertiary">Filename:</span> {document.original_filename}</div>
+                            <div><span className="font-medium text-text-tertiary">Type:</span> {document.document_type}</div>
+                            <div><span className="font-medium text-text-tertiary">Size:</span> {(document.file_size / 1024 / 1024).toFixed(2)} MB</div>
+                            <div><span className="font-medium text-text-tertiary">Status:</span> {document.processing_status}</div>
+                            <div><span className="font-medium text-text-tertiary">Classification:</span> {document.eden_ai_classification || '—'}</div>
+                            <div><span className="font-medium text-text-tertiary">Secondary Classification:</span> {document.secondary_classification || '—'}</div>
+                            <div><span className="font-medium text-text-tertiary">Client:</span> {document.client_id || '—'}</div>
+                            <div><span className="font-medium text-text-tertiary">Created:</span> {new Date(document.created_at).toLocaleString()}</div>
+                            <div><span className="font-medium text-text-tertiary">Updated:</span> {new Date(document.updated_at).toLocaleString()}</div>
+                          </div>
+                          {document.ocr_text && (
+                            <div className="mt-4 text-xs text-text-tertiary bg-surface-elevated rounded p-2">
+                              <span className="font-medium">OCR Preview:</span> {document.ocr_text.substring(0, 200)}{document.ocr_text.length > 200 ? '...' : ''}
+                            </div>
+                          )}
+                        </div>
+                        {/* Right: Processing Progress (if available) */}
+                        {processingDoc && (
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-lg font-semibold text-text-primary mb-2">Processing Progress</h4>
+                            <ProcessingStatusIndicator document={processingDoc} />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </div>
           </div>
-        ) : (
-          <EmptyState
-            icon={FileText}
-            title={searchQuery || statusFilter !== 'all' || classificationFilter !== 'all' 
-              ? 'No documents match your filters' 
-              : 'No documents yet'
-            }
-            description={searchQuery || statusFilter !== 'all' || classificationFilter !== 'all'
-              ? 'Try adjusting your search or filters to find what you\'re looking for'
-              : 'Upload your first document to get started with AI-powered processing'
-            }
-            action={(!searchQuery && statusFilter === 'all' && classificationFilter === 'all') ? {
-              label: "Upload First Document",
-              onClick: () => setShowUpload(true),
-              icon: Upload
-            } : undefined}
-          />
         )}
       </div>
 

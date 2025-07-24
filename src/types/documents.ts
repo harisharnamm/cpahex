@@ -16,6 +16,13 @@ export interface Document {
   is_processed: boolean;
   created_at: string;
   updated_at: string;
+  eden_ai_classification?: string;
+  processing_status?: string;
+  secondary_classification?: string;
+  classification_api_response?: any;
+  financial_processing_response?: any;
+  identity_processing_response?: any;
+  tax_processing_response?: any;
 }
 
 export type DocumentType = 
